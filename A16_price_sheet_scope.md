@@ -61,15 +61,55 @@ offered the larger plan. Nothing stops. Their figures keep updating and keep rec
 **Hard.** The sync stops at the limit, or the figures stop updating, until the seller moves
 up a plan.
 
-The recommendation is soft, for the reason already written into A14 section 14.4 about a
-failed payment. A bookkeeping product that stops showing a seller their own records is
-holding their accounts hostage, and doing it over a volume threshold is worse than doing it
-over an unpaid invoice, because the seller has done nothing wrong. They have sold more.
+**Soft is ruled**, on 22 September 2026, for the reason already written into A14 section
+14.4 about a failed payment. A bookkeeping product that stops showing a seller their own
+records is holding their accounts hostage, and doing it over a volume threshold is worse
+than doing it over an unpaid invoice, because the seller has done nothing wrong. They have
+sold more.
 
 Soft enforcement also earns its money. A seller who can see they are at 480 orders of 500
 has a reason to upgrade that does not involve being locked out.
 
-This is not ruled yet. Nothing is built until it is.
+### What soft means precisely
+
+**What is counted.** Orders created within the billing period, by TikTok's order creation
+time, in Europe/London. A cancelled order still counts, because the work of reading it,
+allocating it and reconciling it was done either way.
+
+**The period is the billing period, not the calendar month.** A seller who signs up on the
+20th does not receive a fresh allowance eleven days later.
+
+**Two thresholds.** At 80 per cent the count appears on Today with the larger plan offered
+beside it. At 100 per cent the wording changes to say the plan has been passed, and an
+email is sent. There is no third threshold, because a warning repeated becomes noise.
+
+**What never happens.** The sync does not stop. Figures do not stop updating. No month
+closes to the seller, no export is withheld, no screen is taken away. A seller at 900
+orders on Starter sees everything a seller at 90 sees.
+
+**What happens instead.** They are asked to move up, in plain words, on a screen they are
+already looking at.
+
+Persistent overage is not handled by this ruling, deliberately. If sellers turn out to sit
+above their plan for months at a time, that is a decision to make with evidence rather than
+a rule to guess at now.
+
+### What it needs first
+
+There was no billing state in the database. `accounts` carries an email, a subject and a
+status, and nothing else. No plan, no Stripe customer, no period dates. The quota counts
+within a billing period, so there was nothing to count within.
+
+Migration 0018 adds it: a `subscriptions` table under the same forced row level security as
+everything else, with `mse_app` holding SELECT and no write at all, and two SECURITY
+DEFINER functions. `create_subscription` is called at checkout. `apply_subscription_event`
+is called by the Stripe webhook, which arrives carrying a customer id and no account
+context, and therefore cannot run inside `db.tenant()`.
+
+That migration also closes two things that were already broken and had not been noticed.
+S38 had no data source, because `invoice.payment_failed` had nowhere to be written down.
+And `accounts.status` has carried a `suspended` value since v0.2 with no route into it,
+which A14 recorded as open.
 
 ## 16.4 What this changes
 
