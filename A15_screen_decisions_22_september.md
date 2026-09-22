@@ -64,7 +64,27 @@ a shop, waited through a twelve month sync, chosen a plan, confirmed a card and 
 their costs has done a long piece of work. Landing them on a dense screen of figures with
 no acknowledgement treats that work as though it did not happen.
 
-## 15.6 The copy pass
+## 15.6 The prices are exclusive of VAT
+
+Ruled 22 September 2026. Starter £9.99, Growth £24.99 and Pro £49.99 are all exclusive of
+VAT. A UK registered seller therefore pays £11.99, £29.99 and £59.99 at 20 per cent.
+
+Three things follow and none of them is optional.
+
+**Stripe carries the tax rather than the price.** The three prices are created with
+`tax_behavior: "exclusive"`. Setting this wrongly cannot be corrected later, because a
+Stripe price is immutable once created. A price created as inclusive has to be replaced
+and every subscription moved across.
+
+**S33 shows both numbers.** A plan card that says £9.99 and then charges £11.99 is the
+kind of surprise that produces a chargeback. The card carries the price and the words
+"plus VAT", and the total including VAT appears before the card is confirmed.
+
+**The seller's own VAT position does not change ours.** Most of these sellers are below
+the registration threshold and cannot reclaim it. The price they pay is the price with VAT
+on it, and the screen says so rather than assuming a reclaim they cannot make.
+
+## 15.7 The copy pass
 
 Ten strings were removed from the frames because they were written for a reviewer rather
 than a seller. They included requirement identifiers, references to this document set, and
