@@ -1,0 +1,16 @@
+{
+ "code": 0,
+ "message": "Success",
+ "data": {
+  "shops": [
+   {
+    "id": "7495000000000000001",
+    "cipher": "GBP_SyntheticCipherAAAAAAAAAAAAAA",
+    "code": "GBSYNTH0001",
+    "name": "Synthetic UK Shop",
+    "region": "GB",
+    "seller_type": "LOCAL"
+   }
+  ]
+ }
+}

@@ -1,0 +1,51 @@
+{
+ "code": 0,
+ "message": "Success",
+ "data": {
+  "statements": [
+   {
+    "id": "202608A-0001",
+    "statement_time": 1787270400,
+    "currency": "GBP",
+    "payment_status": "PAID",
+    "payment_id": "PAY-202608A-0001",
+    "payment_time": 1787274000,
+    "net_sales_amount": "345.00",
+    "fee_amount": "-33.49",
+    "shipping_cost_amount": "0.00",
+    "adjustment_amount": "0.00",
+    "revenue_amount": null,
+    "settlement_amount": "311.51"
+   },
+   {
+    "id": "202608A-0002",
+    "statement_time": 1787356800,
+    "currency": "GBP",
+    "payment_status": "PROCESSING",
+    "payment_id": "PAY-202608A-0002",
+    "payment_time": null,
+    "net_sales_amount": "180.00",
+    "fee_amount": "-27.00",
+    "shipping_cost_amount": "-5.50",
+    "adjustment_amount": "0.00",
+    "revenue_amount": null,
+    "settlement_amount": "147.50"
+   },
+   {
+    "id": "202608A-0003",
+    "statement_time": 1787443200,
+    "currency": "GBP",
+    "payment_status": "PAID",
+    "payment_id": "PAY-202608A-0003",
+    "payment_time": 1787446800,
+    "net_sales_amount": "18.00",
+    "fee_amount": "-13.63",
+    "shipping_cost_amount": "-4.50",
+    "adjustment_amount": "-5.00",
+    "revenue_amount": null,
+    "settlement_amount": "-5.13"
+   }
+  ],
+  "next_page_token": ""
+ }
+}

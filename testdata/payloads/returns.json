@@ -1,0 +1,135 @@
+{
+ "code": 0,
+ "message": "Success",
+ "data": {
+  "return_orders": [
+   {
+    "return_id": "RETA13",
+    "order_id": "5767178F3AF3FE2DE6",
+    "return_type": "CANCELLATION",
+    "return_status": "RETURN_OR_REFUND_REQUEST_COMPLETE",
+    "return_reason_text": "\u65e0\u5e93\u5b58",
+    "refund_amount": {
+     "currency": "GBP",
+     "refund_total": "20.00"
+    },
+    "create_time": 1786795200,
+    "update_time": 1786881600,
+    "credit_note_number": null,
+    "_damaged": false,
+    "_skus": [
+     "1729100000000000001"
+    ]
+   },
+   {
+    "return_id": "RETA14",
+    "order_id": "5767175FB85D991594",
+    "return_type": "REFUND_ONLY",
+    "return_status": "RETURN_OR_REFUND_REQUEST_COMPLETE",
+    "return_reason_text": "Item not as described",
+    "refund_amount": {
+     "currency": "GBP",
+     "refund_total": "20.00"
+    },
+    "create_time": 1786881600,
+    "update_time": 1786968000,
+    "credit_note_number": null,
+    "_damaged": false,
+    "_skus": [
+     "1729100000000000002"
+    ]
+   },
+   {
+    "return_id": "RETA15",
+    "order_id": "576761EE20644DEF60",
+    "return_type": "RETURN_REFUND",
+    "return_status": "RETURN_OR_REFUND_REQUEST_COMPLETE",
+    "return_reason_text": "Item not as described",
+    "refund_amount": {
+     "currency": "GBP",
+     "refund_total": "20.00"
+    },
+    "create_time": 1786968000,
+    "update_time": 1787054400,
+    "credit_note_number": null,
+    "_damaged": false,
+    "_skus": [
+     "1729100000000000003"
+    ]
+   },
+   {
+    "return_id": "RETA16",
+    "order_id": "576714A55EDE7AD91C",
+    "return_type": "RETURN_REFUND",
+    "return_status": "RETURN_OR_REFUND_REQUEST_COMPLETE",
+    "return_reason_text": "Item not as described",
+    "refund_amount": {
+     "currency": "GBP",
+     "refund_total": "120.00"
+    },
+    "create_time": 1787054400,
+    "update_time": 1787140800,
+    "credit_note_number": null,
+    "_damaged": true,
+    "_skus": [
+     "1729100000000000004"
+    ]
+   },
+   {
+    "return_id": "RETA17",
+    "order_id": "57671A047BF1E6FD11",
+    "return_type": "RETURN_REFUND",
+    "return_status": "RETURN_OR_REFUND_REQUEST_COMPLETE",
+    "return_reason_text": "Item not as described",
+    "refund_amount": {
+     "currency": "GBP",
+     "refund_total": "35.00"
+    },
+    "create_time": 1787140800,
+    "update_time": 1787227200,
+    "credit_note_number": null,
+    "_damaged": false,
+    "_skus": [
+     "1729100000000000007"
+    ]
+   },
+   {
+    "return_id": "RETA18",
+    "order_id": "576767F6D5F4B5DB61",
+    "return_type": "RETURN_REFUND",
+    "return_status": "RETURN_OR_REFUND_REQUEST_COMPLETE",
+    "return_reason_text": "Item not as described",
+    "refund_amount": {
+     "currency": "GBP",
+     "refund_total": "35.00"
+    },
+    "create_time": 1787227200,
+    "update_time": 1787313600,
+    "credit_note_number": null,
+    "_damaged": false,
+    "_skus": [
+     "1729100000000000008"
+    ]
+   },
+   {
+    "return_id": "RETA19",
+    "order_id": "5767056CFFD71C7796",
+    "return_type": "RETURN_REFUND",
+    "return_status": "RETURN_OR_REFUND_REQUEST_COMPLETE",
+    "return_reason_text": "Item not as described",
+    "refund_amount": {
+     "currency": "GBP",
+     "refund_total": "24.00"
+    },
+    "create_time": 1787313600,
+    "update_time": 1787400000,
+    "credit_note_number": "CN-UK-2026-0019",
+    "_damaged": false,
+    "_skus": [
+     "1729100000000000009"
+    ]
+   }
+  ],
+  "total_count": 7
+ }
+}

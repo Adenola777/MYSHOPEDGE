@@ -1,0 +1,1107 @@
+{
+ "code": 0,
+ "message": "Success",
+ "data": {
+  "orders": [
+   {
+    "id": "576789066FEA5A82A8",
+    "create_time": 1785585600,
+    "update_time": 1785672000,
+    "status": "COMPLETED",
+    "commerce_platform": "TIKTOK_SHOP",
+    "fulfillment_type": "FULFILLMENT_BY_SELLER",
+    "is_cod": false,
+    "order_type": "NORMAL",
+    "line_items": [
+     {
+      "id": "57681B904F5EF851F5",
+      "sku_id": "1729100000000000001",
+      "product_id": "1729000000000000001",
+      "product_name": "Double Use Curly Hair Brush",
+      "sku_name": "Blue",
+      "seller_sku": "HAIR-BLUE",
+      "sku_type": "NORMAL",
+      "currency": "GBP",
+      "original_price": "20.00",
+      "sale_price": "20.00",
+      "platform_discount": "0.00",
+      "seller_discount": "0.00",
+      "display_status": "DELIVERED",
+      "is_gift": false
+     }
+    ],
+    "payment": {
+     "currency": "GBP",
+     "original_total_product_price": "20.00",
+     "sub_total": "20.00",
+     "seller_discount": "0.00",
+     "platform_discount": "0.00",
+     "shipping_fee": "0.00",
+     "tax": "0.00",
+     "total_amount": "20.00"
+    },
+    "buyer_email": "89066FEA5A82A87F2EE66E6E6A00E@scs2.tiktok.com",
+    "recipient_address": {
+     "name": "",
+     "phone_number": "",
+     "full_address": "",
+     "postal_code": "",
+     "region_code": "GB"
+    },
+    "_ref": "A01",
+    "_flags": {},
+    "_subtotal": 2000,
+    "_discount": 0
+   },
+   {
+    "id": "5767AFF856A8549DB4",
+    "create_time": 1785672000,
+    "update_time": 1785758400,
+    "status": "COMPLETED",
+    "commerce_platform": "TIKTOK_SHOP",
+    "fulfillment_type": "FULFILLMENT_BY_SELLER",
+    "is_cod": false,
+    "order_type": "NORMAL",
+    "line_items": [
+     {
+      "id": "57687BE626A9973643",
+      "sku_id": "1729100000000000001",
+      "product_id": "1729000000000000001",
+      "product_name": "Double Use Curly Hair Brush",
+      "sku_name": "Blue",
+      "seller_sku": "HAIR-BLUE",
+      "sku_type": "NORMAL",
+      "currency": "GBP",
+      "original_price": "20.00",
+      "sale_price": "20.00",
+      "platform_discount": "0.00",
+      "seller_discount": "0.00",
+      "display_status": "DELIVERED",
+      "is_gift": false
+     },
+     {
+      "id": "57686017487B8865F6",
+      "sku_id": "1729100000000000001",
+      "product_id": "1729000000000000001",
+      "product_name": "Double Use Curly Hair Brush",
+      "sku_name": "Blue",
+      "seller_sku": "HAIR-BLUE",
+      "sku_type": "NORMAL",
+      "currency": "GBP",
+      "original_price": "20.00",
+      "sale_price": "20.00",
+      "platform_discount": "0.00",
+      "seller_discount": "0.00",
+      "display_status": "DELIVERED",
+      "is_gift": false
+     },
+     {
+      "id": "57689C89F03219F193",
+      "sku_id": "1729100000000000001",
+      "product_id": "1729000000000000001",
+      "product_name": "Double Use Curly Hair Brush",
+      "sku_name": "Blue",
+      "seller_sku": "HAIR-BLUE",
+      "sku_type": "NORMAL",
+      "currency": "GBP",
+      "original_price": "20.00",
+      "sale_price": "20.00",
+      "platform_discount": "0.00",
+      "seller_discount": "0.00",
+      "display_status": "DELIVERED",
+      "is_gift": false
+     }
+    ],
+    "payment": {
+     "currency": "GBP",
+     "original_total_product_price": "60.00",
+     "sub_total": "60.00",
+     "seller_discount": "0.00",
+     "platform_discount": "0.00",
+     "shipping_fee": "0.00",
+     "tax": "0.00",
+     "total_amount": "60.00"
+    },
+    "buyer_email": "AFF856A8549DB46A5D747D3B78480@scs2.tiktok.com",
+    "recipient_address": {
+     "name": "",
+     "phone_number": "",
+     "full_address": "",
+     "postal_code": "",
+     "region_code": "GB"
+    },
+    "_ref": "A02",
+    "_flags": {},
+    "_subtotal": 6000,
+    "_discount": 0
+   },
+   {
+    "id": "5767F16AA2433C3C01",
+    "create_time": 1785758400,
+    "update_time": 1785844800,
+    "status": "COMPLETED",
+    "commerce_platform": "TIKTOK_SHOP",
+    "fulfillment_type": "FULFILLMENT_BY_SELLER",
+    "is_cod": false,
+    "order_type": "NORMAL",
+    "line_items": [
+     {
+      "id": "5768133E2071DA4398",
+      "sku_id": "1729100000000000001",
+      "product_id": "1729000000000000001",
+      "product_name": "Double Use Curly Hair Brush",
+      "sku_name": "Blue",
+      "seller_sku": "HAIR-BLUE",
+      "sku_type": "NORMAL",
+      "currency": "GBP",
+      "original_price": "20.00",
+      "sale_price": "20.00",
+      "platform_discount": "0.00",
+      "seller_discount": "0.00",
+      "display_status": "DELIVERED",
+      "is_gift": false
+     },
+     {
+      "id": "5768B0158428D9D868",
+      "sku_id": "1729100000000000004",
+      "product_id": "1729000000000000002",
+      "product_name": "Computer Desk 120cm",
+      "sku_name": "Black",
+      "seller_sku": "DESK-BLK",
+      "sku_type": "NORMAL",
+      "currency": "GBP",
+      "original_price": "120.00",
+      "sale_price": "120.00",
+      "platform_discount": "0.00",
+      "seller_discount": "0.00",
+      "display_status": "DELIVERED",
+      "is_gift": false
+     }
+    ],
+    "payment": {
+     "currency": "GBP",
+     "original_total_product_price": "140.00",
+     "sub_total": "140.00",
+     "seller_discount": "0.00",
+     "platform_discount": "0.00",
+     "shipping_fee": "0.00",
+     "tax": "0.00",
+     "total_amount": "140.00"
+    },
+    "buyer_email": "F16AA2433C3C0120BD95A5BFD89E7@scs2.tiktok.com",
+    "recipient_address": {
+     "name": "",
+     "phone_number": "",
+     "full_address": "",
+     "postal_code": "",
+     "region_code": "GB"
+    },
+    "_ref": "A03",
+    "_flags": {},
+    "_subtotal": 14000,
+    "_discount": 0
+   },
+   {
+    "id": "57678353E160B74911",
+    "create_time": 1785844800,
+    "update_time": 1785931200,
+    "status": "COMPLETED",
+    "commerce_platform": "TIKTOK_SHOP",
+    "fulfillment_type": "FULFILLMENT_BY_SELLER",
+    "is_cod": false,
+    "order_type": "NORMAL",
+    "line_items": [
+     {
+      "id": "5768C6F905754303D5",
+      "sku_id": "1729100000000000006",
+      "product_id": "1729000000000000003",
+      "product_name": "Vacuum Food Flask 500ml",
+      "sku_name": "Default",
+      "seller_sku": "FLASK-DEF",
+      "sku_type": "NORMAL",
+      "currency": "GBP",
+      "original_price": "18.00",
+      "sale_price": "18.00",
+      "platform_discount": "0.00",
+      "seller_discount": "0.00",
+      "display_status": "DELIVERED",
+      "is_gift": false
+     },
+     {
+      "id": "576854D6EE0D62E4E3",
+      "sku_id": "1729100000000000006",
+      "product_id": "1729000000000000003",
+      "product_name": "Vacuum Food Flask 500ml",
+      "sku_name": "Default",
+      "seller_sku": "FLASK-DEF",
+      "sku_type": "NORMAL",
+      "currency": "GBP",
+      "original_price": "18.00",
+      "sale_price": "18.00",
+      "platform_discount": "0.00",
+      "seller_discount": "0.00",
+      "display_status": "DELIVERED",
+      "is_gift": false
+     }
+    ],
+    "payment": {
+     "currency": "GBP",
+     "original_total_product_price": "36.00",
+     "sub_total": "31.00",
+     "seller_discount": "5.00",
+     "platform_discount": "0.00",
+     "shipping_fee": "0.00",
+     "tax": "0.00",
+     "total_amount": "31.00"
+    },
+    "buyer_email": "8353E160B749115B91796BC4933EB@scs2.tiktok.com",
+    "recipient_address": {
+     "name": "",
+     "phone_number": "",
+     "full_address": "",
+     "postal_code": "",
+     "region_code": "GB"
+    },
+    "_ref": "A04",
+    "_flags": {
+     "seller_discount": 500
+    },
+    "_subtotal": 3600,
+    "_discount": 500
+   },
+   {
+    "id": "57671FE17FD353865F",
+    "create_time": 1785931200,
+    "update_time": 1786017600,
+    "status": "COMPLETED",
+    "commerce_platform": "TIKTOK_SHOP",
+    "fulfillment_type": "FULFILLMENT_BY_SELLER",
+    "is_cod": false,
+    "order_type": "NORMAL",
+    "line_items": [
+     {
+      "id": "5768B9E0062BF380A5",
+      "sku_id": "1729100000000000007",
+      "product_id": "1729000000000000004",
+      "product_name": "Travel Duffel Bag",
+      "sku_name": "Black",
+      "seller_sku": "BAG-BLK",
+      "sku_type": "NORMAL",
+      "currency": "GBP",
+      "original_price": "35.00",
+      "sale_price": "35.00",
+      "platform_discount": "0.00",
+      "seller_discount": "0.00",
+      "display_status": "DELIVERED",
+      "is_gift": false
+     }
+    ],
+    "payment": {
+     "currency": "GBP",
+     "original_total_product_price": "35.00",
+     "sub_total": "35.00",
+     "seller_discount": "0.00",
+     "platform_discount": "0.00",
+     "shipping_fee": "0.00",
+     "tax": "0.00",
+     "total_amount": "35.00"
+    },
+    "buyer_email": "1FE17FD353865F52BF4D1802B48A4@scs2.tiktok.com",
+    "recipient_address": {
+     "name": "",
+     "phone_number": "",
+     "full_address": "",
+     "postal_code": "",
+     "region_code": "GB"
+    },
+    "_ref": "A05",
+    "_flags": {
+     "affiliate": true
+    },
+    "_subtotal": 3500,
+    "_discount": 0
+   },
+   {
+    "id": "5767B24628DF38A230",
+    "create_time": 1786017600,
+    "update_time": 1786104000,
+    "status": "COMPLETED",
+    "commerce_platform": "TIKTOK_SHOP",
+    "fulfillment_type": "FULFILLMENT_BY_SELLER",
+    "is_cod": false,
+    "order_type": "NORMAL",
+    "line_items": [
+     {
+      "id": "5768751434C92686F2",
+      "sku_id": "1729100000000000009",
+      "product_id": "1729000000000000005",
+      "product_name": "LED Desk Lamp",
+      "sku_name": "White",
+      "seller_sku": "LAMP-WHT",
+      "sku_type": "NORMAL",
+      "currency": "GBP",
+      "original_price": "24.00",
+      "sale_price": "24.00",
+      "platform_discount": "0.00",
+      "seller_discount": "0.00",
+      "display_status": "DELIVERED",
+      "is_gift": false
+     }
+    ],
+    "payment": {
+     "currency": "GBP",
+     "original_total_product_price": "24.00",
+     "sub_total": "24.00",
+     "seller_discount": "0.00",
+     "platform_discount": "0.00",
+     "shipping_fee": "0.00",
+     "tax": "0.00",
+     "total_amount": "24.00"
+    },
+    "buyer_email": "B24628DF38A2306BC0D213E61F248@scs2.tiktok.com",
+    "recipient_address": {
+     "name": "",
+     "phone_number": "",
+     "full_address": "",
+     "postal_code": "",
+     "region_code": "GB"
+    },
+    "_ref": "A06",
+    "_flags": {
+     "affiliate_ads": true
+    },
+    "_subtotal": 2400,
+    "_discount": 0
+   },
+   {
+    "id": "5767014FB3CE7AE1ED",
+    "create_time": 1786104000,
+    "update_time": 1786190400,
+    "status": "COMPLETED",
+    "commerce_platform": "TIKTOK_SHOP",
+    "fulfillment_type": "FULFILLMENT_BY_SELLER",
+    "is_cod": false,
+    "order_type": "NORMAL",
+    "line_items": [
+     {
+      "id": "5768CF6951D79C1913",
+      "sku_id": "1729100000000000002",
+      "product_id": "1729000000000000001",
+      "product_name": "Double Use Curly Hair Brush",
+      "sku_name": "Red",
+      "seller_sku": "HAIR-RED",
+      "sku_type": "NORMAL",
+      "currency": "GBP",
+      "original_price": "20.00",
+      "sale_price": "20.00",
+      "platform_discount": "0.00",
+      "seller_discount": "0.00",
+      "display_status": "DELIVERED",
+      "is_gift": false
+     }
+    ],
+    "payment": {
+     "currency": "GBP",
+     "original_total_product_price": "20.00",
+     "sub_total": "20.00",
+     "seller_discount": "0.00",
+     "platform_discount": "0.00",
+     "shipping_fee": "0.00",
+     "tax": "0.00",
+     "total_amount": "20.00"
+    },
+    "buyer_email": "014FB3CE7AE1ED358CA17A68FDFB7@scs2.tiktok.com",
+    "recipient_address": {
+     "name": "",
+     "phone_number": "",
+     "full_address": "",
+     "postal_code": "",
+     "region_code": "GB"
+    },
+    "_ref": "A07",
+    "_flags": {
+     "unsettled": "waiting_delivery"
+    },
+    "_subtotal": 2000,
+    "_discount": 0
+   },
+   {
+    "id": "5767252231CB56376E",
+    "create_time": 1786190400,
+    "update_time": 1786276800,
+    "status": "COMPLETED",
+    "commerce_platform": "TIKTOK_SHOP",
+    "fulfillment_type": "FULFILLMENT_BY_SELLER",
+    "is_cod": false,
+    "order_type": "NORMAL",
+    "line_items": [
+     {
+      "id": "576802B59FA0D1FC5A",
+      "sku_id": "1729100000000000003",
+      "product_id": "1729000000000000001",
+      "product_name": "Double Use Curly Hair Brush",
+      "sku_name": "Green",
+      "seller_sku": "",
+      "sku_type": "NORMAL",
+      "currency": "GBP",
+      "original_price": "20.00",
+      "sale_price": "20.00",
+      "platform_discount": "0.00",
+      "seller_discount": "0.00",
+      "display_status": "DELIVERED",
+      "is_gift": false
+     }
+    ],
+    "payment": {
+     "currency": "GBP",
+     "original_total_product_price": "20.00",
+     "sub_total": "20.00",
+     "seller_discount": "0.00",
+     "platform_discount": "0.00",
+     "shipping_fee": "0.00",
+     "tax": "0.00",
+     "total_amount": "20.00"
+    },
+    "buyer_email": "252231CB56376E8DC5E4A0D440910@scs2.tiktok.com",
+    "recipient_address": {
+     "name": "",
+     "phone_number": "",
+     "full_address": "",
+     "postal_code": "",
+     "region_code": "GB"
+    },
+    "_ref": "A08",
+    "_flags": {
+     "unsettled": "delivered_awaiting_settlement"
+    },
+    "_subtotal": 2000,
+    "_discount": 0
+   },
+   {
+    "id": "5767ED13D72C4E1113",
+    "create_time": 1786276800,
+    "update_time": 1786363200,
+    "status": "COMPLETED",
+    "commerce_platform": "TIKTOK_SHOP",
+    "fulfillment_type": "FULFILLMENT_BY_SELLER",
+    "is_cod": false,
+    "order_type": "NORMAL",
+    "line_items": [
+     {
+      "id": "5768FABFF7FB640EB4",
+      "sku_id": "1729100000000000008",
+      "product_id": "1729000000000000004",
+      "product_name": "Travel Duffel Bag",
+      "sku_name": "Brown",
+      "seller_sku": "BAG-BRN",
+      "sku_type": "NORMAL",
+      "currency": "GBP",
+      "original_price": "35.00",
+      "sale_price": "35.00",
+      "platform_discount": "0.00",
+      "seller_discount": "0.00",
+      "display_status": "DELIVERED",
+      "is_gift": false
+     }
+    ],
+    "payment": {
+     "currency": "GBP",
+     "original_total_product_price": "35.00",
+     "sub_total": "35.00",
+     "seller_discount": "0.00",
+     "platform_discount": "0.00",
+     "shipping_fee": "0.00",
+     "tax": "0.00",
+     "total_amount": "35.00"
+    },
+    "buyer_email": "ED13D72C4E11136B85CEB803535FA@scs2.tiktok.com",
+    "recipient_address": {
+     "name": "",
+     "phone_number": "",
+     "full_address": "",
+     "postal_code": "",
+     "region_code": "GB"
+    },
+    "_ref": "A09",
+    "_flags": {
+     "promo": true
+    },
+    "_subtotal": 3500,
+    "_discount": 0
+   },
+   {
+    "id": "57676E39D6B2C00645",
+    "create_time": 1785540600,
+    "update_time": 1785627000,
+    "status": "COMPLETED",
+    "commerce_platform": "TIKTOK_SHOP",
+    "fulfillment_type": "FULFILLMENT_BY_SELLER",
+    "is_cod": false,
+    "order_type": "NORMAL",
+    "line_items": [
+     {
+      "id": "5768E98D248DDD9EF7",
+      "sku_id": "1729100000000000001",
+      "product_id": "1729000000000000001",
+      "product_name": "Double Use Curly Hair Brush",
+      "sku_name": "Blue",
+      "seller_sku": "HAIR-BLUE",
+      "sku_type": "NORMAL",
+      "currency": "GBP",
+      "original_price": "20.00",
+      "sale_price": "20.00",
+      "platform_discount": "0.00",
+      "seller_discount": "0.00",
+      "display_status": "DELIVERED",
+      "is_gift": false
+     }
+    ],
+    "payment": {
+     "currency": "GBP",
+     "original_total_product_price": "20.00",
+     "sub_total": "20.00",
+     "seller_discount": "0.00",
+     "platform_discount": "0.00",
+     "shipping_fee": "0.00",
+     "tax": "0.00",
+     "total_amount": "20.00"
+    },
+    "buyer_email": "6E39D6B2C00645551860FF90FE750@scs2.tiktok.com",
+    "recipient_address": {
+     "name": "",
+     "phone_number": "",
+     "full_address": "",
+     "postal_code": "",
+     "region_code": "GB"
+    },
+    "_ref": "A10",
+    "_flags": {},
+    "_subtotal": 2000,
+    "_discount": 0
+   },
+   {
+    "id": "57671EA20B6365B344",
+    "create_time": 1785533400,
+    "update_time": 1785619800,
+    "status": "COMPLETED",
+    "commerce_platform": "TIKTOK_SHOP",
+    "fulfillment_type": "FULFILLMENT_BY_SELLER",
+    "is_cod": false,
+    "order_type": "NORMAL",
+    "line_items": [
+     {
+      "id": "57682ECB4256DEAC47",
+      "sku_id": "1729100000000000004",
+      "product_id": "1729000000000000002",
+      "product_name": "Computer Desk 120cm",
+      "sku_name": "Black",
+      "seller_sku": "DESK-BLK",
+      "sku_type": "NORMAL",
+      "currency": "GBP",
+      "original_price": "120.00",
+      "sale_price": "120.00",
+      "platform_discount": "0.00",
+      "seller_discount": "0.00",
+      "display_status": "DELIVERED",
+      "is_gift": false
+     }
+    ],
+    "payment": {
+     "currency": "GBP",
+     "original_total_product_price": "120.00",
+     "sub_total": "120.00",
+     "seller_discount": "0.00",
+     "platform_discount": "0.00",
+     "shipping_fee": "0.00",
+     "tax": "0.00",
+     "total_amount": "120.00"
+    },
+    "buyer_email": "1EA20B6365B3447FAAB2DBCE07E0F@scs2.tiktok.com",
+    "recipient_address": {
+     "name": "",
+     "phone_number": "",
+     "full_address": "",
+     "postal_code": "",
+     "region_code": "GB"
+    },
+    "_ref": "A11",
+    "_flags": {},
+    "_subtotal": 12000,
+    "_discount": 0
+   },
+   {
+    "id": "57671879B9D44D0043",
+    "create_time": 1786536000,
+    "update_time": 1786622400,
+    "status": "COMPLETED",
+    "commerce_platform": "TIKTOK_SHOP",
+    "fulfillment_type": "FULFILLMENT_BY_TIKTOK",
+    "is_cod": false,
+    "order_type": "NORMAL",
+    "line_items": [
+     {
+      "id": "5768728A80FB71B961",
+      "sku_id": "1729100000000000010",
+      "product_id": "1729000000000000006",
+      "product_name": "Seasonal Gift Box",
+      "sku_name": "Default",
+      "seller_sku": "GIFT-DEF",
+      "sku_type": "NORMAL",
+      "currency": "GBP",
+      "original_price": "40.00",
+      "sale_price": "40.00",
+      "platform_discount": "0.00",
+      "seller_discount": "0.00",
+      "display_status": "DELIVERED",
+      "is_gift": false
+     }
+    ],
+    "payment": {
+     "currency": "GBP",
+     "original_total_product_price": "40.00",
+     "sub_total": "40.00",
+     "seller_discount": "0.00",
+     "platform_discount": "0.00",
+     "shipping_fee": "0.00",
+     "tax": "0.00",
+     "total_amount": "40.00"
+    },
+    "buyer_email": "1879B9D44D004394A53ECC31ACB05@scs2.tiktok.com",
+    "recipient_address": {
+     "name": "",
+     "phone_number": "",
+     "full_address": "",
+     "postal_code": "",
+     "region_code": "GB"
+    },
+    "_ref": "A12",
+    "_flags": {
+     "fbt": true
+    },
+    "_subtotal": 4000,
+    "_discount": 0
+   },
+   {
+    "id": "5767178F3AF3FE2DE6",
+    "create_time": 1786622400,
+    "update_time": 1786708800,
+    "status": "CANCELLED",
+    "commerce_platform": "TIKTOK_SHOP",
+    "fulfillment_type": "FULFILLMENT_BY_SELLER",
+    "is_cod": false,
+    "order_type": "NORMAL",
+    "line_items": [
+     {
+      "id": "576896ED535EC73DFC",
+      "sku_id": "1729100000000000001",
+      "product_id": "1729000000000000001",
+      "product_name": "Double Use Curly Hair Brush",
+      "sku_name": "Blue",
+      "seller_sku": "HAIR-BLUE",
+      "sku_type": "NORMAL",
+      "currency": "GBP",
+      "original_price": "20.00",
+      "sale_price": "20.00",
+      "platform_discount": "0.00",
+      "seller_discount": "0.00",
+      "display_status": "CANCELLED",
+      "is_gift": false
+     }
+    ],
+    "payment": {
+     "currency": "GBP",
+     "original_total_product_price": "20.00",
+     "sub_total": "20.00",
+     "seller_discount": "0.00",
+     "platform_discount": "0.00",
+     "shipping_fee": "0.00",
+     "tax": "0.00",
+     "total_amount": "20.00"
+    },
+    "buyer_email": "178F3AF3FE2DE659D13B27779E658@scs2.tiktok.com",
+    "recipient_address": {
+     "name": "",
+     "phone_number": "",
+     "full_address": "",
+     "postal_code": "",
+     "region_code": "GB"
+    },
+    "_ref": "A13",
+    "_flags": {
+     "cancelled": true
+    },
+    "_subtotal": 2000,
+    "_discount": 0
+   },
+   {
+    "id": "5767175FB85D991594",
+    "create_time": 1786708800,
+    "update_time": 1786795200,
+    "status": "COMPLETED",
+    "commerce_platform": "TIKTOK_SHOP",
+    "fulfillment_type": "FULFILLMENT_BY_SELLER",
+    "is_cod": false,
+    "order_type": "NORMAL",
+    "line_items": [
+     {
+      "id": "576863D52ED6DF60A8",
+      "sku_id": "1729100000000000002",
+      "product_id": "1729000000000000001",
+      "product_name": "Double Use Curly Hair Brush",
+      "sku_name": "Red",
+      "seller_sku": "HAIR-RED",
+      "sku_type": "NORMAL",
+      "currency": "GBP",
+      "original_price": "20.00",
+      "sale_price": "20.00",
+      "platform_discount": "0.00",
+      "seller_discount": "0.00",
+      "display_status": "DELIVERED",
+      "is_gift": false
+     }
+    ],
+    "payment": {
+     "currency": "GBP",
+     "original_total_product_price": "20.00",
+     "sub_total": "20.00",
+     "seller_discount": "0.00",
+     "platform_discount": "0.00",
+     "shipping_fee": "0.00",
+     "tax": "0.00",
+     "total_amount": "20.00"
+    },
+    "buyer_email": "175FB85D991594F2DE3D0784AE69E@scs2.tiktok.com",
+    "recipient_address": {
+     "name": "",
+     "phone_number": "",
+     "full_address": "",
+     "postal_code": "",
+     "region_code": "GB"
+    },
+    "_ref": "A14",
+    "_flags": {
+     "refund_only": true
+    },
+    "_subtotal": 2000,
+    "_discount": 0
+   },
+   {
+    "id": "576761EE20644DEF60",
+    "create_time": 1786795200,
+    "update_time": 1786881600,
+    "status": "COMPLETED",
+    "commerce_platform": "TIKTOK_SHOP",
+    "fulfillment_type": "FULFILLMENT_BY_SELLER",
+    "is_cod": false,
+    "order_type": "NORMAL",
+    "line_items": [
+     {
+      "id": "57686D869E5BC12C15",
+      "sku_id": "1729100000000000003",
+      "product_id": "1729000000000000001",
+      "product_name": "Double Use Curly Hair Brush",
+      "sku_name": "Green",
+      "seller_sku": "",
+      "sku_type": "NORMAL",
+      "currency": "GBP",
+      "original_price": "20.00",
+      "sale_price": "20.00",
+      "platform_discount": "0.00",
+      "seller_discount": "0.00",
+      "display_status": "DELIVERED",
+      "is_gift": false
+     }
+    ],
+    "payment": {
+     "currency": "GBP",
+     "original_total_product_price": "20.00",
+     "sub_total": "20.00",
+     "seller_discount": "0.00",
+     "platform_discount": "0.00",
+     "shipping_fee": "0.00",
+     "tax": "0.00",
+     "total_amount": "20.00"
+    },
+    "buyer_email": "61EE20644DEF60E61C6BA273639CD@scs2.tiktok.com",
+    "recipient_address": {
+     "name": "",
+     "phone_number": "",
+     "full_address": "",
+     "postal_code": "",
+     "region_code": "GB"
+    },
+    "_ref": "A15",
+    "_flags": {
+     "return_resellable": true
+    },
+    "_subtotal": 2000,
+    "_discount": 0
+   },
+   {
+    "id": "576714A55EDE7AD91C",
+    "create_time": 1786881600,
+    "update_time": 1786968000,
+    "status": "COMPLETED",
+    "commerce_platform": "TIKTOK_SHOP",
+    "fulfillment_type": "FULFILLMENT_BY_SELLER",
+    "is_cod": false,
+    "order_type": "NORMAL",
+    "line_items": [
+     {
+      "id": "57682089928D89390F",
+      "sku_id": "1729100000000000004",
+      "product_id": "1729000000000000002",
+      "product_name": "Computer Desk 120cm",
+      "sku_name": "Black",
+      "seller_sku": "DESK-BLK",
+      "sku_type": "NORMAL",
+      "currency": "GBP",
+      "original_price": "120.00",
+      "sale_price": "120.00",
+      "platform_discount": "0.00",
+      "seller_discount": "0.00",
+      "display_status": "DELIVERED",
+      "is_gift": false
+     }
+    ],
+    "payment": {
+     "currency": "GBP",
+     "original_total_product_price": "120.00",
+     "sub_total": "120.00",
+     "seller_discount": "0.00",
+     "platform_discount": "0.00",
+     "shipping_fee": "0.00",
+     "tax": "0.00",
+     "total_amount": "120.00"
+    },
+    "buyer_email": "14A55EDE7AD91CADCCBEB3D81BB3C@scs2.tiktok.com",
+    "recipient_address": {
+     "name": "",
+     "phone_number": "",
+     "full_address": "",
+     "postal_code": "",
+     "region_code": "GB"
+    },
+    "_ref": "A16",
+    "_flags": {
+     "return_damaged": true
+    },
+    "_subtotal": 12000,
+    "_discount": 0
+   },
+   {
+    "id": "57671A047BF1E6FD11",
+    "create_time": 1786968000,
+    "update_time": 1787054400,
+    "status": "COMPLETED",
+    "commerce_platform": "TIKTOK_SHOP",
+    "fulfillment_type": "FULFILLMENT_BY_SELLER",
+    "is_cod": false,
+    "order_type": "NORMAL",
+    "line_items": [
+     {
+      "id": "5768E7388E71780B8A",
+      "sku_id": "1729100000000000007",
+      "product_id": "1729000000000000004",
+      "product_name": "Travel Duffel Bag",
+      "sku_name": "Black",
+      "seller_sku": "BAG-BLK",
+      "sku_type": "NORMAL",
+      "currency": "GBP",
+      "original_price": "35.00",
+      "sale_price": "35.00",
+      "platform_discount": "0.00",
+      "seller_discount": "0.00",
+      "display_status": "DELIVERED",
+      "is_gift": false
+     }
+    ],
+    "payment": {
+     "currency": "GBP",
+     "original_total_product_price": "35.00",
+     "sub_total": "35.00",
+     "seller_discount": "0.00",
+     "platform_discount": "0.00",
+     "shipping_fee": "0.00",
+     "tax": "0.00",
+     "total_amount": "35.00"
+    },
+    "buyer_email": "1A047BF1E6FD115BEAC750263C984@scs2.tiktok.com",
+    "recipient_address": {
+     "name": "",
+     "phone_number": "",
+     "full_address": "",
+     "postal_code": "",
+     "region_code": "GB"
+    },
+    "_ref": "A17",
+    "_flags": {
+     "return_resellable": true,
+     "return_postage": 450
+    },
+    "_subtotal": 3500,
+    "_discount": 0
+   },
+   {
+    "id": "576767F6D5F4B5DB61",
+    "create_time": 1787054400,
+    "update_time": 1787140800,
+    "status": "COMPLETED",
+    "commerce_platform": "TIKTOK_SHOP",
+    "fulfillment_type": "FULFILLMENT_BY_SELLER",
+    "is_cod": false,
+    "order_type": "NORMAL",
+    "line_items": [
+     {
+      "id": "5768356AD74695FB1F",
+      "sku_id": "1729100000000000008",
+      "product_id": "1729000000000000004",
+      "product_name": "Travel Duffel Bag",
+      "sku_name": "Brown",
+      "seller_sku": "BAG-BRN",
+      "sku_type": "NORMAL",
+      "currency": "GBP",
+      "original_price": "35.00",
+      "sale_price": "35.00",
+      "platform_discount": "0.00",
+      "seller_discount": "0.00",
+      "display_status": "DELIVERED",
+      "is_gift": false
+     }
+    ],
+    "payment": {
+     "currency": "GBP",
+     "original_total_product_price": "35.00",
+     "sub_total": "35.00",
+     "seller_discount": "0.00",
+     "platform_discount": "0.00",
+     "shipping_fee": "0.00",
+     "tax": "0.00",
+     "total_amount": "35.00"
+    },
+    "buyer_email": "67F6D5F4B5DB615702CD5E779D8DB@scs2.tiktok.com",
+    "recipient_address": {
+     "name": "",
+     "phone_number": "",
+     "full_address": "",
+     "postal_code": "",
+     "region_code": "GB"
+    },
+    "_ref": "A18",
+    "_flags": {
+     "return_resellable": true,
+     "return_handling": 325
+    },
+    "_subtotal": 3500,
+    "_discount": 0
+   },
+   {
+    "id": "5767056CFFD71C7796",
+    "create_time": 1787140800,
+    "update_time": 1787227200,
+    "status": "COMPLETED",
+    "commerce_platform": "TIKTOK_SHOP",
+    "fulfillment_type": "FULFILLMENT_BY_SELLER",
+    "is_cod": false,
+    "order_type": "NORMAL",
+    "line_items": [
+     {
+      "id": "5768C3B8EB6419DC64",
+      "sku_id": "1729100000000000009",
+      "product_id": "1729000000000000005",
+      "product_name": "LED Desk Lamp",
+      "sku_name": "White",
+      "seller_sku": "LAMP-WHT",
+      "sku_type": "NORMAL",
+      "currency": "GBP",
+      "original_price": "24.00",
+      "sale_price": "24.00",
+      "platform_discount": "0.00",
+      "seller_discount": "0.00",
+      "display_status": "DELIVERED",
+      "is_gift": false
+     }
+    ],
+    "payment": {
+     "currency": "GBP",
+     "original_total_product_price": "24.00",
+     "sub_total": "24.00",
+     "seller_discount": "0.00",
+     "platform_discount": "0.00",
+     "shipping_fee": "0.00",
+     "tax": "0.00",
+     "total_amount": "24.00"
+    },
+    "buyer_email": "056CFFD71C7796629DF92AFC69F06@scs2.tiktok.com",
+    "recipient_address": {
+     "name": "",
+     "phone_number": "",
+     "full_address": "",
+     "postal_code": "",
+     "region_code": "GB"
+    },
+    "_ref": "A19",
+    "_flags": {
+     "return_resellable": true,
+     "credit_note": true
+    },
+    "_subtotal": 2400,
+    "_discount": 0
+   },
+   {
+    "id": "5767E825EC5D34E749",
+    "create_time": 1787227200,
+    "update_time": 1787313600,
+    "status": "COMPLETED",
+    "commerce_platform": "TIKTOK_SHOP",
+    "fulfillment_type": "FULFILLMENT_BY_SELLER",
+    "is_cod": false,
+    "order_type": "NORMAL",
+    "line_items": [
+     {
+      "id": "5768CF05898D5DFD34",
+      "sku_id": "1729100000000000006",
+      "product_id": "1729000000000000003",
+      "product_name": "Vacuum Food Flask 500ml",
+      "sku_name": "Default",
+      "seller_sku": "FLASK-DEF",
+      "sku_type": "NORMAL",
+      "currency": "GBP",
+      "original_price": "18.00",
+      "sale_price": "18.00",
+      "platform_discount": "0.00",
+      "seller_discount": "0.00",
+      "display_status": "DELIVERED",
+      "is_gift": false
+     }
+    ],
+    "payment": {
+     "currency": "GBP",
+     "original_total_product_price": "18.00",
+     "sub_total": "18.00",
+     "seller_discount": "0.00",
+     "platform_discount": "0.00",
+     "shipping_fee": "0.00",
+     "tax": "0.00",
+     "total_amount": "18.00"
+    },
+    "buyer_email": "E825EC5D34E749695BE2C5F18E95B@scs2.tiktok.com",
+    "recipient_address": {
+     "name": "",
+     "phone_number": "",
+     "full_address": "",
+     "postal_code": "",
+     "region_code": "GB"
+    },
+    "_ref": "A20",
+    "_flags": {
+     "mystery_fee": 199
+    },
+    "_subtotal": 1800,
+    "_discount": 0
+   }
+  ],
+  "total_count": 20,
+  "next_page_token": ""
+ }
+}

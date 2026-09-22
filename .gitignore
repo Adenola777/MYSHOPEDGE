@@ -1,0 +1,8 @@
+# Nothing secret belongs in this repository.
+.env
+.env.*
+*.pem
+*.key
+node_modules/
+__pycache__/
+.DS_Store

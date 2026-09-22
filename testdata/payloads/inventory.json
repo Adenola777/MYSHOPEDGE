@@ -1,0 +1,78 @@
+{
+ "code": 0,
+ "message": "Success",
+ "data": {
+  "inventory": [
+   {
+    "sku_id": "1729100000000000001",
+    "product_id": "1729000000000000001",
+    "seller_sku": "HAIR-BLUE",
+    "quantity": 25,
+    "warehouse_id": "7352000000000000001"
+   },
+   {
+    "sku_id": "1729100000000000002",
+    "product_id": "1729000000000000001",
+    "seller_sku": "HAIR-RED",
+    "quantity": 23,
+    "warehouse_id": "7352000000000000001"
+   },
+   {
+    "sku_id": "1729100000000000003",
+    "product_id": "1729000000000000001",
+    "seller_sku": "",
+    "quantity": 21,
+    "warehouse_id": "7352000000000000001"
+   },
+   {
+    "sku_id": "1729100000000000004",
+    "product_id": "1729000000000000002",
+    "seller_sku": "DESK-BLK",
+    "quantity": 19,
+    "warehouse_id": "7352000000000000001"
+   },
+   {
+    "sku_id": "1729100000000000005",
+    "product_id": "1729000000000000002",
+    "seller_sku": "",
+    "quantity": 17,
+    "warehouse_id": "7352000000000000001"
+   },
+   {
+    "sku_id": "1729100000000000006",
+    "product_id": "1729000000000000003",
+    "seller_sku": "FLASK-DEF",
+    "quantity": 15,
+    "warehouse_id": "7352000000000000001"
+   },
+   {
+    "sku_id": "1729100000000000007",
+    "product_id": "1729000000000000004",
+    "seller_sku": "BAG-BLK",
+    "quantity": 13,
+    "warehouse_id": "7352000000000000001"
+   },
+   {
+    "sku_id": "1729100000000000008",
+    "product_id": "1729000000000000004",
+    "seller_sku": "BAG-BRN",
+    "quantity": 11,
+    "warehouse_id": "7352000000000000001"
+   },
+   {
+    "sku_id": "1729100000000000009",
+    "product_id": "1729000000000000005",
+    "seller_sku": "LAMP-WHT",
+    "quantity": 9,
+    "warehouse_id": "7352000000000000001"
+   },
+   {
+    "sku_id": "1729100000000000010",
+    "product_id": "1729000000000000006",
+    "seller_sku": "GIFT-DEF",
+    "quantity": 0,
+    "warehouse_id": "7352000000000000001"
+   }
+  ]
+ }
+}

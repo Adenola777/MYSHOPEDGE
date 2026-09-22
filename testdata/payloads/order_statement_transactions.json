@@ -1,0 +1,922 @@
+{
+ "576789066FEA5A82A8": {
+  "code": 0,
+  "message": "Success",
+  "request_id": "SYNTH-A01",
+  "data": {
+   "order_id": "576789066FEA5A82A8",
+   "order_create_time": 1785585600,
+   "currency": "GBP",
+   "total_count": 1,
+   "fee_and_tax_amount": "-1.50",
+   "shipping_cost_amount": "0.00",
+   "revenue_amount": null,
+   "settlement_amount": "18.50",
+   "sku_transactions": [
+    {
+     "sku_id": "1729100000000000001",
+     "sku_name": "Blue",
+     "product_name": "Double Use Curly Hair Brush",
+     "quantity": "1",
+     "statement_id": "202608A-0001",
+     "revenue_breakdown": {
+      "subtotal_before_discount_amount": "20.00",
+      "seller_discount_amount": "0.00",
+      "refund_subtotal_before_discount_amount": "0.00",
+      "seller_discount_refund_amount": "0.00"
+     },
+     "revenue_amount": "20.00",
+     "fee_tax_breakdown": {
+      "fee": {
+       "platform_commission_amount": "-1.20",
+       "transaction_fee_amount": "-0.30"
+      },
+      "tax": {
+       "local_vat_amount": "0.00"
+      }
+     },
+     "fee_tax_amount": "-1.50",
+     "shipping_cost_breakdown": {},
+     "shipping_cost_amount": "0.00",
+     "settlement_amount": "18.50"
+    }
+   ]
+  }
+ },
+ "5767AFF856A8549DB4": {
+  "code": 0,
+  "message": "Success",
+  "request_id": "SYNTH-A02",
+  "data": {
+   "order_id": "5767AFF856A8549DB4",
+   "order_create_time": 1785672000,
+   "currency": "GBP",
+   "total_count": 1,
+   "fee_and_tax_amount": "-4.50",
+   "shipping_cost_amount": "0.00",
+   "revenue_amount": null,
+   "settlement_amount": "55.50",
+   "sku_transactions": [
+    {
+     "sku_id": "1729100000000000001",
+     "sku_name": "Blue",
+     "product_name": "Double Use Curly Hair Brush",
+     "quantity": "3",
+     "statement_id": "202608A-0001",
+     "revenue_breakdown": {
+      "subtotal_before_discount_amount": "60.00",
+      "seller_discount_amount": "0.00",
+      "refund_subtotal_before_discount_amount": "0.00",
+      "seller_discount_refund_amount": "0.00"
+     },
+     "revenue_amount": "60.00",
+     "fee_tax_breakdown": {
+      "fee": {
+       "platform_commission_amount": "-3.60",
+       "transaction_fee_amount": "-0.90"
+      },
+      "tax": {
+       "local_vat_amount": "0.00"
+      }
+     },
+     "fee_tax_amount": "-4.50",
+     "shipping_cost_breakdown": {},
+     "shipping_cost_amount": "0.00",
+     "settlement_amount": "55.50"
+    }
+   ]
+  }
+ },
+ "5767F16AA2433C3C01": {
+  "code": 0,
+  "message": "Success",
+  "request_id": "SYNTH-A03",
+  "data": {
+   "order_id": "5767F16AA2433C3C01",
+   "order_create_time": 1785758400,
+   "currency": "GBP",
+   "total_count": 2,
+   "fee_and_tax_amount": "-10.50",
+   "shipping_cost_amount": "0.00",
+   "revenue_amount": null,
+   "settlement_amount": "129.50",
+   "sku_transactions": [
+    {
+     "sku_id": "1729100000000000001",
+     "sku_name": "Blue",
+     "product_name": "Double Use Curly Hair Brush",
+     "quantity": "1",
+     "statement_id": "202608A-0001",
+     "revenue_breakdown": {
+      "subtotal_before_discount_amount": "20.00",
+      "seller_discount_amount": "0.00",
+      "refund_subtotal_before_discount_amount": "0.00",
+      "seller_discount_refund_amount": "0.00"
+     },
+     "revenue_amount": "20.00",
+     "fee_tax_breakdown": {
+      "fee": {
+       "platform_commission_amount": "-1.20",
+       "transaction_fee_amount": "-0.30"
+      },
+      "tax": {
+       "local_vat_amount": "0.00"
+      }
+     },
+     "fee_tax_amount": "-1.50",
+     "shipping_cost_breakdown": {},
+     "shipping_cost_amount": "0.00",
+     "settlement_amount": "18.50"
+    },
+    {
+     "sku_id": "1729100000000000004",
+     "sku_name": "Black",
+     "product_name": "Computer Desk 120cm",
+     "quantity": "1",
+     "statement_id": "202608A-0001",
+     "revenue_breakdown": {
+      "subtotal_before_discount_amount": "120.00",
+      "seller_discount_amount": "0.00",
+      "refund_subtotal_before_discount_amount": "0.00",
+      "seller_discount_refund_amount": "0.00"
+     },
+     "revenue_amount": "120.00",
+     "fee_tax_breakdown": {
+      "fee": {
+       "platform_commission_amount": "-7.20",
+       "transaction_fee_amount": "-1.80"
+      },
+      "tax": {
+       "local_vat_amount": "0.00"
+      }
+     },
+     "fee_tax_amount": "-9.00",
+     "shipping_cost_breakdown": {},
+     "shipping_cost_amount": "0.00",
+     "settlement_amount": "111.00"
+    }
+   ]
+  }
+ },
+ "57678353E160B74911": {
+  "code": 0,
+  "message": "Success",
+  "request_id": "SYNTH-A04",
+  "data": {
+   "order_id": "57678353E160B74911",
+   "order_create_time": 1785844800,
+   "currency": "GBP",
+   "total_count": 1,
+   "fee_and_tax_amount": "-2.32",
+   "shipping_cost_amount": "0.00",
+   "revenue_amount": null,
+   "settlement_amount": "28.68",
+   "sku_transactions": [
+    {
+     "sku_id": "1729100000000000006",
+     "sku_name": "Default",
+     "product_name": "Vacuum Food Flask 500ml",
+     "quantity": "2",
+     "statement_id": "202608A-0001",
+     "revenue_breakdown": {
+      "subtotal_before_discount_amount": "36.00",
+      "seller_discount_amount": "-5.00",
+      "refund_subtotal_before_discount_amount": "0.00",
+      "seller_discount_refund_amount": "0.00"
+     },
+     "revenue_amount": "31.00",
+     "fee_tax_breakdown": {
+      "fee": {
+       "platform_commission_amount": "-1.86",
+       "transaction_fee_amount": "-0.46"
+      },
+      "tax": {
+       "local_vat_amount": "0.00"
+      }
+     },
+     "fee_tax_amount": "-2.32",
+     "shipping_cost_breakdown": {},
+     "shipping_cost_amount": "0.00",
+     "settlement_amount": "28.68"
+    }
+   ]
+  }
+ },
+ "57671FE17FD353865F": {
+  "code": 0,
+  "message": "Success",
+  "request_id": "SYNTH-A05",
+  "data": {
+   "order_id": "57671FE17FD353865F",
+   "order_create_time": 1785931200,
+   "currency": "GBP",
+   "total_count": 1,
+   "fee_and_tax_amount": "-6.12",
+   "shipping_cost_amount": "0.00",
+   "revenue_amount": null,
+   "settlement_amount": "28.88",
+   "sku_transactions": [
+    {
+     "sku_id": "1729100000000000007",
+     "sku_name": "Black",
+     "product_name": "Travel Duffel Bag",
+     "quantity": "1",
+     "statement_id": "202608A-0001",
+     "revenue_breakdown": {
+      "subtotal_before_discount_amount": "35.00",
+      "seller_discount_amount": "0.00",
+      "refund_subtotal_before_discount_amount": "0.00",
+      "seller_discount_refund_amount": "0.00"
+     },
+     "revenue_amount": "35.00",
+     "fee_tax_breakdown": {
+      "fee": {
+       "platform_commission_amount": "-2.10",
+       "transaction_fee_amount": "-0.52",
+       "affiliate_commission_amount": "-3.50"
+      },
+      "tax": {
+       "local_vat_amount": "0.00"
+      }
+     },
+     "fee_tax_amount": "-6.12",
+     "shipping_cost_breakdown": {},
+     "shipping_cost_amount": "0.00",
+     "settlement_amount": "28.88"
+    }
+   ]
+  }
+ },
+ "5767B24628DF38A230": {
+  "code": 0,
+  "message": "Success",
+  "request_id": "SYNTH-A06",
+  "data": {
+   "order_id": "5767B24628DF38A230",
+   "order_create_time": 1786017600,
+   "currency": "GBP",
+   "total_count": 1,
+   "fee_and_tax_amount": "-4.68",
+   "shipping_cost_amount": "0.00",
+   "revenue_amount": null,
+   "settlement_amount": "19.32",
+   "sku_transactions": [
+    {
+     "sku_id": "1729100000000000009",
+     "sku_name": "White",
+     "product_name": "LED Desk Lamp",
+     "quantity": "1",
+     "statement_id": "202608A-0001",
+     "revenue_breakdown": {
+      "subtotal_before_discount_amount": "24.00",
+      "seller_discount_amount": "0.00",
+      "refund_subtotal_before_discount_amount": "0.00",
+      "seller_discount_refund_amount": "0.00"
+     },
+     "revenue_amount": "24.00",
+     "fee_tax_breakdown": {
+      "fee": {
+       "platform_commission_amount": "-1.44",
+       "transaction_fee_amount": "-0.36",
+       "affiliate_ads_commission_amount": "-2.88"
+      },
+      "tax": {
+       "local_vat_amount": "0.00"
+      }
+     },
+     "fee_tax_amount": "-4.68",
+     "shipping_cost_breakdown": {},
+     "shipping_cost_amount": "0.00",
+     "settlement_amount": "19.32"
+    }
+   ]
+  }
+ },
+ "5767014FB3CE7AE1ED": {
+  "code": 0,
+  "message": "Success",
+  "request_id": "SYNTH-A07",
+  "data": {
+   "order_id": "5767014FB3CE7AE1ED",
+   "order_create_time": 1786104000,
+   "currency": "GBP",
+   "total_count": 1,
+   "fee_and_tax_amount": "-1.50",
+   "shipping_cost_amount": "0.00",
+   "revenue_amount": null,
+   "settlement_amount": "18.50",
+   "sku_transactions": [
+    {
+     "sku_id": "1729100000000000002",
+     "sku_name": "Red",
+     "product_name": "Double Use Curly Hair Brush",
+     "quantity": "1",
+     "statement_id": null,
+     "revenue_breakdown": {
+      "subtotal_before_discount_amount": "20.00",
+      "seller_discount_amount": "0.00",
+      "refund_subtotal_before_discount_amount": "0.00",
+      "seller_discount_refund_amount": "0.00"
+     },
+     "revenue_amount": "20.00",
+     "fee_tax_breakdown": {
+      "fee": {
+       "platform_commission_amount": "-1.20",
+       "transaction_fee_amount": "-0.30"
+      },
+      "tax": {
+       "local_vat_amount": "0.00"
+      }
+     },
+     "fee_tax_amount": "-1.50",
+     "shipping_cost_breakdown": {},
+     "shipping_cost_amount": "0.00",
+     "settlement_amount": "18.50"
+    }
+   ]
+  }
+ },
+ "5767252231CB56376E": {
+  "code": 0,
+  "message": "Success",
+  "request_id": "SYNTH-A08",
+  "data": {
+   "order_id": "5767252231CB56376E",
+   "order_create_time": 1786190400,
+   "currency": "GBP",
+   "total_count": 1,
+   "fee_and_tax_amount": "-1.50",
+   "shipping_cost_amount": "0.00",
+   "revenue_amount": null,
+   "settlement_amount": "18.50",
+   "sku_transactions": [
+    {
+     "sku_id": "1729100000000000003",
+     "sku_name": "Green",
+     "product_name": "Double Use Curly Hair Brush",
+     "quantity": "1",
+     "statement_id": null,
+     "revenue_breakdown": {
+      "subtotal_before_discount_amount": "20.00",
+      "seller_discount_amount": "0.00",
+      "refund_subtotal_before_discount_amount": "0.00",
+      "seller_discount_refund_amount": "0.00"
+     },
+     "revenue_amount": "20.00",
+     "fee_tax_breakdown": {
+      "fee": {
+       "platform_commission_amount": "-1.20",
+       "transaction_fee_amount": "-0.30"
+      },
+      "tax": {
+       "local_vat_amount": "0.00"
+      }
+     },
+     "fee_tax_amount": "-1.50",
+     "shipping_cost_breakdown": {},
+     "shipping_cost_amount": "0.00",
+     "settlement_amount": "18.50"
+    }
+   ]
+  }
+ },
+ "5767ED13D72C4E1113": {
+  "code": 0,
+  "message": "Success",
+  "request_id": "SYNTH-A09",
+  "data": {
+   "order_id": "5767ED13D72C4E1113",
+   "order_create_time": 1786276800,
+   "currency": "GBP",
+   "total_count": 1,
+   "fee_and_tax_amount": "-3.87",
+   "shipping_cost_amount": "0.00",
+   "revenue_amount": null,
+   "settlement_amount": "31.13",
+   "sku_transactions": [
+    {
+     "sku_id": "1729100000000000008",
+     "sku_name": "Brown",
+     "product_name": "Travel Duffel Bag",
+     "quantity": "1",
+     "statement_id": "202608A-0001",
+     "revenue_breakdown": {
+      "subtotal_before_discount_amount": "35.00",
+      "seller_discount_amount": "0.00",
+      "refund_subtotal_before_discount_amount": "0.00",
+      "seller_discount_refund_amount": "0.00"
+     },
+     "revenue_amount": "35.00",
+     "fee_tax_breakdown": {
+      "fee": {
+       "platform_commission_amount": "-2.10",
+       "transaction_fee_amount": "-0.52",
+       "cofunded_promotion_service_fee_amount": "-1.25"
+      },
+      "tax": {
+       "local_vat_amount": "0.00"
+      }
+     },
+     "fee_tax_amount": "-3.87",
+     "shipping_cost_breakdown": {},
+     "shipping_cost_amount": "0.00",
+     "settlement_amount": "31.13"
+    }
+   ]
+  }
+ },
+ "57676E39D6B2C00645": {
+  "code": 0,
+  "message": "Success",
+  "request_id": "SYNTH-A10",
+  "data": {
+   "order_id": "57676E39D6B2C00645",
+   "order_create_time": 1785540600,
+   "currency": "GBP",
+   "total_count": 1,
+   "fee_and_tax_amount": "-1.50",
+   "shipping_cost_amount": "0.00",
+   "revenue_amount": null,
+   "settlement_amount": "18.50",
+   "sku_transactions": [
+    {
+     "sku_id": "1729100000000000001",
+     "sku_name": "Blue",
+     "product_name": "Double Use Curly Hair Brush",
+     "quantity": "1",
+     "statement_id": "202608A-0002",
+     "revenue_breakdown": {
+      "subtotal_before_discount_amount": "20.00",
+      "seller_discount_amount": "0.00",
+      "refund_subtotal_before_discount_amount": "0.00",
+      "seller_discount_refund_amount": "0.00"
+     },
+     "revenue_amount": "20.00",
+     "fee_tax_breakdown": {
+      "fee": {
+       "platform_commission_amount": "-1.20",
+       "transaction_fee_amount": "-0.30"
+      },
+      "tax": {
+       "local_vat_amount": "0.00"
+      }
+     },
+     "fee_tax_amount": "-1.50",
+     "shipping_cost_breakdown": {},
+     "shipping_cost_amount": "0.00",
+     "settlement_amount": "18.50"
+    }
+   ]
+  }
+ },
+ "57671EA20B6365B344": {
+  "code": 0,
+  "message": "Success",
+  "request_id": "SYNTH-A11",
+  "data": {
+   "order_id": "57671EA20B6365B344",
+   "order_create_time": 1785533400,
+   "currency": "GBP",
+   "total_count": 1,
+   "fee_and_tax_amount": "-9.00",
+   "shipping_cost_amount": "0.00",
+   "revenue_amount": null,
+   "settlement_amount": "111.00",
+   "sku_transactions": [
+    {
+     "sku_id": "1729100000000000004",
+     "sku_name": "Black",
+     "product_name": "Computer Desk 120cm",
+     "quantity": "1",
+     "statement_id": "202608A-0002",
+     "revenue_breakdown": {
+      "subtotal_before_discount_amount": "120.00",
+      "seller_discount_amount": "0.00",
+      "refund_subtotal_before_discount_amount": "0.00",
+      "seller_discount_refund_amount": "0.00"
+     },
+     "revenue_amount": "120.00",
+     "fee_tax_breakdown": {
+      "fee": {
+       "platform_commission_amount": "-7.20",
+       "transaction_fee_amount": "-1.80"
+      },
+      "tax": {
+       "local_vat_amount": "0.00"
+      }
+     },
+     "fee_tax_amount": "-9.00",
+     "shipping_cost_breakdown": {},
+     "shipping_cost_amount": "0.00",
+     "settlement_amount": "111.00"
+    }
+   ]
+  }
+ },
+ "57671879B9D44D0043": {
+  "code": 0,
+  "message": "Success",
+  "request_id": "SYNTH-A12",
+  "data": {
+   "order_id": "57671879B9D44D0043",
+   "order_create_time": 1786536000,
+   "currency": "GBP",
+   "total_count": 1,
+   "fee_and_tax_amount": "-3.00",
+   "shipping_cost_amount": "-5.50",
+   "revenue_amount": null,
+   "settlement_amount": "31.50",
+   "sku_transactions": [
+    {
+     "sku_id": "1729100000000000010",
+     "sku_name": "Default",
+     "product_name": "Seasonal Gift Box",
+     "quantity": "1",
+     "statement_id": "202608A-0002",
+     "revenue_breakdown": {
+      "subtotal_before_discount_amount": "40.00",
+      "seller_discount_amount": "0.00",
+      "refund_subtotal_before_discount_amount": "0.00",
+      "seller_discount_refund_amount": "0.00"
+     },
+     "revenue_amount": "40.00",
+     "fee_tax_breakdown": {
+      "fee": {
+       "platform_commission_amount": "-2.40",
+       "transaction_fee_amount": "-0.60"
+      },
+      "tax": {
+       "local_vat_amount": "0.00"
+      }
+     },
+     "fee_tax_amount": "-3.00",
+     "shipping_cost_breakdown": {
+      "fbt_free_shipping_fee_amount": "-2.50",
+      "actual_shipping_fee_amount": "-3.00",
+      "supplementary_component": {
+       "fbt_fulfillment_fee_amount": "-3.00"
+      }
+     },
+     "shipping_cost_amount": "-5.50",
+     "settlement_amount": "31.50"
+    }
+   ]
+  }
+ },
+ "5767178F3AF3FE2DE6": {
+  "code": 0,
+  "message": "Success",
+  "request_id": "SYNTH-A13",
+  "data": {
+   "order_id": "5767178F3AF3FE2DE6",
+   "order_create_time": 1786622400,
+   "currency": "GBP",
+   "total_count": 1,
+   "fee_and_tax_amount": "-1.50",
+   "shipping_cost_amount": "0.00",
+   "revenue_amount": null,
+   "settlement_amount": "-1.50",
+   "sku_transactions": [
+    {
+     "sku_id": "1729100000000000001",
+     "sku_name": "Blue",
+     "product_name": "Double Use Curly Hair Brush",
+     "quantity": "1",
+     "statement_id": "202608A-0002",
+     "revenue_breakdown": {
+      "subtotal_before_discount_amount": "20.00",
+      "seller_discount_amount": "0.00",
+      "refund_subtotal_before_discount_amount": "-20.00",
+      "seller_discount_refund_amount": "0.00"
+     },
+     "revenue_amount": "0.00",
+     "fee_tax_breakdown": {
+      "fee": {
+       "platform_commission_amount": "-1.20",
+       "transaction_fee_amount": "-0.30"
+      },
+      "tax": {
+       "local_vat_amount": "0.00"
+      }
+     },
+     "fee_tax_amount": "-1.50",
+     "shipping_cost_breakdown": {},
+     "shipping_cost_amount": "0.00",
+     "settlement_amount": "-1.50"
+    }
+   ]
+  }
+ },
+ "5767175FB85D991594": {
+  "code": 0,
+  "message": "Success",
+  "request_id": "SYNTH-A14",
+  "data": {
+   "order_id": "5767175FB85D991594",
+   "order_create_time": 1786708800,
+   "currency": "GBP",
+   "total_count": 1,
+   "fee_and_tax_amount": "-1.50",
+   "shipping_cost_amount": "0.00",
+   "revenue_amount": null,
+   "settlement_amount": "-1.50",
+   "sku_transactions": [
+    {
+     "sku_id": "1729100000000000002",
+     "sku_name": "Red",
+     "product_name": "Double Use Curly Hair Brush",
+     "quantity": "1",
+     "statement_id": "202608A-0002",
+     "revenue_breakdown": {
+      "subtotal_before_discount_amount": "20.00",
+      "seller_discount_amount": "0.00",
+      "refund_subtotal_before_discount_amount": "-20.00",
+      "seller_discount_refund_amount": "0.00"
+     },
+     "revenue_amount": "0.00",
+     "fee_tax_breakdown": {
+      "fee": {
+       "platform_commission_amount": "-1.20",
+       "transaction_fee_amount": "-0.30"
+      },
+      "tax": {
+       "local_vat_amount": "0.00"
+      }
+     },
+     "fee_tax_amount": "-1.50",
+     "shipping_cost_breakdown": {},
+     "shipping_cost_amount": "0.00",
+     "settlement_amount": "-1.50"
+    }
+   ]
+  }
+ },
+ "576761EE20644DEF60": {
+  "code": 0,
+  "message": "Success",
+  "request_id": "SYNTH-A15",
+  "data": {
+   "order_id": "576761EE20644DEF60",
+   "order_create_time": 1786795200,
+   "currency": "GBP",
+   "total_count": 1,
+   "fee_and_tax_amount": "-1.50",
+   "shipping_cost_amount": "0.00",
+   "revenue_amount": null,
+   "settlement_amount": "-1.50",
+   "sku_transactions": [
+    {
+     "sku_id": "1729100000000000003",
+     "sku_name": "Green",
+     "product_name": "Double Use Curly Hair Brush",
+     "quantity": "1",
+     "statement_id": "202608A-0002",
+     "revenue_breakdown": {
+      "subtotal_before_discount_amount": "20.00",
+      "seller_discount_amount": "0.00",
+      "refund_subtotal_before_discount_amount": "-20.00",
+      "seller_discount_refund_amount": "0.00"
+     },
+     "revenue_amount": "0.00",
+     "fee_tax_breakdown": {
+      "fee": {
+       "platform_commission_amount": "-1.20",
+       "transaction_fee_amount": "-0.30"
+      },
+      "tax": {
+       "local_vat_amount": "0.00"
+      }
+     },
+     "fee_tax_amount": "-1.50",
+     "shipping_cost_breakdown": {},
+     "shipping_cost_amount": "0.00",
+     "settlement_amount": "-1.50"
+    }
+   ]
+  }
+ },
+ "576714A55EDE7AD91C": {
+  "code": 0,
+  "message": "Success",
+  "request_id": "SYNTH-A16",
+  "data": {
+   "order_id": "576714A55EDE7AD91C",
+   "order_create_time": 1786881600,
+   "currency": "GBP",
+   "total_count": 1,
+   "fee_and_tax_amount": "-9.00",
+   "shipping_cost_amount": "0.00",
+   "revenue_amount": null,
+   "settlement_amount": "-9.00",
+   "sku_transactions": [
+    {
+     "sku_id": "1729100000000000004",
+     "sku_name": "Black",
+     "product_name": "Computer Desk 120cm",
+     "quantity": "1",
+     "statement_id": "202608A-0002",
+     "revenue_breakdown": {
+      "subtotal_before_discount_amount": "120.00",
+      "seller_discount_amount": "0.00",
+      "refund_subtotal_before_discount_amount": "-120.00",
+      "seller_discount_refund_amount": "0.00"
+     },
+     "revenue_amount": "0.00",
+     "fee_tax_breakdown": {
+      "fee": {
+       "platform_commission_amount": "-7.20",
+       "transaction_fee_amount": "-1.80"
+      },
+      "tax": {
+       "local_vat_amount": "0.00"
+      }
+     },
+     "fee_tax_amount": "-9.00",
+     "shipping_cost_breakdown": {},
+     "shipping_cost_amount": "0.00",
+     "settlement_amount": "-9.00"
+    }
+   ]
+  }
+ },
+ "57671A047BF1E6FD11": {
+  "code": 0,
+  "message": "Success",
+  "request_id": "SYNTH-A17",
+  "data": {
+   "order_id": "57671A047BF1E6FD11",
+   "order_create_time": 1786968000,
+   "currency": "GBP",
+   "total_count": 1,
+   "fee_and_tax_amount": "-2.62",
+   "shipping_cost_amount": "-4.50",
+   "revenue_amount": null,
+   "settlement_amount": "-7.12",
+   "sku_transactions": [
+    {
+     "sku_id": "1729100000000000007",
+     "sku_name": "Black",
+     "product_name": "Travel Duffel Bag",
+     "quantity": "1",
+     "statement_id": "202608A-0003",
+     "revenue_breakdown": {
+      "subtotal_before_discount_amount": "35.00",
+      "seller_discount_amount": "0.00",
+      "refund_subtotal_before_discount_amount": "-35.00",
+      "seller_discount_refund_amount": "0.00"
+     },
+     "revenue_amount": "0.00",
+     "fee_tax_breakdown": {
+      "fee": {
+       "platform_commission_amount": "-2.10",
+       "transaction_fee_amount": "-0.52"
+      },
+      "tax": {
+       "local_vat_amount": "0.00"
+      }
+     },
+     "fee_tax_amount": "-2.62",
+     "shipping_cost_breakdown": {
+      "return_shipping_fee_amount": "-4.50"
+     },
+     "shipping_cost_amount": "-4.50",
+     "settlement_amount": "-7.12"
+    }
+   ]
+  }
+ },
+ "576767F6D5F4B5DB61": {
+  "code": 0,
+  "message": "Success",
+  "request_id": "SYNTH-A18",
+  "data": {
+   "order_id": "576767F6D5F4B5DB61",
+   "order_create_time": 1787054400,
+   "currency": "GBP",
+   "total_count": 1,
+   "fee_and_tax_amount": "-5.87",
+   "shipping_cost_amount": "0.00",
+   "revenue_amount": null,
+   "settlement_amount": "-5.87",
+   "sku_transactions": [
+    {
+     "sku_id": "1729100000000000008",
+     "sku_name": "Brown",
+     "product_name": "Travel Duffel Bag",
+     "quantity": "1",
+     "statement_id": "202608A-0003",
+     "revenue_breakdown": {
+      "subtotal_before_discount_amount": "35.00",
+      "seller_discount_amount": "0.00",
+      "refund_subtotal_before_discount_amount": "-35.00",
+      "seller_discount_refund_amount": "0.00"
+     },
+     "revenue_amount": "0.00",
+     "fee_tax_breakdown": {
+      "fee": {
+       "platform_commission_amount": "-2.10",
+       "transaction_fee_amount": "-0.52",
+       "refund_administration_fee_amount": "-3.25"
+      },
+      "tax": {
+       "local_vat_amount": "0.00"
+      }
+     },
+     "fee_tax_amount": "-5.87",
+     "shipping_cost_breakdown": {},
+     "shipping_cost_amount": "0.00",
+     "settlement_amount": "-5.87"
+    }
+   ]
+  }
+ },
+ "5767056CFFD71C7796": {
+  "code": 0,
+  "message": "Success",
+  "request_id": "SYNTH-A19",
+  "data": {
+   "order_id": "5767056CFFD71C7796",
+   "order_create_time": 1787140800,
+   "currency": "GBP",
+   "total_count": 1,
+   "fee_and_tax_amount": "-1.80",
+   "shipping_cost_amount": "0.00",
+   "revenue_amount": null,
+   "settlement_amount": "-1.80",
+   "sku_transactions": [
+    {
+     "sku_id": "1729100000000000009",
+     "sku_name": "White",
+     "product_name": "LED Desk Lamp",
+     "quantity": "1",
+     "statement_id": "202608A-0003",
+     "revenue_breakdown": {
+      "subtotal_before_discount_amount": "24.00",
+      "seller_discount_amount": "0.00",
+      "refund_subtotal_before_discount_amount": "-24.00",
+      "seller_discount_refund_amount": "0.00"
+     },
+     "revenue_amount": "0.00",
+     "fee_tax_breakdown": {
+      "fee": {
+       "platform_commission_amount": "-1.44",
+       "transaction_fee_amount": "-0.36"
+      },
+      "tax": {
+       "local_vat_amount": "0.00"
+      }
+     },
+     "fee_tax_amount": "-1.80",
+     "shipping_cost_breakdown": {},
+     "shipping_cost_amount": "0.00",
+     "settlement_amount": "-1.80"
+    }
+   ]
+  }
+ },
+ "5767E825EC5D34E749": {
+  "code": 0,
+  "message": "Success",
+  "request_id": "SYNTH-A20",
+  "data": {
+   "order_id": "5767E825EC5D34E749",
+   "order_create_time": 1787227200,
+   "currency": "GBP",
+   "total_count": 1,
+   "fee_and_tax_amount": "-3.34",
+   "shipping_cost_amount": "0.00",
+   "revenue_amount": null,
+   "settlement_amount": "14.66",
+   "sku_transactions": [
+    {
+     "sku_id": "1729100000000000006",
+     "sku_name": "Default",
+     "product_name": "Vacuum Food Flask 500ml",
+     "quantity": "1",
+     "statement_id": "202608A-0003",
+     "revenue_breakdown": {
+      "subtotal_before_discount_amount": "18.00",
+      "seller_discount_amount": "0.00",
+      "refund_subtotal_before_discount_amount": "0.00",
+      "seller_discount_refund_amount": "0.00"
+     },
+     "revenue_amount": "18.00",
+     "fee_tax_breakdown": {
+      "fee": {
+       "platform_commission_amount": "-1.08",
+       "transaction_fee_amount": "-0.27",
+       "live_specials_fee_amount": "-1.99"
+      },
+      "tax": {
+       "local_vat_amount": "0.00"
+      }
+     },
+     "fee_tax_amount": "-3.34",
+     "shipping_cost_breakdown": {},
+     "shipping_cost_amount": "0.00",
+     "settlement_amount": "14.66"
+    }
+   ]
+  }
+ }
+}

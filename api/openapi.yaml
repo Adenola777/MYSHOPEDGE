@@ -1,0 +1,4169 @@
+openapi: 3.1.0
+info:
+  title: MyShopEdge API
+  version: 0.3.0
+  description: "The MyShopEdge REST API. Bookkeeping and finance for UK TikTok Shop sellers.\n\nThis document\
+    \ covers the seventeen endpoints that can be built without validated\nTikTok data, plus the shared\
+    \ components every other endpoint will use. The\nconventions are those already set in MSE-API-001\
+    \ section 4.1 and are restated here\nas schemas so they are enforced rather than described.\n\nFour\
+    \ rules govern every response in this document.\n\n1. **Money is never a decimal.** Every amount is\
+    \ an integer of minor units with its\n   currency beside it. A figure of 20.84 is `{\"amount_minor\"\
+    : 2084, \"currency\": \"GBP\"}`.\n   Pence do not round, and a float would make them.\n\n2. **Instants\
+    \ are UTC, periods are Europe/London.** A timestamp is ISO 8601 with a Z.\n   A day or a month is\
+    \ a local date, because a seller's day is a London day and a VAT\n   quarter is a London quarter.\n\
+    \n3. **A figure carries its own confidence.** Any response holding a money figure the\n   seller will\
+    \ act on states its basis, its period and its cost coverage, and says\n   whether it is confirmed,\
+    \ estimated or incomplete. A figure that cannot be trusted\n   returns null with a reason rather than\
+    \ a zero.\n\n4. **Errors are problem details with a stable code.** The `code` field is the\n   contract.\
+    \ The `title` and `detail` are for humans and may change wording.\n\n\n    Coverage: 47 of the 50\
+    \ endpoints in the catalogue. The three not present are the\n    TikTok webhook receiver, which needs\
+    \ a subscription design, and the two cost upload\n    endpoints that perform SKU matching, which need\
+    \ a ruling on an empty seller SKU.\n"
+  contact:
+    name: MyShopEdge
+  license:
+    name: Proprietary
+servers:
+- url: https://api.myshopedge.com/v1
+  description: Production
+- url: https://api.staging.myshopedge.com/v1
+  description: Staging
+security:
+- bearerAuth: []
+tags:
+- name: Account
+  description: The signed-in account, its data export and its deletion
+- name: Connection
+  description: Authorising, listing and disconnecting a TikTok Shop
+- name: Notifications
+- name: Tax
+  description: Tax profile, dates and the quarterly threshold check
+- name: Settings
+- name: Costs
+- name: Integrity
+- name: Money
+- name: Products
+- name: Stock
+- name: Returns
+- name: Exports
+paths:
+  /me:
+    get:
+      tags:
+      - Account
+      summary: The signed-in account
+      description: 'The account is taken from the bearer token. There is no path parameter, because
+
+        an account can only ever read itself.
+
+        '
+      operationId: getMe
+      responses:
+        '200':
+          description: The account
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+    delete:
+      tags:
+      - Account
+      summary: Delete the account and its data
+      description: 'Traces ACC-4. Deletion is asynchronous and irreversible. It removes the account''s
+
+        rows and every object under its prefixes in the file store.
+
+
+        The response states what will be deleted and when, so the seller has a record of
+
+        what they asked for. `invoices_retained_until` is present when the account holds
+
+        TikTok fee invoices, which are kept for six years from the end of the VAT period
+
+        rather than deleted with the account.
+
+        '
+      operationId: deleteMe
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - confirm_email
+              properties:
+                confirm_email:
+                  type: string
+                  format: email
+                  description: Must match the account email exactly. Guards against a mis-click.
+                reason:
+                  type: string
+                  maxLength: 500
+      responses:
+        '202':
+          description: Deletion accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeletionAcknowledgement'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /me/export:
+    post:
+      tags:
+      - Account
+      summary: Request a download of the account's data
+      description: 'Traces ACC-4. Generates a single archive of everything held about the account and
+
+        returns a job. Poll the job, or wait for the notification, then follow
+
+        `download_url` when the status is `ready`.
+
+
+        `download_url` is a signed URL valid for fifteen minutes. It is absent until the
+
+        job is ready.
+
+        '
+      operationId: requestAccountExport
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '202':
+          description: Export queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportJob'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '409':
+          description: An export is already in progress for this account
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /connections/tiktok/authorize:
+    post:
+      tags:
+      - Connection
+      summary: Begin authorising a TikTok Shop
+      description: 'Traces CON-1. Returns the URL to send the seller to. The `state` value is single
+
+        use, expires in ten minutes and is bound to this account. The callback rejects any
+
+        state it did not issue.
+
+        '
+      operationId: authorizeTikTok
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                return_to:
+                  type: string
+                  format: uri
+                  description: 'Where to send the seller after the callback completes. Must be an
+
+                    allow-listed MyShopEdge path. An open redirect here would be an
+
+                    account takeover.
+
+                    '
+      responses:
+        '201':
+          description: Authorisation URL issued
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - authorization_url
+                - state
+                - expires_at
+                properties:
+                  authorization_url:
+                    type: string
+                    format: uri
+                  state:
+                    type: string
+                  expires_at:
+                    type: string
+                    format: date-time
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /connections/tiktok/callback:
+    get:
+      tags:
+      - Connection
+      summary: Complete authorisation
+      description: 'Traces CON-1. TikTok redirects the seller here. The handler exchanges the code,
+
+        calls `GET /authorization/202309/shops`, and stores the shop id, cipher, region
+
+        and seller type.
+
+
+        **The region and seller type are not cosmetic.** A shop outside `GB`, or a
+
+        cross-border seller, returns a different field set on every finance call. The
+
+        connection is recorded with `connection_status` of `pending` and the response
+
+        states the region so the interface can refuse a shop the MVP cannot read
+
+        correctly, rather than showing wrong figures.
+
+
+        This endpoint is reached by browser redirect, not by the client application, and
+
+        is therefore not authenticated by bearer token. It is authenticated by the
+
+        single-use `state`.
+
+        '
+      operationId: tiktokCallback
+      security: []
+      parameters:
+      - name: code
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: state
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Authorisation complete
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectionResult'
+        '400':
+          description: 'The state was unknown, already used or expired, or the code exchange failed.
+
+            The detail never echoes the code or the state back.
+
+            '
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /shops:
+    get:
+      tags:
+      - Connection
+      summary: List the account's shops
+      description: 'Traces CON-3. The MVP supports one shop per account, so this returns at most one
+
+        entry. It is a list because the schema permits more and the interface should not
+
+        have to change when that becomes true.
+
+        '
+      operationId: listShops
+      responses:
+        '200':
+          description: The shops on this account
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - shops
+                properties:
+                  shops:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Shop'
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+  /shops/{shopId}/connection:
+    delete:
+      tags:
+      - Connection
+      summary: Disconnect the shop
+      description: 'Traces CON-3. Revokes the authorisation with TikTok, clears the stored tokens and
+
+        sets `connection_status` to `disconnected`.
+
+
+        **Disconnecting does not delete data.** The seller''s orders, ledger and costs
+
+        remain, and reconnecting the same shop resumes against them. The response states
+
+        this, because a seller who believes disconnecting erased their records will be
+
+        wrong in a way that matters.
+
+        '
+      operationId: disconnectShop
+      parameters:
+      - $ref: '#/components/parameters/ShopId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Disconnected
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - shop_id
+                - connection_status
+                - data_retained
+                properties:
+                  shop_id:
+                    type: string
+                    format: uuid
+                  connection_status:
+                    type: string
+                    const: disconnected
+                  data_retained:
+                    type: boolean
+                    const: true
+                    description: Always true. Disconnecting never deletes records.
+                  revoked_at:
+                    type: string
+                    format: date-time
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ForbiddenShop'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /shops/{shopId}/sync:
+    get:
+      tags:
+      - Connection
+      summary: Sync progress and freshness
+      description: 'Traces SYN-1 and SYN-6. Reports the state of each sync domain and the freshness
+
+        stamp the interface shows.
+
+
+        `stale` is true when the newest successful run is older than its domain''s expected
+
+        interval. A seller looking at figures from a failed sync must be told, not left to
+
+        assume the numbers are current.
+
+        '
+      operationId: getSyncStatus
+      parameters:
+      - $ref: '#/components/parameters/ShopId'
+      responses:
+        '200':
+          description: Sync status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncStatus'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ForbiddenShop'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /notifications:
+    get:
+      tags:
+      - Notifications
+      summary: List notifications
+      description: Traces NTF-1. Newest first.
+      operationId: listNotifications
+      parameters:
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum:
+          - unread
+          - read
+          - done
+      - name: severity
+        in: query
+        schema:
+          type: string
+          enum:
+          - info
+          - warning
+          - critical
+      responses:
+        '200':
+          description: Notifications
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/CursorPage'
+                - type: object
+                  required:
+                  - notifications
+                  properties:
+                    notifications:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/Notification'
+                    unread_count:
+                      type: integer
+                      minimum: 0
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+  /notifications/{notificationId}:
+    patch:
+      tags:
+      - Notifications
+      summary: Mark a notification read or done
+      operationId: updateNotification
+      parameters:
+      - name: notificationId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - status
+              properties:
+                status:
+                  type: string
+                  enum:
+                  - read
+                  - done
+                  description: 'A notification cannot be returned to `unread`. The transition is one
+
+                    way, so a seller cannot lose track of what they have already dealt with.
+
+                    '
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+  /tax-profile:
+    get:
+      tags:
+      - Tax
+      summary: Read the tax profile
+      description: 'Traces TAX-1. The profile is optional. An account that has not filled it in
+
+        returns `completed: false` with null fields rather than a 404.
+
+        '
+      operationId: getTaxProfile
+      responses:
+        '200':
+          description: The tax profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaxProfile'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+    put:
+      tags:
+      - Tax
+      summary: Save the tax profile
+      description: 'Traces TAX-1. A full replacement, not a patch. Omitting a field clears it.
+
+
+        `vat_registered_from` is required when `vat_registered` is true, because a VAT
+
+        monitor without a registration date cannot say which periods are in scope.
+
+        '
+      operationId: putTaxProfile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaxProfileInput'
+      responses:
+        '200':
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaxProfile'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+  /tax/dates:
+    get:
+      tags:
+      - Tax
+      summary: Quarterly and payment dates
+      description: 'Traces TAX-4. Dates are local dates in Europe/London. Every date carries the rule
+
+        it came from and the date that rule was last reviewed, so a seller can see the
+
+        figure is current rather than trusting it.
+
+        '
+      operationId: getTaxDates
+      parameters:
+      - name: tax_year
+        in: query
+        description: UK tax year starting year. Defaults to the current one.
+        schema:
+          type: integer
+          minimum: 2020
+          maximum: 2100
+      responses:
+        '200':
+          description: Dates
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaxDates'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+  /tax/quarterly-check:
+    post:
+      tags:
+      - Tax
+      summary: Compare prior-year gross income with the thresholds
+      description: 'Traces TAX-5. Takes the figures the seller supplies for income outside MyShopEdge
+
+        and compares the total with the current thresholds.
+
+
+        This returns a comparison, not advice. `above_threshold` states a fact about a
+
+        number. It does not tell the seller to register for anything, and the response
+
+        carries no recommendation field by design.
+
+        '
+      operationId: quarterlyCheck
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - prior_year_gross
+              properties:
+                prior_year_gross:
+                  $ref: '#/components/schemas/Money'
+                tax_year:
+                  type: integer
+                  minimum: 2020
+                  maximum: 2100
+      responses:
+        '200':
+          description: Comparison
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuarterlyCheck'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+  /rules:
+    get:
+      tags:
+      - Tax
+      summary: Reference rules with correct-as-at dates
+      description: 'Traces TAX-6. Shared reference data: VAT, income tax, National Insurance and MTD
+
+        rules with the dates they take effect.
+
+
+        These rules are identical for every seller, which is why `reference_rules` is the
+
+        one table without row-level security. It is read-only through this API.
+
+        '
+      operationId: listRules
+      parameters:
+      - name: rule_set
+        in: query
+        schema:
+          type: string
+          enum:
+          - vat
+          - income_tax
+          - national_insurance
+          - mtd
+      - name: effective_on
+        in: query
+        description: Return the rules in force on this local date. Defaults to today.
+        schema:
+          type: string
+          format: date
+      responses:
+        '200':
+          description: Rules
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - rules
+                properties:
+                  rules:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ReferenceRule'
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+  /shops/{shopId}/alert-settings:
+    get:
+      tags:
+      - Settings
+      summary: Read alert thresholds
+      description: Traces STK-3.
+      operationId: getAlertSettings
+      parameters:
+      - $ref: '#/components/parameters/ShopId'
+      responses:
+        '200':
+          description: Alert settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertSettings'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ForbiddenShop'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+      - Settings
+      summary: Change alert thresholds
+      description: 'Traces STK-3 and STK-8. A full replacement.
+
+
+        `absorption_tolerance_units` is the ceiling on silently absorbing an unexplained
+
+        rise in TikTok stock. Above it, a discrepancy is raised instead, because absorbing
+
+        a large figure quietly does more damage than the duplicate it prevents.
+
+        '
+      operationId: putAlertSettings
+      parameters:
+      - $ref: '#/components/parameters/ShopId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlertSettingsInput'
+      responses:
+        '200':
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertSettings'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ForbiddenShop'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+  /shops/{shopId}/cost-uploads:
+    post:
+      tags:
+      - Costs
+      summary: Create a cost upload and return a signed URL
+      description: 'Traces CST-2. Returns a signed URL to PUT the file to. The URL is valid for fifteen
+
+        minutes and the object lands under `uploads/{shop_id}/{upload_id}/{nonce}/`.
+
+        '
+      operationId: createCostUpload
+      parameters:
+      - $ref: '#/components/parameters/ShopId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - filename
+              - content_type
+              - size_bytes
+              properties:
+                filename:
+                  type: string
+                  maxLength: 255
+                content_type:
+                  type: string
+                  enum:
+                  - text/csv
+                  - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+                size_bytes:
+                  type: integer
+                  minimum: 1
+                  maximum: 10485760
+      responses:
+        '201':
+          description: Upload created
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - upload
+                - upload_url
+                - upload_expires_at
+                properties:
+                  upload:
+                    $ref: '#/components/schemas/CostUpload'
+                  upload_url:
+                    type: string
+                    format: uri
+                  upload_expires_at:
+                    type: string
+                    format: date-time
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ForbiddenShop'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+  /shops/{shopId}/cost-uploads/{uploadId}:
+    get:
+      tags:
+      - Costs
+      summary: Upload status and suggested column mapping
+      description: 'Traces CST-2. Once the file is uploaded, the columns are read and a mapping is
+
+        suggested from the headers. The suggestion is a proposal, never applied without
+
+        confirmation.
+
+        '
+      operationId: getCostUpload
+      parameters:
+      - $ref: '#/components/parameters/ShopId'
+      - $ref: '#/components/parameters/UploadId'
+      responses:
+        '200':
+          description: The upload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CostUpload'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ForbiddenShop'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /shops/{shopId}/cost-uploads/{uploadId}/mapping:
+    put:
+      tags:
+      - Costs
+      summary: Confirm the column mapping
+      description: 'Traces CST-2. The seller confirms which column is which.
+
+
+        `match_on` is required and has no default. TikTok''s order line items returned an
+
+        empty `seller_sku` on the sandbox shop, so seller SKU cannot be assumed to exist.
+
+        Forcing the choice at this point surfaces the problem while the seller is looking
+
+        at their own file, rather than as a pile of unmatched rows afterwards.
+
+        '
+      operationId: putCostUploadMapping
+      parameters:
+      - $ref: '#/components/parameters/ShopId'
+      - $ref: '#/components/parameters/UploadId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ColumnMapping'
+      responses:
+        '200':
+          description: Mapping confirmed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CostUpload'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ForbiddenShop'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+  /shops/{shopId}/skus/{skuId}/cost:
+    put:
+      tags:
+      - Costs
+      summary: Set a cost manually
+      description: 'Traces CST-1, CST-4 and CST-5. Costs are never overwritten. Setting a new cost
+
+        supersedes the previous one with a `superseded_at` stamp, so a figure calculated
+
+        last month still reconciles against the cost in force at the time.
+
+        '
+      operationId: putSkuCost
+      parameters:
+      - $ref: '#/components/parameters/ShopId'
+      - $ref: '#/components/parameters/SkuId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - cost
+              properties:
+                cost:
+                  $ref: '#/components/schemas/Money'
+                packing:
+                  $ref: '#/components/schemas/Money'
+                postage:
+                  $ref: '#/components/schemas/Money'
+                effective_from:
+                  type: string
+                  format: date
+                  description: Local date. Defaults to today.
+      responses:
+        '200':
+          description: Cost set
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductCost'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ForbiddenShop'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+  /shops/{shopId}/costs/coverage:
+    get:
+      tags:
+      - Costs
+      summary: Cost coverage by product and units
+      description: 'Traces CST-6. Coverage is the share of sold units whose cost is known. It is the
+
+        gate on every "you keep" figure: below full coverage those figures return null
+
+        with a reason rather than understating the cost and overstating what was kept.
+
+        '
+      operationId: getCostCoverage
+      parameters:
+      - $ref: '#/components/parameters/ShopId'
+      - $ref: '#/components/parameters/PeriodFrom'
+      - $ref: '#/components/parameters/PeriodTo'
+      responses:
+        '200':
+          description: Coverage
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CostCoverage'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ForbiddenShop'
+  /shops/{shopId}/discrepancies:
+    get:
+      tags:
+      - Integrity
+      summary: Open and resolved discrepancies
+      description: Traces DSC-5.
+      operationId: listDiscrepancies
+      parameters:
+      - $ref: '#/components/parameters/ShopId'
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum:
+          - open
+          - resolved
+      - name: kind
+        in: query
+        schema:
+          type: string
+          enum:
+          - product_code
+          - order_reference
+          - transaction_reference
+          - amount
+          - return_unmatched
+          - duplicate
+      responses:
+        '200':
+          description: Discrepancies
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/CursorPage'
+                - type: object
+                  required:
+                  - discrepancies
+                  properties:
+                    discrepancies:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/Discrepancy'
+                    open_count:
+                      type: integer
+                      minimum: 0
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ForbiddenShop'
+  /shops/{shopId}/discrepancies/{discrepancyId}/resolve:
+    post:
+      tags:
+      - Integrity
+      summary: Accept, correct or explain a discrepancy
+      description: 'Traces DSC-4. Resolving never edits a posted figure. Where a resolution changes
+
+        money, it posts a dated adjustment, because the ledger is append-only and a
+
+        correction that rewrites history destroys the audit trail it exists to provide.
+
+        '
+      operationId: resolveDiscrepancy
+      parameters:
+      - $ref: '#/components/parameters/ShopId'
+      - name: discrepancyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - resolution
+              properties:
+                resolution:
+                  type: string
+                  enum:
+                  - accepted_tiktok
+                  - corrected_seller
+                  - explained
+                note:
+                  type: string
+                  maxLength: 1000
+                applied_value:
+                  type:
+                  - string
+                  - 'null'
+                  description: Required when the resolution is `corrected_seller`.
+      responses:
+        '200':
+          description: Resolved
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - discrepancy
+                properties:
+                  discrepancy:
+                    $ref: '#/components/schemas/Discrepancy'
+                  adjustment_posted:
+                    type:
+                    - object
+                    - 'null'
+                    description: The dated adjustment, where the resolution moved money.
+                    properties:
+                      ledger_entry_id:
+                        type: string
+                        format: uuid
+                      amount:
+                        $ref: '#/components/schemas/Money'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ForbiddenShop'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+  /shops/{shopId}/other-sales/{month}:
+    put:
+      tags:
+      - Tax
+      summary: Enter a monthly total from another channel
+      description: 'Traces MON-3. Sales made outside TikTok Shop, entered by the seller, so the VAT
+
+        threshold monitor measures total turnover rather than TikTok turnover alone.
+
+
+        These figures never enter the ledger and never appear in a money view. They exist
+
+        only for the threshold calculation, and mixing them into reported figures would
+
+        make the ledger disagree with TikTok.
+
+        '
+      operationId: putOtherChannelSales
+      parameters:
+      - $ref: '#/components/parameters/ShopId'
+      - $ref: '#/components/parameters/Month'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - channel
+              - gross
+              properties:
+                channel:
+                  type: string
+                  maxLength: 100
+                gross:
+                  $ref: '#/components/schemas/Money'
+      responses:
+        '200':
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OtherChannelSales'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ForbiddenShop'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+  /shops/{shopId}/exports:
+    post:
+      tags:
+      - Exports
+      summary: Request an export
+      description: 'Traces MON-2. `basis` is required and has no default, because the same period
+
+        produces different figures on a sales basis and a cash basis, and an accountant
+
+        receiving a file that does not say which one it is cannot use it.
+
+        '
+      operationId: createExport
+      parameters:
+      - $ref: '#/components/parameters/ShopId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - kind
+              - format
+              - basis
+              - period_start
+              - period_end
+              properties:
+                kind:
+                  type: string
+                  enum:
+                  - month_summary
+                  - ledger
+                  - accountant
+                  - transactions
+                format:
+                  type: string
+                  enum:
+                  - xlsx
+                  - csv
+                basis:
+                  $ref: '#/components/schemas/Basis'
+                period_start:
+                  type: string
+                  format: date
+                period_end:
+                  type: string
+                  format: date
+      responses:
+        '202':
+          description: Export queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShopExportJob'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ForbiddenShop'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+  /shops/{shopId}/exports/{exportId}:
+    get:
+      tags:
+      - Exports
+      summary: Export status and signed download URL
+      operationId: getExport
+      parameters:
+      - $ref: '#/components/parameters/ShopId'
+      - name: exportId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: The export
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShopExportJob'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ForbiddenShop'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /shops/{shopId}/today:
+    get:
+      tags:
+      - Money
+      summary: Hero figure, month, shop money and what needs you
+      description: Traces DSH-1 and DSH-2.
+      operationId: getToday
+      parameters:
+      - $ref: '#/components/parameters/ShopId'
+      - $ref: '#/components/parameters/BasisQuery'
+      responses:
+        '200':
+          description: Today
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodayView'
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ForbiddenShop'
+  /shops/{shopId}/money:
+    get:
+      tags:
+      - Money
+      summary: The calculator
+      description: 'Traces MON-1 and LED-4. Every figure the seller is shown, with every line that
+
+        makes it up.
+
+
+        **No fee is ever merged with another.** Each line carries its own label, the exact
+
+        TikTok field it came from, and its amount. A fee TikTok returns that MyShopEdge has
+
+        no category for appears as its own line with `category: unmapped_fee` and TikTok''s
+
+        field name kept verbatim, so nothing disappears into an "other" bucket.
+
+
+        The response is a list of sections, each with lines and a subtotal, and each
+
+        subtotal states which lines produced it. A client renders it without knowing any
+
+        fee name in advance, which is what lets a new TikTok fee appear on screen the day
+
+        it arrives rather than the day someone updates the interface.
+
+        '
+      operationId: getMoney
+      parameters:
+      - $ref: '#/components/parameters/ShopId'
+      - $ref: '#/components/parameters/BasisQuery'
+      - $ref: '#/components/parameters/PeriodFrom'
+      - $ref: '#/components/parameters/PeriodTo'
+      - name: granularity
+        in: query
+        schema:
+          type: string
+          enum:
+          - day
+          - week
+          - month
+          default: month
+      responses:
+        '200':
+          description: The calculator
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MoneyView'
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ForbiddenShop'
+  /shops/{shopId}/money/where-it-went:
+    get:
+      tags:
+      - Money
+      summary: Deductions by category and pence per pound
+      description: 'Traces LED-8. The same lines as the calculator, expressed as a share of gross
+
+        sales. `pence_per_pound` is an integer of tenths of a penny to avoid a float, so
+
+        4.4 pence is 44.
+
+        '
+      operationId: getWhereItWent
+      parameters:
+      - $ref: '#/components/parameters/ShopId'
+      - $ref: '#/components/parameters/BasisQuery'
+      - $ref: '#/components/parameters/PeriodFrom'
+      - $ref: '#/components/parameters/PeriodTo'
+      responses:
+        '200':
+          description: Where it went
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WhereItWent'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ForbiddenShop'
+  /shops/{shopId}/payouts/expected:
+    get:
+      tags:
+      - Money
+      summary: Unsettled orders by estimated week
+      description: 'Traces DSH-2 and LED-5. Read from TikTok''s unsettled orders endpoint. Every figure
+
+        here is an estimate and is labelled as one, because an estimated payout a seller
+
+        treats as confirmed is how a business runs out of cash.
+
+        '
+      operationId: getExpectedPayouts
+      parameters:
+      - $ref: '#/components/parameters/ShopId'
+      responses:
+        '200':
+          description: Expected payouts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpectedPayouts'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ForbiddenShop'
+  /shops/{shopId}/velocity:
+    get:
+      tags:
+      - Money
+      summary: Average daily sales and net proceeds
+      description: Traces DSH-3.
+      operationId: getVelocity
+      parameters:
+      - $ref: '#/components/parameters/ShopId'
+      - $ref: '#/components/parameters/BasisQuery'
+      - name: window_days
+        in: query
+        schema:
+          type: integer
+          minimum: 7
+          maximum: 90
+          default: 28
+      responses:
+        '200':
+          description: Velocity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Velocity'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ForbiddenShop'
+  /shops/{shopId}/products:
+    get:
+      tags:
+      - Products
+      summary: Ranked products
+      description: 'Traces DSH-4. Ranked by the chosen measure. The response states the total across
+
+        all products and the total shown, so a table displaying the top ten can say what
+
+        the other products came to rather than leaving the figures not to add up.
+
+        '
+      operationId: listProducts
+      parameters:
+      - $ref: '#/components/parameters/ShopId'
+      - $ref: '#/components/parameters/BasisQuery'
+      - $ref: '#/components/parameters/PeriodFrom'
+      - $ref: '#/components/parameters/PeriodTo'
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      - name: measure
+        in: query
+        schema:
+          type: string
+          enum:
+          - kept
+          - net_proceeds
+          - gross_sales
+          - units
+          - returns
+          default: kept
+      responses:
+        '200':
+          description: Ranked products
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductRanking'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ForbiddenShop'
+  /shops/{shopId}/products/{productId}:
+    get:
+      tags:
+      - Products
+      summary: One product, with breakdown, stock and returns
+      description: Traces DSH-5. Includes the one-unit breakdown.
+      operationId: getProduct
+      parameters:
+      - $ref: '#/components/parameters/ShopId'
+      - name: productId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/BasisQuery'
+      - $ref: '#/components/parameters/PeriodFrom'
+      - $ref: '#/components/parameters/PeriodTo'
+      responses:
+        '200':
+          description: The product
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDetail'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ForbiddenShop'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /shops/{shopId}/insights:
+    get:
+      tags:
+      - Products
+      summary: Rule-based insights with evidence
+      description: 'Traces DSH-6. Every insight carries the rule that produced it and the figures it
+
+        was based on. An insight a seller cannot check is an assertion, and this product
+
+        does not make assertions about someone else''s money.
+
+        '
+      operationId: getInsights
+      parameters:
+      - $ref: '#/components/parameters/ShopId'
+      - $ref: '#/components/parameters/BasisQuery'
+      responses:
+        '200':
+          description: Insights
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - as_of
+                - insights
+                properties:
+                  as_of:
+                    type: string
+                    format: date-time
+                  insights:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Insight'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ForbiddenShop'
+  /shops/{shopId}/trends:
+    get:
+      tags:
+      - Money
+      summary: Twelve-month bars
+      description: Traces DSH-7.
+      operationId: getTrends
+      parameters:
+      - $ref: '#/components/parameters/ShopId'
+      - $ref: '#/components/parameters/BasisQuery'
+      - name: measure
+        in: query
+        schema:
+          type: string
+          enum:
+          - gross_sales
+          - net_proceeds
+          - kept
+          - units
+          default: net_proceeds
+      responses:
+        '200':
+          description: Trends
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Trends'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ForbiddenShop'
+  /shops/{shopId}/records:
+    get:
+      tags:
+      - Integrity
+      summary: The records behind a figure
+      description: 'Traces DSH-8. Every figure in the product can be opened to the ledger entries
+
+        behind it. The sum of the entries returned equals the figure, and the response
+
+        states both so a mismatch is visible rather than silent.
+
+        '
+      operationId: getRecords
+      parameters:
+      - $ref: '#/components/parameters/ShopId'
+      - $ref: '#/components/parameters/BasisQuery'
+      - $ref: '#/components/parameters/PeriodFrom'
+      - $ref: '#/components/parameters/PeriodTo'
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      - name: category
+        in: query
+        schema:
+          $ref: '#/components/schemas/LedgerCategory'
+      - name: entry_type
+        in: query
+        schema:
+          type: string
+          enum:
+          - sale
+          - platform_deduction
+          - refund
+          - payout
+          - return_cost
+          - write_off
+          - adjustment
+      - name: sku_id
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - name: order_id
+        in: query
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Records
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/CursorPage'
+                - type: object
+                  required:
+                  - entries
+                  - total
+                  - shown_total
+                  properties:
+                    entries:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/LedgerEntry'
+                    total:
+                      allOf:
+                      - $ref: '#/components/schemas/Money'
+                      description: The figure being drilled into.
+                    shown_total:
+                      allOf:
+                      - $ref: '#/components/schemas/Money'
+                      description: The sum of the entries on this page.
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ForbiddenShop'
+  /shops/{shopId}/needs-you:
+    get:
+      tags:
+      - Integrity
+      summary: Ordered action list
+      description: Traces DSH-10. What the seller has to do, most consequential first.
+      operationId: getNeedsYou
+      parameters:
+      - $ref: '#/components/parameters/ShopId'
+      responses:
+        '200':
+          description: Actions
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - as_of
+                - items
+                properties:
+                  as_of:
+                    type: string
+                    format: date-time
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/NeedsYouItem'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ForbiddenShop'
+  /shops/{shopId}/stock:
+    get:
+      tags:
+      - Stock
+      summary: Stock states and days left
+      description: Traces STK-1 and STK-2.
+      operationId: getStock
+      parameters:
+      - $ref: '#/components/parameters/ShopId'
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      - name: state
+        in: query
+        schema:
+          type: string
+          enum:
+          - healthy
+          - low
+          - out
+          - coming_back
+      responses:
+        '200':
+          description: Stock
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/CursorPage'
+                - type: object
+                  required:
+                  - as_of
+                  - items
+                  properties:
+                    as_of:
+                      type: string
+                      format: date-time
+                    items:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/StockPosition'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ForbiddenShop'
+  /shops/{shopId}/stock/{skuId}/movements:
+    get:
+      tags:
+      - Stock
+      summary: Movement ledger for a SKU
+      description: Traces STK-4.
+      operationId: getStockMovements
+      parameters:
+      - $ref: '#/components/parameters/ShopId'
+      - $ref: '#/components/parameters/SkuId'
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Movements
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/CursorPage'
+                - type: object
+                  required:
+                  - movements
+                  properties:
+                    movements:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/StockMovement'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ForbiddenShop'
+  /shops/{shopId}/stock/{skuId}/adjustments:
+    post:
+      tags:
+      - Stock
+      summary: Record a manual stock adjustment
+      description: 'Traces STK-4. A reason is required and the constraint is enforced in the database,
+
+        not only here.
+
+
+        **This does not write to TikTok.** PRD 6.2 excludes writing stock or any data back
+
+        to TikTok Shop. The adjustment moves `adjusted_delta` in MyShopEdge only, and
+
+        TikTok''s own figure is left untouched.
+
+        '
+      operationId: createStockAdjustment
+      parameters:
+      - $ref: '#/components/parameters/ShopId'
+      - $ref: '#/components/parameters/SkuId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - quantity
+              - reason
+              properties:
+                quantity:
+                  type: integer
+                  description: Signed. Negative removes units.
+                reason:
+                  type: string
+                  minLength: 1
+                  maxLength: 500
+      responses:
+        '201':
+          description: Adjustment recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - movement
+                - position
+                properties:
+                  movement:
+                    $ref: '#/components/schemas/StockMovement'
+                  position:
+                    $ref: '#/components/schemas/StockPosition'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ForbiddenShop'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+  /shops/{shopId}/returns:
+    get:
+      tags:
+      - Returns
+      summary: Returns by status
+      description: Traces RET-1.
+      operationId: listReturns
+      parameters:
+      - $ref: '#/components/parameters/ShopId'
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      - name: kind
+        in: query
+        schema:
+          type: string
+          enum:
+          - cancellation
+          - refund_only
+          - return_refund
+      - name: awaiting_check
+        in: query
+        schema:
+          type: boolean
+      responses:
+        '200':
+          description: Returns
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/CursorPage'
+                - type: object
+                  required:
+                  - returns
+                  properties:
+                    returns:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/ReturnSummary'
+                    awaiting_check_count:
+                      type: integer
+                      minimum: 0
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ForbiddenShop'
+  /shops/{shopId}/return-items/{returnItemId}/check:
+    post:
+      tags:
+      - Returns
+      summary: Confirm receipt, condition and postage
+      description: 'Traces RET-3 and RET-4. The seller says whether the goods came back usable.
+
+
+        A resellable item produces exactly one stock movement. An unsellable item produces
+
+        a write-off and no stock movement. A refund with no goods coming back must produce
+
+        neither. `return_reconciliation` checks that afterwards, and any other combination
+
+        is a defect under REC-2.
+
+        '
+      operationId: checkReturnItem
+      parameters:
+      - $ref: '#/components/parameters/ShopId'
+      - name: returnItemId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - seller_check_status
+              properties:
+                seller_check_status:
+                  type: string
+                  enum:
+                  - resellable
+                  - unsellable
+                  - not_applicable
+                return_postage:
+                  allOf:
+                  - $ref: '#/components/schemas/Money'
+                  description: What the seller paid to get the goods back, if anything.
+      responses:
+        '200':
+          description: Checked
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - item
+                - stock_movements_created
+                properties:
+                  item:
+                    $ref: '#/components/schemas/ReturnItem'
+                  stock_movements_created:
+                    type: integer
+                    minimum: 0
+                    maximum: 1
+                  write_off:
+                    allOf:
+                    - $ref: '#/components/schemas/Money'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ForbiddenShop'
+        '409':
+          description: This item has already been checked. Checking is one way.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+  /shops/{shopId}/returns/metrics:
+    get:
+      tags:
+      - Returns
+      summary: Return rate, most returned, total return cost
+      description: Traces RET-6.
+      operationId: getReturnMetrics
+      parameters:
+      - $ref: '#/components/parameters/ShopId'
+      - $ref: '#/components/parameters/PeriodFrom'
+      - $ref: '#/components/parameters/PeriodTo'
+      responses:
+        '200':
+          description: Metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReturnMetrics'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ForbiddenShop'
+  /shops/{shopId}/summary/{month}:
+    get:
+      tags:
+      - Money
+      summary: Month summary
+      description: Traces LED-6.
+      operationId: getMonthSummary
+      parameters:
+      - $ref: '#/components/parameters/ShopId'
+      - $ref: '#/components/parameters/Month'
+      - $ref: '#/components/parameters/BasisQuery'
+      responses:
+        '200':
+          description: The month
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MoneyView'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ForbiddenShop'
+  /shops/{shopId}/tax/vat:
+    get:
+      tags:
+      - Tax
+      summary: VAT threshold monitor
+      description: 'Traces TAX-2. Measures rolling twelve-month turnover against the registration
+
+        threshold, including other-channel sales the seller entered.
+
+
+        This monitors a threshold. It does not prepare or submit a VAT return, and it
+
+        does not account for VAT on behalf of a registered seller. PRD 6.2 excludes both.
+
+        '
+      operationId: getVatMonitor
+      parameters:
+      - $ref: '#/components/parameters/ShopId'
+      responses:
+        '200':
+          description: VAT monitor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VatMonitor'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ForbiddenShop'
+  /shops/{shopId}/tax/set-aside:
+    get:
+      tags:
+      - Tax
+      summary: Set-aside estimate
+      description: 'Traces TAX-3. An estimate of what to put by, returned only when the tax profile
+
+        and cost coverage are complete enough to produce one.
+
+
+        When they are not, `amount` is null with a reason. A tax set-aside figure built on
+
+        incomplete costs would be too low, and a seller who under-saves on this product''s
+
+        advice has been failed by it.
+
+        '
+      operationId: getSetAside
+      parameters:
+      - $ref: '#/components/parameters/ShopId'
+      responses:
+        '200':
+          description: Set-aside
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetAside'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ForbiddenShop'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: 'A JWT from the identity provider, verified against its JWKS endpoint. The account
+
+        is resolved from the `sub` claim against `accounts.auth_subject`, never from
+
+        anything the client sends. Any `shopId` in a path is checked against that account
+
+        before the query runs, and a shop belonging to another account returns 403 rather
+
+        than 404, because the shop does exist and pretending otherwise helps nobody.
+
+        '
+  parameters:
+    ShopId:
+      name: shopId
+      in: path
+      required: true
+      description: The MyShopEdge shop identifier, not the TikTok shop id.
+      schema:
+        type: string
+        format: uuid
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description: 'A client-generated key. A repeat with the same key returns the first result rather
+
+        than acting twice. Keys are retained for 24 hours.
+
+        '
+      schema:
+        type: string
+        minLength: 8
+        maxLength: 128
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    Cursor:
+      name: cursor
+      in: query
+      description: The `next_cursor` from a previous response. Opaque, do not parse.
+      schema:
+        type: string
+    UploadId:
+      name: uploadId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    SkuId:
+      name: skuId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    Month:
+      name: month
+      in: path
+      required: true
+      description: Local month in Europe/London, as YYYY-MM.
+      schema:
+        type: string
+        pattern: ^\d{4}-(0[1-9]|1[0-2])$
+    PeriodFrom:
+      name: from
+      in: query
+      description: Local date, Europe/London. Inclusive.
+      schema:
+        type: string
+        format: date
+    PeriodTo:
+      name: to
+      in: query
+      description: Local date, Europe/London. Inclusive.
+      schema:
+        type: string
+        format: date
+    BasisQuery:
+      name: basis
+      in: query
+      description: 'Required in effect. Defaults to `sales`, and the response always states which basis
+
+        it used, so a client that forgets to ask still knows what it received.
+
+        '
+      schema:
+        type: string
+        enum:
+        - sales
+        - cash
+        default: sales
+  headers:
+    ETag:
+      description: Entity tag. Send back as `If-None-Match` to receive 304 when unchanged.
+      schema:
+        type: string
+    RateLimitRemaining:
+      description: Requests remaining in the current window.
+      schema:
+        type: integer
+    RetryAfter:
+      description: Seconds to wait before retrying.
+      schema:
+        type: integer
+  responses:
+    NotModified:
+      description: Unchanged since the supplied ETag.
+    Unauthenticated:
+      description: No token, an invalid token, or an expired one.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    ForbiddenShop:
+      description: The shop exists but does not belong to this account.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    NotFound:
+      description: No such resource.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    ValidationFailed:
+      description: 'The request was well formed but its contents were rejected. `errors` names the
+
+        offending fields so the interface can mark them rather than showing one message.
+
+        '
+      content:
+        application/problem+json:
+          schema:
+            allOf:
+            - $ref: '#/components/schemas/Problem'
+            - type: object
+              properties:
+                errors:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                    - field
+                    - message
+                    properties:
+                      field:
+                        type: string
+                      message:
+                        type: string
+    RateLimited:
+      description: Too many requests.
+      headers:
+        Retry-After:
+          $ref: '#/components/headers/RetryAfter'
+        RateLimit-Remaining:
+          $ref: '#/components/headers/RateLimitRemaining'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+  schemas:
+    Money:
+      type: object
+      description: 'An amount in integer minor units with its currency. Never a decimal, never a
+
+        float. 20.84 pounds is `{"amount_minor": 2084, "currency": "GBP"}`.
+
+        '
+      required:
+      - amount_minor
+      - currency
+      properties:
+        amount_minor:
+          type: integer
+          format: int64
+          examples:
+          - 2084
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          examples:
+          - GBP
+    Problem:
+      type: object
+      description: RFC 9457 problem details, with a stable machine-readable `code`.
+      required:
+      - type
+      - title
+      - status
+      - code
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+          description: Human readable. Wording may change.
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+        code:
+          type: string
+          description: 'The contract. Clients branch on this, never on `title` or `status` alone.
+
+            '
+          enum:
+          - unauthenticated
+          - token_expired
+          - forbidden_shop
+          - not_found
+          - validation_failed
+          - conflict
+          - idempotency_key_conflict
+          - rate_limited
+          - shop_needs_reconnect
+          - shop_region_unsupported
+          - upstream_unavailable
+          - internal_error
+    Confidence:
+      type: string
+      description: 'How far a figure can be trusted. `confirmed` means every input is settled.
+
+        `estimated` means at least one input is a projection. `incomplete` means a
+
+        required input is missing, and the figure it describes will be null.
+
+        '
+      enum:
+      - confirmed
+      - estimated
+      - incomplete
+    Basis:
+      type: string
+      description: '`sales` recognises money when the sale happens. `cash` recognises it when TikTok
+
+        pays out. A figure without a basis is meaningless, so every period figure states it.
+
+        '
+      enum:
+      - sales
+      - cash
+    Period:
+      type: object
+      required:
+      - from
+      - to
+      - basis
+      properties:
+        from:
+          type: string
+          format: date
+          description: Local date
+          Europe/London.: null
+        to:
+          type: string
+          format: date
+          description: Local date
+          Europe/London. Inclusive.: null
+        basis:
+          $ref: '#/components/schemas/Basis'
+    CursorPage:
+      type: object
+      required:
+      - next_cursor
+      properties:
+        next_cursor:
+          type:
+          - string
+          - 'null'
+          description: Null when there is no further page.
+    Account:
+      type: object
+      required:
+      - id
+      - email
+      - locale
+      - timezone
+      - status
+      - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        display_name:
+          type:
+          - string
+          - 'null'
+        locale:
+          type: string
+          default: en-GB
+        timezone:
+          type: string
+          default: Europe/London
+          description: 'The seller''s reporting timezone. The MVP fixes this at Europe/London, because
+
+            every period figure and every VAT quarter is derived in it.
+
+            '
+        status:
+          type: string
+          enum:
+          - active
+          - suspended
+          - deleted
+        created_at:
+          type: string
+          format: date-time
+        tax_profile_completed:
+          type: boolean
+        shop_count:
+          type: integer
+          minimum: 0
+    Shop:
+      type: object
+      required:
+      - id
+      - platform
+      - tiktok_shop_id
+      - region
+      - currency
+      - connection_status
+      properties:
+        id:
+          type: string
+          format: uuid
+        platform:
+          type: string
+          const: tiktok_shop
+        tiktok_shop_id:
+          type: string
+        tiktok_shop_code:
+          type: string
+          description: The code shown in Seller Center, for example IDLCFNWM88. Display only.
+        shop_name:
+          type:
+          - string
+          - 'null'
+        region:
+          type: string
+          minLength: 2
+          maxLength: 2
+          description: 'ISO country code from TikTok. The MVP reads `GB` correctly. Any other region
+
+            returns a different finance field set and is refused at connection time.
+
+            '
+        seller_type:
+          type:
+          - string
+          - 'null'
+          enum:
+          - LOCAL
+          - CROSS_BORDER
+          - null
+          description: 'TikTok''s own value. A cross-border seller returns import VAT and customs fields
+
+            in place of `local_vat_amount`, so this changes the mapping as much as region does.
+
+            '
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+        connection_status:
+          type: string
+          enum:
+          - pending
+          - connected
+          - needs_reconnect
+          - disconnected
+        first_synced_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        last_synced_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        authorization_expires_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+          description: 'When the TikTok authorisation lapses. TikTok warns 30 days ahead through the
+
+            UPCOMING_AUTHORIZATION_EXPIRATION event, and the interface should too.
+
+            '
+    ConnectionResult:
+      type: object
+      required:
+      - shop
+      - accepted
+      properties:
+        shop:
+          $ref: '#/components/schemas/Shop'
+        accepted:
+          type: boolean
+          description: 'False when the shop authorised successfully but its region or seller type is
+
+            outside what the MVP can read correctly. The tokens are stored, the shop is
+
+            listed, and no figures are produced.
+
+            '
+        rejection_reason:
+          type:
+          - string
+          - 'null'
+          enum:
+          - region_unsupported
+          - seller_type_unsupported
+          - null
+        return_to:
+          type:
+          - string
+          - 'null'
+          format: uri
+    SyncStatus:
+      type: object
+      required:
+      - shop_id
+      - as_of
+      - domains
+      properties:
+        shop_id:
+          type: string
+          format: uuid
+        as_of:
+          type: string
+          format: date-time
+        overall:
+          type: string
+          enum:
+          - healthy
+          - degraded
+          - failed
+          - needs_reconnect
+        domains:
+          type: array
+          items:
+            type: object
+            required:
+            - domain
+            - status
+            - stale
+            properties:
+              domain:
+                type: string
+                enum:
+                - orders
+                - products
+                - inventory
+                - finance
+                - returns
+              status:
+                type: string
+                enum:
+                - scheduled
+                - fetching
+                - persisting
+                - processing
+                - completed
+                - retry_wait
+                - failed
+                - needs_reconnect
+              last_success_at:
+                type:
+                - string
+                - 'null'
+                format: date-time
+              stale:
+                type: boolean
+                description: 'True when the newest success is older than this domain''s expected
+
+                  interval. Figures drawn from a stale domain must be labelled, not shown
+
+                  as current.
+
+                  '
+              records_written:
+                type: integer
+                minimum: 0
+              attempt:
+                type: integer
+                minimum: 0
+              backfill_progress:
+                type:
+                - number
+                - 'null'
+                minimum: 0
+                maximum: 1
+    Notification:
+      type: object
+      required:
+      - id
+      - type
+      - severity
+      - title
+      - status
+      - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        shop_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        type:
+          type: string
+        severity:
+          type: string
+          enum:
+          - info
+          - warning
+          - critical
+        title:
+          type: string
+        body:
+          type:
+          - string
+          - 'null'
+        entity_type:
+          type:
+          - string
+          - 'null'
+        entity_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        status:
+          type: string
+          enum:
+          - unread
+          - read
+          - done
+        created_at:
+          type: string
+          format: date-time
+    TaxProfileInput:
+      type: object
+      properties:
+        business_structure:
+          type:
+          - string
+          - 'null'
+          enum:
+          - sole_trader
+          - company
+          - not_sure
+          - null
+        vat_registered:
+          type: boolean
+          default: false
+        vat_registered_from:
+          type:
+          - string
+          - 'null'
+          format: date
+          description: Required when `vat_registered` is true.
+    TaxProfile:
+      allOf:
+      - $ref: '#/components/schemas/TaxProfileInput'
+      - type: object
+        required:
+        - completed
+        - updated_at
+        properties:
+          completed:
+            type: boolean
+            description: False for an account that has not filled the profile in.
+          updated_at:
+            type:
+            - string
+            - 'null'
+            format: date-time
+    TaxDates:
+      type: object
+      required:
+      - tax_year
+      - dates
+      properties:
+        tax_year:
+          type: integer
+        dates:
+          type: array
+          items:
+            type: object
+            required:
+            - label
+            - date
+            - rule_key
+            properties:
+              label:
+                type: string
+              date:
+                type: string
+                format: date
+                description: Local date
+                Europe/London.: null
+              rule_key:
+                type: string
+              reviewed_at:
+                type:
+                - string
+                - 'null'
+                format: date
+                description: 'When this rule was last checked against its source. A date the seller
+
+                  cannot see the provenance of is a date they should not rely on.
+
+                  '
+              source_url:
+                type:
+                - string
+                - 'null'
+                format: uri
+    QuarterlyCheck:
+      type: object
+      required:
+      - tax_year
+      - prior_year_gross
+      - thresholds
+      - checked_at
+      properties:
+        tax_year:
+          type: integer
+        prior_year_gross:
+          $ref: '#/components/schemas/Money'
+        thresholds:
+          type: array
+          items:
+            type: object
+            required:
+            - rule_key
+            - label
+            - threshold
+            - above_threshold
+            properties:
+              rule_key:
+                type: string
+              label:
+                type: string
+              threshold:
+                $ref: '#/components/schemas/Money'
+              above_threshold:
+                type: boolean
+              headroom:
+                $ref: '#/components/schemas/Money'
+              reviewed_at:
+                type:
+                - string
+                - 'null'
+                format: date
+        checked_at:
+          type: string
+          format: date-time
+    ReferenceRule:
+      type: object
+      required:
+      - rule_set
+      - rule_key
+      - value
+      - effective_from
+      properties:
+        rule_set:
+          type: string
+          enum:
+          - vat
+          - income_tax
+          - national_insurance
+          - mtd
+        rule_key:
+          type: string
+        value:
+          description: Shape depends on the rule.
+        effective_from:
+          type: string
+          format: date
+        effective_to:
+          type:
+          - string
+          - 'null'
+          format: date
+        source_url:
+          type:
+          - string
+          - 'null'
+          format: uri
+        reviewed_at:
+          type:
+          - string
+          - 'null'
+          format: date
+    AlertSettingsInput:
+      type: object
+      required:
+      - low_stock_days
+      - coming_back_days
+      - absorption_tolerance_units
+      properties:
+        low_stock_days:
+          type: integer
+          minimum: 1
+          maximum: 365
+          default: 14
+        coming_back_days:
+          type: integer
+          minimum: 1
+          maximum: 365
+          default: 7
+        absorption_tolerance_units:
+          type: integer
+          minimum: 0
+          maximum: 1000
+          default: 20
+    AlertSettings:
+      allOf:
+      - $ref: '#/components/schemas/AlertSettingsInput'
+      - type: object
+        required:
+        - shop_id
+        - updated_at
+        properties:
+          shop_id:
+            type: string
+            format: uuid
+          updated_at:
+            type: string
+            format: date-time
+    ExportJob:
+      type: object
+      required:
+      - id
+      - status
+      - requested_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+          - queued
+          - ready
+          - failed
+          - expired
+        requested_at:
+          type: string
+          format: date-time
+        ready_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        expires_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        download_url:
+          type:
+          - string
+          - 'null'
+          format: uri
+          description: 'A signed URL valid for fifteen minutes. Absent until the status is `ready`.
+
+            Not a permanent link, and never logged.
+
+            '
+        size_bytes:
+          type:
+          - integer
+          - 'null'
+    DeletionAcknowledgement:
+      type: object
+      required:
+      - scheduled_at
+      - includes
+      - account_id
+      properties:
+        account_id:
+          type: string
+          format: uuid
+        scheduled_at:
+          type: string
+          format: date-time
+        includes:
+          type: array
+          description: What will be removed, stated plainly so the seller has a record.
+          items:
+            type: string
+        invoices_retained_until:
+          type:
+          - string
+          - 'null'
+          format: date
+          description: 'Present when the account holds TikTok fee invoices. Those are kept for six
+
+            years from the end of the VAT period rather than deleted with the account, and
+
+            the seller is told to take a copy first.
+
+            '
+        cancel_by:
+          type:
+          - string
+          - 'null'
+          format: date-time
+          description: Until this moment the deletion can still be cancelled.
+    LedgerCategory:
+      type: string
+      description: 'The eighteen categories in `ledger_entries.category`. `unmapped_fee` carries a fee
+
+        TikTok returned that has no category yet, with its TikTok field name kept verbatim
+
+        so it can be investigated without a re-sync.
+
+        '
+      enum:
+      - gross_sales
+      - seller_discount
+      - refund
+      - platform_commission
+      - affiliate_commission
+      - transaction_fee
+      - smart_promotions_fee
+      - shipping_fee
+      - return_handling_fee
+      - fbt_operations_fee
+      - fbt_shipping_fee
+      - fbt_storage_fee
+      - unmapped_fee
+      - cost_of_goods_sold
+      - seller_shipping
+      - return_shipping
+      - stock_written_off
+      - settlement
+    CalculatorLine:
+      type: object
+      description: 'One line of the calculator. Never merged with another line.
+
+        '
+      required:
+      - label
+      - amount
+      properties:
+        label:
+          type: string
+          description: TikTok's own name, or the correct accounting term. Never invented shorthand.
+        amount:
+          $ref: '#/components/schemas/Money'
+        category:
+          $ref: '#/components/schemas/LedgerCategory'
+        tiktok_field:
+          type:
+          - string
+          - 'null'
+          description: 'The exact field this came from, for example `platform_commission_amount`. Null
+
+            for a line MyShopEdge computed rather than read.
+
+            '
+        tiktok_fee_type:
+          type:
+          - string
+          - 'null'
+          description: 'TikTok''s fee type string, kept verbatim. Populated when `category` is
+
+            `unmapped_fee`, so an unrecognised fee is still named on screen.
+
+            '
+        quantity:
+          type:
+          - integer
+          - 'null'
+        note:
+          type:
+          - string
+          - 'null'
+    CalculatorSection:
+      type: object
+      required:
+      - key
+      - label
+      - lines
+      - subtotal
+      properties:
+        key:
+          type: string
+          examples:
+          - revenue
+          - tiktok_fees
+          - shipping
+          - taxes
+          - your_costs
+        label:
+          type: string
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/CalculatorLine'
+        subtotal:
+          $ref: '#/components/schemas/Money'
+        subtotal_label:
+          type: string
+    MoneyView:
+      type: object
+      description: 'The calculator. Sections in order, each with its lines and subtotal, then the
+
+        figures the seller acts on.
+
+        '
+      required:
+      - as_of
+      - period
+      - sections
+      - totals
+      - confidence
+      properties:
+        as_of:
+          type: string
+          format: date-time
+        period:
+          $ref: '#/components/schemas/Period'
+        granularity:
+          type: string
+          enum:
+          - day
+          - week
+          - month
+        sections:
+          type: array
+          items:
+            $ref: '#/components/schemas/CalculatorSection'
+        totals:
+          type: object
+          required:
+          - gross_sales
+          - net_sales
+          - net_proceeds
+          properties:
+            gross_sales:
+              $ref: '#/components/schemas/Money'
+            net_sales:
+              $ref: '#/components/schemas/Money'
+            net_proceeds:
+              $ref: '#/components/schemas/Money'
+            cost_of_goods_sold:
+              $ref: '#/components/schemas/Money'
+            gross_profit:
+              type:
+              - object
+              - 'null'
+              allOf:
+              - $ref: '#/components/schemas/Money'
+              description: Null where cost coverage is incomplete.
+            gross_profit_after_returns:
+              type:
+              - object
+              - 'null'
+              allOf:
+              - $ref: '#/components/schemas/Money'
+        kept:
+          type:
+          - object
+          - 'null'
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          description: Null when cost coverage is incomplete. Never a zero standing in for unknown.
+        kept_reason:
+          type:
+          - string
+          - 'null'
+          enum:
+          - incomplete_costs
+          - no_sales
+          - null
+        cost_coverage:
+          type: number
+          minimum: 0
+          maximum: 1
+        confidence:
+          $ref: '#/components/schemas/Confidence'
+        unmapped_fee_count:
+          type: integer
+          minimum: 0
+          description: 'Fees in this period with no category. Above zero, the interface must say so,
+
+            because those amounts are in the totals but not in any named line.
+
+            '
+    WhereItWent:
+      type: object
+      required:
+      - period
+      - gross_sales
+      - lines
+      properties:
+        period:
+          $ref: '#/components/schemas/Period'
+        gross_sales:
+          $ref: '#/components/schemas/Money'
+        lines:
+          type: array
+          items:
+            allOf:
+            - $ref: '#/components/schemas/CalculatorLine'
+            - type: object
+              required:
+              - pence_per_pound
+              properties:
+                pence_per_pound:
+                  type: integer
+                  description: Tenths of a penny per pound of gross sales. 4.4p is 44.
+    TodayView:
+      type: object
+      required:
+      - as_of
+      - hero
+      - month
+      - shop_money
+      - needs_you
+      properties:
+        as_of:
+          type: string
+          format: date-time
+        stale:
+          type: boolean
+        hero:
+          type: object
+          required:
+          - label
+          - value
+          - confidence
+          properties:
+            label:
+              type: string
+              examples:
+              - left_after_tiktok
+            value:
+              type:
+              - object
+              - 'null'
+              allOf:
+              - $ref: '#/components/schemas/Money'
+            confidence:
+              $ref: '#/components/schemas/Confidence'
+            cost_coverage:
+              type: number
+              minimum: 0
+              maximum: 1
+        month:
+          type: object
+          properties:
+            period:
+              $ref: '#/components/schemas/Period'
+            gross:
+              $ref: '#/components/schemas/Money'
+            net_proceeds:
+              $ref: '#/components/schemas/Money'
+            kept:
+              type:
+              - object
+              - 'null'
+              allOf:
+              - $ref: '#/components/schemas/Money'
+            kept_reason:
+              type:
+              - string
+              - 'null'
+        shop_money:
+          type: object
+          properties:
+            generated:
+              $ref: '#/components/schemas/Money'
+            paid_out:
+              $ref: '#/components/schemas/Money'
+            awaiting:
+              $ref: '#/components/schemas/Money'
+            awaiting_breakdown:
+              type: array
+              items:
+                type: object
+                required:
+                - status
+                - amount
+                - orders
+                properties:
+                  status:
+                    type: string
+                    enum:
+                    - waiting_delivery
+                    - waiting_return_refund
+                    - delivered_awaiting_settlement
+                    description: TikTok's own sub-statuses, not MyShopEdge inventions.
+                  amount:
+                    $ref: '#/components/schemas/Money'
+                  orders:
+                    type: integer
+                    minimum: 0
+        needs_you:
+          type: array
+          items:
+            $ref: '#/components/schemas/NeedsYouItem'
+    NeedsYouItem:
+      type: object
+      required:
+      - type
+      - count
+      - severity
+      properties:
+        type:
+          type: string
+          examples:
+          - returns_to_check
+          - missing_costs
+          - open_discrepancies
+          - connection_expiring
+          - unmapped_fees
+        count:
+          type: integer
+          minimum: 0
+        severity:
+          type: string
+          enum:
+          - info
+          - warning
+          - critical
+        label:
+          type: string
+        amount_at_stake:
+          type:
+          - object
+          - 'null'
+          allOf:
+          - $ref: '#/components/schemas/Money'
+        href:
+          type:
+          - string
+          - 'null'
+    ExpectedPayouts:
+      type: object
+      required:
+      - as_of
+      - confidence
+      - weeks
+      - total
+      properties:
+        as_of:
+          type: string
+          format: date-time
+        confidence:
+          allOf:
+          - $ref: '#/components/schemas/Confidence'
+          description: Always `estimated`. TikTok does not commit to a settlement date.
+        total:
+          $ref: '#/components/schemas/Money'
+        weeks:
+          type: array
+          items:
+            type: object
+            required:
+            - week_starting
+            - amount
+            - orders
+            properties:
+              week_starting:
+                type: string
+                format: date
+                description: Monday, Europe/London, matching `ledger_entries.basis_week`.
+              amount:
+                $ref: '#/components/schemas/Money'
+              orders:
+                type: integer
+                minimum: 0
+    Velocity:
+      type: object
+      required:
+      - window_days
+      - period
+      - average_daily_gross
+      - average_daily_net_proceeds
+      properties:
+        window_days:
+          type: integer
+        period:
+          $ref: '#/components/schemas/Period'
+        average_daily_gross:
+          $ref: '#/components/schemas/Money'
+        average_daily_net_proceeds:
+          $ref: '#/components/schemas/Money'
+        average_daily_units:
+          type: number
+          minimum: 0
+    ProductRanking:
+      type: object
+      required:
+      - period
+      - measure
+      - products
+      - total
+      - shown_total
+      properties:
+        period:
+          $ref: '#/components/schemas/Period'
+        measure:
+          type: string
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductRow'
+        total:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          description: Across every product, not only those returned.
+        shown_total:
+          $ref: '#/components/schemas/Money'
+        others:
+          type: object
+          description: 'What the products not shown came to. Present so a top-ten table adds up to the
+
+            figure on the money screen rather than appearing to lose money.
+
+            '
+          properties:
+            count:
+              type: integer
+              minimum: 0
+            amount:
+              $ref: '#/components/schemas/Money'
+        next_cursor:
+          type:
+          - string
+          - 'null'
+    ProductRow:
+      type: object
+      required:
+      - product_id
+      - title
+      - units
+      - gross_sales
+      - net_proceeds
+      properties:
+        product_id:
+          type: string
+          format: uuid
+        tiktok_product_id:
+          type: string
+        title:
+          type:
+          - string
+          - 'null'
+        units:
+          type: integer
+          minimum: 0
+        gross_sales:
+          $ref: '#/components/schemas/Money'
+        net_proceeds:
+          $ref: '#/components/schemas/Money'
+        kept:
+          type:
+          - object
+          - 'null'
+          allOf:
+          - $ref: '#/components/schemas/Money'
+        kept_reason:
+          type:
+          - string
+          - 'null'
+        returns_units:
+          type: integer
+          minimum: 0
+        cost_known:
+          type: boolean
+    ProductDetail:
+      type: object
+      required:
+      - product
+      - period
+      - per_unit
+      - sections
+      properties:
+        product:
+          $ref: '#/components/schemas/ProductRow'
+        period:
+          $ref: '#/components/schemas/Period'
+        per_unit:
+          type: object
+          description: The one-unit breakdown. The same lines as the calculator, divided by units.
+          required:
+          - units
+          - sections
+          properties:
+            units:
+              type: integer
+              minimum: 1
+            sections:
+              type: array
+              items:
+                $ref: '#/components/schemas/CalculatorSection'
+        sections:
+          type: array
+          items:
+            $ref: '#/components/schemas/CalculatorSection'
+        stock:
+          $ref: '#/components/schemas/StockPosition'
+        returns:
+          $ref: '#/components/schemas/ReturnMetrics'
+        skus:
+          type: array
+          items:
+            type: object
+            properties:
+              sku_id:
+                type: string
+                format: uuid
+              tiktok_sku_id:
+                type: string
+              seller_sku:
+                type:
+                - string
+                - 'null'
+                description: 'Often empty. TikTok permits a blank seller SKU, so nothing may key on it.
+
+                  '
+              variant_label:
+                type:
+                - string
+                - 'null'
+              cost:
+                type:
+                - object
+                - 'null'
+                allOf:
+                - $ref: '#/components/schemas/Money'
+    Insight:
+      type: object
+      required:
+      - rule_key
+      - severity
+      - headline
+      - evidence
+      properties:
+        rule_key:
+          type: string
+        severity:
+          type: string
+          enum:
+          - info
+          - warning
+          - critical
+        headline:
+          type: string
+        detail:
+          type:
+          - string
+          - 'null'
+        evidence:
+          type: object
+          description: 'The figures the insight was computed from, so the seller can check it. An
+
+            insight without evidence is not shown.
+
+            '
+          properties:
+            period:
+              $ref: '#/components/schemas/Period'
+            values:
+              type: array
+              items:
+                type: object
+                required:
+                - label
+                properties:
+                  label:
+                    type: string
+                  amount:
+                    type:
+                    - object
+                    - 'null'
+                    allOf:
+                    - $ref: '#/components/schemas/Money'
+                  number:
+                    type:
+                    - number
+                    - 'null'
+            entity_type:
+              type:
+              - string
+              - 'null'
+            entity_id:
+              type:
+              - string
+              - 'null'
+              format: uuid
+    Trends:
+      type: object
+      required:
+      - measure
+      - basis
+      - points
+      properties:
+        measure:
+          type: string
+        basis:
+          $ref: '#/components/schemas/Basis'
+        points:
+          type: array
+          maxItems: 12
+          items:
+            type: object
+            required:
+            - month
+            - value
+            - complete
+            properties:
+              month:
+                type: string
+                pattern: ^\d{4}-(0[1-9]|1[0-2])$
+              value:
+                $ref: '#/components/schemas/Money'
+              complete:
+                type: boolean
+                description: 'False for a month still settling, or one before the shop connected. A bar
+
+                  drawn from a partial month must be marked, not shown as a fall in trade.
+
+                  '
+    LedgerEntry:
+      type: object
+      required:
+      - id
+      - entry_type
+      - amount
+      - occurred_at
+      - basis_day
+      - source
+      properties:
+        id:
+          type: string
+          format: uuid
+        entry_type:
+          type: string
+          enum:
+          - sale
+          - platform_deduction
+          - refund
+          - payout
+          - return_cost
+          - write_off
+          - adjustment
+        category:
+          $ref: '#/components/schemas/LedgerCategory'
+        tiktok_fee_type:
+          type:
+          - string
+          - 'null'
+        amount:
+          $ref: '#/components/schemas/Money'
+        occurred_at:
+          type: string
+          format: date-time
+        basis_day:
+          type: string
+          format: date
+          description: Local date
+          Europe/London.: null
+        basis_month:
+          type: string
+          format: date
+        source:
+          type: string
+          enum:
+          - tiktok
+          - seller
+          - system
+        source_ref:
+          type:
+          - string
+          - 'null'
+        attribution:
+          type: string
+          enum:
+          - direct
+          - allocated
+          - none
+        order_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        tiktok_order_id:
+          type:
+          - string
+          - 'null'
+        sku_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        tiktok_invoice_number:
+          type:
+          - string
+          - 'null'
+        reverses_entry_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        reason:
+          type:
+          - string
+          - 'null'
+    StockPosition:
+      type: object
+      required:
+      - sku_id
+      - on_shelf
+      - state
+      - as_of
+      properties:
+        sku_id:
+          type: string
+          format: uuid
+        tiktok_sku_id:
+          type: string
+        seller_sku:
+          type:
+          - string
+          - 'null'
+        product_title:
+          type:
+          - string
+          - 'null'
+        tiktok_stock:
+          type: integer
+        adjusted_delta:
+          type: integer
+        on_shelf:
+          type: integer
+          description: TikTok stock plus the seller's adjustment. Computed in the database.
+        sold_not_posted:
+          type: integer
+          minimum: 0
+        coming_back:
+          type: integer
+          minimum: 0
+        written_off:
+          type: integer
+          minimum: 0
+        state:
+          type: string
+          enum:
+          - healthy
+          - low
+          - out
+          - coming_back
+        days_left:
+          type:
+          - number
+          - 'null'
+          description: Null when there is no recent sales rate to divide by.
+        as_of:
+          type: string
+          format: date-time
+    StockMovement:
+      type: object
+      required:
+      - id
+      - movement_type
+      - quantity
+      - occurred_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        movement_type:
+          type: string
+          enum:
+          - sale_reserved
+          - posted
+          - cancelled
+          - return_resellable
+          - write_off
+          - manual_adjustment
+          - adjustment_absorbed
+        quantity:
+          type: integer
+        occurred_at:
+          type: string
+          format: date-time
+        order_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        return_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        reason:
+          type:
+          - string
+          - 'null'
+        created_by:
+          type:
+          - string
+          - 'null'
+          format: uuid
+    ReturnSummary:
+      type: object
+      required:
+      - id
+      - tiktok_return_id
+      - tiktok_order_id
+      - kind
+      - status
+      properties:
+        id:
+          type: string
+          format: uuid
+        tiktok_return_id:
+          type: string
+        tiktok_order_id:
+          type: string
+        tiktok_credit_note_number:
+          type:
+          - string
+          - 'null'
+        kind:
+          type: string
+          enum:
+          - cancellation
+          - refund_only
+          - return_refund
+        status:
+          type: string
+        reason_code:
+          type:
+          - string
+          - 'null'
+          description: 'TikTok''s own value, which arrives as localised free text rather than a code.
+            Kept
+
+            verbatim and mapped for display, never shown raw.
+
+            '
+        refund:
+          type:
+          - object
+          - 'null'
+          allOf:
+          - $ref: '#/components/schemas/Money'
+        requested_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        refund_completed_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        items_awaiting_check:
+          type: integer
+          minimum: 0
+        return_cost:
+          type:
+          - object
+          - 'null'
+          allOf:
+          - $ref: '#/components/schemas/Money'
+    ReturnItem:
+      type: object
+      required:
+      - id
+      - return_id
+      - quantity
+      - seller_check_status
+      properties:
+        id:
+          type: string
+          format: uuid
+        return_id:
+          type: string
+          format: uuid
+        sku_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        quantity:
+          type: integer
+          minimum: 1
+        seller_check_status:
+          type: string
+          enum:
+          - pending
+          - resellable
+          - unsellable
+          - not_applicable
+        checked_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        return_postage:
+          type:
+          - object
+          - 'null'
+          allOf:
+          - $ref: '#/components/schemas/Money'
+    ReturnMetrics:
+      type: object
+      required:
+      - period
+      - return_rate
+      - returns_units
+      - total_return_cost
+      properties:
+        period:
+          $ref: '#/components/schemas/Period'
+        return_rate:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Returned units divided by units sold in the same period.
+        returns_units:
+          type: integer
+          minimum: 0
+        total_return_cost:
+          $ref: '#/components/schemas/Money'
+        write_off_total:
+          $ref: '#/components/schemas/Money'
+        most_returned:
+          type: array
+          items:
+            type: object
+            properties:
+              product_id:
+                type: string
+                format: uuid
+              title:
+                type:
+                - string
+                - 'null'
+              units:
+                type: integer
+                minimum: 0
+              cost:
+                $ref: '#/components/schemas/Money'
+    CostUpload:
+      type: object
+      required:
+      - id
+      - filename
+      - status
+      - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        filename:
+          type: string
+        status:
+          type: string
+          enum:
+          - uploaded
+          - mapped
+          - confirmed
+          - applied
+          - failed
+        created_at:
+          type: string
+          format: date-time
+        confirmed_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        detected_columns:
+          type: array
+          items:
+            type: string
+        suggested_mapping:
+          type:
+          - object
+          - 'null'
+          allOf:
+          - $ref: '#/components/schemas/ColumnMapping'
+          description: A proposal from the headers. Never applied without confirmation.
+        column_mapping:
+          type:
+          - object
+          - 'null'
+          allOf:
+          - $ref: '#/components/schemas/ColumnMapping'
+        rows_total:
+          type:
+          - integer
+          - 'null'
+        rows_matched:
+          type:
+          - integer
+          - 'null'
+        rows_unmatched:
+          type:
+          - integer
+          - 'null'
+        rows_duplicate:
+          type:
+          - integer
+          - 'null'
+        error:
+          type:
+          - string
+          - 'null'
+    ColumnMapping:
+      type: object
+      required:
+      - match_on
+      - cost_column
+      properties:
+        match_on:
+          type: string
+          enum:
+          - seller_sku
+          - tiktok_sku_id
+          description: 'Which column identifies the SKU. No default. TikTok permits an empty
+
+            `seller_sku`, and the sandbox shop returned one, so a file keyed on seller SKU
+
+            will not match those products. The seller chooses while looking at their file.
+
+            '
+        key_column:
+          type: string
+        cost_column:
+          type: string
+        packing_column:
+          type:
+          - string
+          - 'null'
+        postage_column:
+          type:
+          - string
+          - 'null'
+        currency:
+          type: string
+          default: GBP
+    ProductCost:
+      type: object
+      required:
+      - sku_id
+      - cost
+      - source
+      - effective_from
+      properties:
+        sku_id:
+          type: string
+          format: uuid
+        cost:
+          $ref: '#/components/schemas/Money'
+        packing:
+          type:
+          - object
+          - 'null'
+          allOf:
+          - $ref: '#/components/schemas/Money'
+        postage:
+          type:
+          - object
+          - 'null'
+          allOf:
+          - $ref: '#/components/schemas/Money'
+        source:
+          type: string
+          enum:
+          - upload
+          - manual
+        effective_from:
+          type: string
+          format: date
+        supersedes:
+          type:
+          - string
+          - 'null'
+          format: uuid
+          description: The cost this replaced. Costs are never overwritten in place.
+    CostCoverage:
+      type: object
+      required:
+      - period
+      - coverage
+      - units_with_cost
+      - units_total
+      properties:
+        period:
+          $ref: '#/components/schemas/Period'
+        coverage:
+          type: number
+          minimum: 0
+          maximum: 1
+        units_with_cost:
+          type: integer
+          minimum: 0
+        units_total:
+          type: integer
+          minimum: 0
+        skus_missing_cost:
+          type: integer
+          minimum: 0
+        top_missing:
+          type: array
+          description: The products whose missing cost is suppressing the most figures.
+          items:
+            type: object
+            properties:
+              sku_id:
+                type: string
+                format: uuid
+              product_title:
+                type:
+                - string
+                - 'null'
+              units:
+                type: integer
+                minimum: 0
+              gross_sales:
+                $ref: '#/components/schemas/Money'
+    Discrepancy:
+      type: object
+      required:
+      - id
+      - kind
+      - entity_type
+      - status
+      - opened_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          enum:
+          - product_code
+          - order_reference
+          - transaction_reference
+          - amount
+          - return_unmatched
+          - duplicate
+        entity_type:
+          type: string
+        entity_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        field:
+          type:
+          - string
+          - 'null'
+        tiktok_value:
+          type:
+          - string
+          - 'null'
+        seller_value:
+          type:
+          - string
+          - 'null'
+        applied_value:
+          type:
+          - string
+          - 'null'
+          description: 'What MyShopEdge used. TikTok takes precedence while a discrepancy is open, so
+
+            this normally equals `tiktok_value`.
+
+            '
+        status:
+          type: string
+          enum:
+          - open
+          - resolved
+        resolution:
+          type:
+          - string
+          - 'null'
+          enum:
+          - accepted_tiktok
+          - corrected_seller
+          - explained
+          - null
+        note:
+          type:
+          - string
+          - 'null'
+        effect:
+          type:
+          - object
+          - 'null'
+          description: What the discrepancy changes if resolved the other way.
+        opened_at:
+          type: string
+          format: date-time
+        resolved_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+    OtherChannelSales:
+      type: object
+      required:
+      - month
+      - channel
+      - gross
+      - entered_at
+      properties:
+        month:
+          type: string
+          pattern: ^\d{4}-(0[1-9]|1[0-2])$
+        channel:
+          type: string
+        gross:
+          $ref: '#/components/schemas/Money'
+        entered_at:
+          type: string
+          format: date-time
+    ShopExportJob:
+      allOf:
+      - $ref: '#/components/schemas/ExportJob'
+      - type: object
+        required:
+        - kind
+        - format
+        - basis
+        - period_start
+        - period_end
+        properties:
+          kind:
+            type: string
+            enum:
+            - month_summary
+            - ledger
+            - accountant
+            - transactions
+          format:
+            type: string
+            enum:
+            - xlsx
+            - csv
+          basis:
+            $ref: '#/components/schemas/Basis'
+          period_start:
+            type: string
+            format: date
+          period_end:
+            type: string
+            format: date
+          row_count:
+            type:
+            - integer
+            - 'null'
+    VatMonitor:
+      type: object
+      required:
+      - as_of
+      - rolling_twelve_month_turnover
+      - threshold
+      - above_threshold
+      - includes_other_channels
+      properties:
+        as_of:
+          type: string
+          format: date-time
+        rolling_twelve_month_turnover:
+          $ref: '#/components/schemas/Money'
+        threshold:
+          $ref: '#/components/schemas/Money'
+        headroom:
+          $ref: '#/components/schemas/Money'
+        above_threshold:
+          type: boolean
+        includes_other_channels:
+          type: boolean
+          description: 'False when the seller has entered no other-channel figures. The turnover is then
+
+            TikTok only and understates the threshold test, which must be said on screen.
+
+            '
+        months:
+          type: array
+          maxItems: 12
+          items:
+            type: object
+            properties:
+              month:
+                type: string
+                pattern: ^\d{4}-(0[1-9]|1[0-2])$
+              tiktok_gross:
+                $ref: '#/components/schemas/Money'
+              other_channels_gross:
+                $ref: '#/components/schemas/Money'
+        rule_key:
+          type: string
+        reviewed_at:
+          type:
+          - string
+          - 'null'
+          format: date
+    SetAside:
+      type: object
+      required:
+      - as_of
+      - amount
+      - confidence
+      properties:
+        as_of:
+          type: string
+          format: date-time
+        amount:
+          type:
+          - object
+          - 'null'
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          description: Null when the figure cannot be produced honestly.
+        unavailable_reason:
+          type:
+          - string
+          - 'null'
+          enum:
+          - incomplete_costs
+          - no_tax_profile
+          - insufficient_history
+          - null
+        confidence:
+          $ref: '#/components/schemas/Confidence'
+        period:
+          $ref: '#/components/schemas/Period'
+        basis_of_estimate:
+          type: array
+          description: The figures and rules behind the estimate, so it can be checked.
+          items:
+            type: object
+            properties:
+              label:
+                type: string
+              amount:
+                type:
+                - object
+                - 'null'
+                allOf:
+                - $ref: '#/components/schemas/Money'
+              rule_key:
+                type:
+                - string
+                - 'null'
