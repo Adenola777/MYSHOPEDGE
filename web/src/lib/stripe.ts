@@ -10,6 +10,8 @@ if (!key) {
 }
 
 export const stripe = new Stripe(key, {
-  apiVersion: "2025-08-27.basil",
+  // Pinned deliberately. The version is tied to the SDK major, so upgrading the stripe
+  // package is a decision about API behaviour and not only about dependencies.
+  apiVersion: "2025-02-24.acacia",
   appInfo: { name: "MyShopEdge", url: "https://myshopedge.com" },
 });

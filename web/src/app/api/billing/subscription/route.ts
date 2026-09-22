@@ -133,8 +133,9 @@ async function findOrCreateCustomer(
     query: `metadata['account_id']:'${account.id}'`,
     limit: 1,
   });
-  if (existing.data.length > 0) {
-    return existing.data[0];
+  const found = existing.data[0];
+  if (found) {
+    return found;
   }
   return stripe.customers.create(
     {
