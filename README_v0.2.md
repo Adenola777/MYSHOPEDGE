@@ -1,33 +1,40 @@
 # MyShopEdge v0.3, work in progress
 
-Prepared 21 September 2026, revised 22 September 2026. This package closes the gaps found
-in the specification audit of the v0.1 drafts dated 20 September 2026, and carries the
-platform and TikTok integration decisions taken since.
+Prepared 21 September 2026, revised 22 September 2026 at 22:00. This package closes the
+gaps found in the specification audit of the v0.1 drafts dated 20 September 2026, and
+carries every platform, integration and commercial decision taken since.
 
-## What this package holds
+## What this repository holds
 
 | Folder | Contents |
 |---|---|
-| `originals/` | The ten v0.1 files, unchanged, for comparison |
-| `specifications/` | The new specification text, by action, ready to merge into the documents |
-| `schema/` | The consolidated v0.2 schema and migrations 0001 to 0011 |
-| `wireframes/figures/` | The wireframe figures, rendered at 2x |
+| `A2` to `A16` | The rulings, one document per action |
+| `schema/` | The consolidated v0.2 schema and migrations 0001 to 0018 |
+| `api/` | `openapi.yaml`, 58 operations across 53 paths, 59 schemas |
+| `service/` | The Python service. FastAPI, psycopg 3, PyJWT |
+| `web/` | The Next.js front end, JavaScript with JSDoc |
+| `testdata/` | The payload generator, the ingest, and the seeded rows |
+| `design/` | The Figma change set that is written and not yet applied |
 
-## Progress against the audit
+## Progress by action
 
-| Audit question | Action | Status |
+| Action | Subject | Status |
 |---|---|---|
-| 1. Per-product deductions grid and the Excel ledger | Action 2 | Specified |
-| 2. Returns, stock and the account | Action 4 | Specified |
-| 3. Every screen from onboarding to account closure | Action 3 | Specified and drawn. Seventeen screens, nine figures |
-| 4. Logo integration | Action 7 | Complete. Fourteen vector files derived from the master |
-| 5b. Daily, weekly and monthly views | Action 5 | Specified |
-| Schema hardening | Action 6 | Specified and applied |
-| Terminology standard | Action 8 | Specified and applied |
-| Identifiers and reconciliation | Action 9 | Specified and applied |
-| Platform, region and identity | Action 10 | Decided and provisioned |
-| Statement ingestion and scope rulings | Action 11 | Specified |
-| Rebuild the ten documents | Action 12 | Not started |
+| 2 | Per-product deductions grid and the Excel ledger | Specified |
+| 3 | Every screen from onboarding to account closure | Specified and drawn |
+| 4 | Returns, stock and the account | Specified |
+| 5 | Daily, weekly and monthly views | Specified |
+| 6 | Schema hardening | Specified and applied |
+| 7 | Logo integration | Complete. 15 vector files derived from the master |
+| 8 | Terminology standard | Specified and applied |
+| 9 | Identifiers and reconciliation | Specified and applied |
+| 10 | Platform, region and identity | Decided and provisioned |
+| 11 | Statement ingestion and scope rulings | Specified |
+| 12 | Test data requirements | Built. 118 ledger entries, five assertions passing |
+| 13 | Stack and client contract | Decided. Python and JavaScript, no TypeScript |
+| 14 | The onboarding screen set | Specified. **Section 14.1 and 14.3 are now wrong, see below** |
+| 15 | Four screen rulings, the copy pass, VAT | Specified and applied |
+| 16 | The six price sheet rows | Specified. Migration 0018 written, not applied |
 
 ## Decisions taken, and open to reversal
 
@@ -41,8 +48,11 @@ platform and TikTok integration decisions taken since.
    which NFR-10 requires. The original orange is kept for large graphics.
 4. **Golden dataset numbering.** G10 was already in use for the workbook discrepancy
    dataset. The new datasets are G11, from Action 2, and G12, from Action 4.
-5. **Sign-in pages may be hosted by the identity provider.** Settled by Action 10. Neon
-   Auth provides the hosted pages, so MyShopEdge does not build its own.
+5. **Sign-in pages are hosted by the identity provider.** Settled by Action 10.
+   **Correction of 22 September:** the provider is Better Auth, delivered as Neon Auth, and
+   not Stack Auth as A14 states. Tokens are EdDSA over Ed25519, expire in fifteen minutes,
+   and carry no custom claims. A14 sections 14.1 and 14.3 describe the wrong provider and
+   have not yet been rewritten.
 6. **The database is Neon, in London.** Action 10. Plain PostgreSQL 16 with the four
    hand-rolled roles and FORCE row level security applying verbatim.
 7. **Bank reconciliation is out of scope.** Action 11, against PRD 6.2. The consequence is
@@ -50,21 +60,36 @@ platform and TikTok integration decisions taken since.
 8. **The TikTok invoice stays**, as an identifier for reconciliation. The VAT reclaim
    wording comes off the screen, because PRD 6.2 excludes VAT accounting for registered
    sellers.
+9. **Where TikTok and a seller's own document disagree, TikTok is taken as correct.**
+10. **Cost files are Excel and CSV only.** A15.1. Word and PDF carry no columns, so reading
+    a cost from one means guessing, and a wrong cost is worse than a missing one.
+11. **The three prices are exclusive of VAT.** A15.6. Starter, Growth and Pro are £9.99,
+    £24.99 and £49.99 plus VAT. Stripe prices are immutable once created, so
+    `tax_behavior: "exclusive"` has to be right first time.
+12. **History is twenty-four months on every plan**, not tiered. A16.2. Whether TikTok
+    exposes two years of statements is unverified and cannot be verified without a shop.
+13. **The order limit is enforced softly.** A16.3. The count is shown at eighty per cent
+    and at a hundred, the larger plan is offered, and nothing stops. No month closes, no
+    export is withheld, no figure stops updating.
 
 ## Open items, by owner
 
-| Item | Owner |
-|---|---|
-| A UK shop, live or sandbox, for the integration spike | Adenola |
-| Whether the TikTok invoice number is reachable at all, from Seller Center | Adenola |
-| Whether Vercel's `lhr1` guarantees data at rest in London | Confirm before launch |
-| Immutable storage for the invoice documents, which Vercel Blob does not offer | Deferred, see A10.8 |
-| A pre-existing Vercel blob store named `myshopedge-seller-files`, provenance unknown | Identify or remove |
-| Backup retention, capped at six hours on the current Neon plan | Commercial |
-| Where Stack Auth processes identity data | Confirm before launch |
-| Whether Neon Auth offers multi-factor authentication | Confirm |
-| Request and response schemas for the 51 REST endpoints | Specification |
-| Hosting, since Vercel and AWS London containers are not the same answer | Decision |
+| Item | Owner | Blocks |
+|---|---|---|
+| A UK shop, live or sandbox, for the integration spike | Adenola | Every claim the ingestion makes |
+| Whether TikTok exposes twenty-four months of statements | Adenola | Whether A16.2 can be delivered |
+| Whether the TikTok invoice number is reachable from Seller Center | Adenola | Reconciliation identifier |
+| The literal column labels on a settlement export | Blocked on the shop | A8 section 3.5 |
+| Which Neon project the product runs on | Adenola | Applying migrations 0017 and 0018 |
+| Repository access for `Adenola777/My-ShopEdge` | Adenola | Fifteen commits that cannot be pushed |
+| Backup retention, capped at six hours on the current Neon plan | Commercial | Nothing yet |
+| Immutable storage for the invoice documents | Deferred, see A10.8 | Nothing yet |
+| A Vercel blob store named `myshopedge-seller-files`, provenance unknown | Identify or remove | Nothing yet |
+| Whether Vercel `lhr1` guarantees data at rest in London | Confirm before launch | Data protection alignment |
+| Where Better Auth processes identity data | Confirm before launch | Data protection alignment |
+| Whether the identity provider offers a second factor | Confirm | A14 section 14.7 |
+| Rewriting A14 for Better Auth | Specification | Nothing, but the document is wrong |
+| Eight screens specified before the 22 September rulings | Specification | S9, S10, S11, S14, S22, S23, S25, S26 |
 
 ## Counts
 
@@ -74,13 +99,31 @@ platform and TikTok integration decisions taken since.
 | Of which Must | 64 | 78 |
 | Test cases | 84 | 107 |
 | Golden datasets | 10 | 12 |
-| Designed screens | 15 | 32 |
-| Wireframe figures | 8 | 18 |
-| Schema migrations | 0 | 11 |
+| Screens ruled | 15 | 39 |
+| Screens drawn in Figma | 0 | 18 |
+| Schema migrations | 0 | 18 |
+| API operations specified | 0 | 58 |
+
+## Build status
+
+The specification is nearly complete. The application is not.
+
+| Layer | State |
+|---|---|
+| Brand, terminology, screen specification, data model, API contract | Done |
+| Schema applied | Through 0016 on all three branches. 0017 on development only. 0018 nowhere |
+| Backend | 4 of 58 routes. Billing and health |
+| Authentication | Written and broken. It verifies ES256 and RS256, the provider signs EdDSA |
+| Billing | Screens built. The three Stripe products have never been created |
+| TikTok integration | Proved against generated fixtures only |
+| Front end | 2 pages of 39 screens |
+| Deployment | Vercel chosen. Nothing deployed |
+| Tests | 1 file, which tested the wrong signing algorithm |
 
 ## Scope check
 
 Every screen added in Action 3, S16 to S32, was tested against PRD section 6.1 and maps to
-an epic that is in the MVP. Nothing added in Actions 2 to 11 falls inside PRD 6.2, with the
-two exceptions ruled on above: bank reconciliation, which has been withdrawn, and the VAT
-reclaim wording, which has been removed while the invoice identifier is kept.
+an epic that is in the MVP. Nothing added in Actions 2 to 16 falls inside PRD 6.2, with
+three exceptions ruled on above: bank reconciliation, which has been withdrawn, the VAT
+reclaim wording, which has been removed while the invoice identifier is kept, and four
+price sheet rows ruled out of the MVP in A16.
