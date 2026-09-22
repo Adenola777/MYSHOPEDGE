@@ -15,10 +15,9 @@ info:
     \ act on states its basis, its period and its cost coverage, and says\n   whether it is confirmed,\
     \ estimated or incomplete. A figure that cannot be trusted\n   returns null with a reason rather than\
     \ a zero.\n\n4. **Errors are problem details with a stable code.** The `code` field is the\n   contract.\
-    \ The `title` and `detail` are for humans and may change wording.\n\n\n    Coverage: 47 of the 50\
-    \ endpoints in the catalogue. The three not present are the\n    TikTok webhook receiver, which needs\
-    \ a subscription design, and the two cost upload\n    endpoints that perform SKU matching, which need\
-    \ a ruling on an empty seller SKU.\n"
+    \ The `title` and `detail` are for humans and may change wording.\n\n\n    Coverage: 58 of the 59\
+    \ endpoints in the catalogue. The one not present is the\n    TikTok webhook receiver, which needs\
+    \ a subscription design and is deferred.\n"
   contact:
     name: MyShopEdge
   license:
@@ -728,6 +727,35 @@ paths:
         '422':
           $ref: '#/components/responses/ValidationFailed'
   /shops/{shopId}/cost-uploads:
+    get:
+      operationId: listCostUploads
+      summary: Cost files the seller has uploaded
+      tags:
+      - Costs
+      parameters:
+      - $ref: '#/components/parameters/ShopId'
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Uploads, most recent first
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/CursorPage'
+                - type: object
+                  required:
+                  - uploads
+                  properties:
+                    uploads:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/CostUploadSummary'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ForbiddenShop'
     post:
       tags:
       - Costs
@@ -1146,7 +1174,6 @@ paths:
                   enum:
                   - month_summary
                   - ledger
-                  - accountant
                   - transactions
                 format:
                   type: string
@@ -1547,13 +1574,32 @@ paths:
           - return_cost
           - write_off
           - adjustment
+          - reserve
       - name: sku_id
         in: query
         schema:
           type: string
           format: uuid
+      - name: product_id
+        in: query
+        description: Every entry for a product, across all of its variants.
+        schema:
+          type: string
+          format: uuid
       - name: order_id
         in: query
+        schema:
+          type: string
+          format: uuid
+      - name: return_id
+        in: query
+        description: The entries a return produced, its refund and its costs together.
+        schema:
+          type: string
+          format: uuid
+      - name: settlement_id
+        in: query
+        description: The entries behind one statement, which is what the payout screen links to.
         schema:
           type: string
           format: uuid
@@ -1982,6 +2028,400 @@ paths:
           $ref: '#/components/responses/Unauthenticated'
         '403':
           $ref: '#/components/responses/ForbiddenShop'
+  /shops/{shopId}/settlements:
+    get:
+      operationId: listSettlements
+      summary: The statements TikTok has issued
+      description: 'Each row states what the statement says, what was withheld as a reserve,
+
+        and what will actually reach the bank. Those three figures differ whenever
+
+        TikTok holds funds, and a seller who sees only the first will believe they
+
+        have been underpaid.
+
+        '
+      tags:
+      - Money
+      parameters:
+      - $ref: '#/components/parameters/ShopId'
+      - $ref: '#/components/parameters/PeriodFrom'
+      - $ref: '#/components/parameters/PeriodTo'
+      - name: payment_status
+        in: query
+        schema:
+          type: string
+          enum:
+          - PAID
+          - PROCESSING
+          - FAILED
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Statements, most recent first
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/CursorPage'
+                - type: object
+                  required:
+                  - settlements
+                  properties:
+                    settlements:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/Settlement'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ForbiddenShop'
+  /shops/{shopId}/settlements/{settlementId}:
+    get:
+      operationId: getSettlement
+      summary: One statement, and whether it reconciles
+      description: 'Carries the reconciliation the product exists to perform. `unexplained_minor`
+
+        compares the statement against the entries derived from the orders behind it.
+
+        A non-zero value is the defect this product is built to catch, and it is shown
+
+        to the seller rather than hidden.
+
+        '
+      tags:
+      - Money
+      parameters:
+      - $ref: '#/components/parameters/ShopId'
+      - name: settlementId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: The statement and its reconciliation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettlementDetail'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ForbiddenShop'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /shops/{shopId}/settlements/{settlementId}/invoice:
+    put:
+      operationId: recordSettlementInvoice
+      summary: Record the TikTok fee invoice number
+      description: 'No TikTok finance endpoint returns the fee invoice number. It appears
+
+        in Seller Center under Finance, Bills, Invoice, and the seller enters it
+
+        here so the statement can be tied to the document their accountant will ask
+
+        for. This endpoint exists because the API has no path to it, not because
+
+        typing is preferred.
+
+        '
+      tags:
+      - Money
+      parameters:
+      - $ref: '#/components/parameters/ShopId'
+      - name: settlementId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - invoice_number
+              properties:
+                invoice_number:
+                  type: string
+                  maxLength: 64
+                gross:
+                  $ref: '#/components/schemas/Money'
+                net:
+                  $ref: '#/components/schemas/Money'
+                vat:
+                  $ref: '#/components/schemas/Money'
+      responses:
+        '200':
+          description: Recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Settlement'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ForbiddenShop'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+  /shops/{shopId}/other-sales:
+    get:
+      operationId: listOtherChannelSales
+      summary: Monthly sales entered from outside TikTok
+      description: 'S24 shows the months already entered. Without this the screen can write
+
+        a month and cannot read one back.
+
+        '
+      tags:
+      - Money
+      parameters:
+      - $ref: '#/components/parameters/ShopId'
+      - $ref: '#/components/parameters/PeriodFrom'
+      - $ref: '#/components/parameters/PeriodTo'
+      responses:
+        '200':
+          description: Months entered
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - months
+                properties:
+                  months:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/OtherChannelMonth'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ForbiddenShop'
+  /shops/{shopId}/cost-uploads/{uploadId}/match:
+    post:
+      operationId: matchCostUpload
+      summary: Match the rows of an upload to SKUs
+      description: 'Matching never creates a SKU. SKUs exist because TikTok returned them.
+
+        A row naming a SKU TikTok has not returned is reported as unmatched and is
+
+        left alone. Where TikTok returns an empty `seller_sku`, no value is invented:
+
+        matching falls back to TikTok''s own `sku_id`, and failing that the seller
+
+        attaches the cost by hand on S20 or S21. Nothing is applied by this call.
+
+        '
+      tags:
+      - Costs
+      parameters:
+      - $ref: '#/components/parameters/ShopId'
+      - $ref: '#/components/parameters/UploadId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: The match result, for the seller to review
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CostMatchResult'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ForbiddenShop'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+  /shops/{shopId}/cost-uploads/{uploadId}/apply:
+    post:
+      operationId: applyCostUpload
+      summary: Apply the matched rows
+      description: 'Applies only the rows the seller confirmed. Unmatched and duplicate rows
+
+        stay unapplied and stay visible. Nothing is applied before this call.
+
+        '
+      tags:
+      - Costs
+      parameters:
+      - $ref: '#/components/parameters/ShopId'
+      - $ref: '#/components/parameters/UploadId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - apply_row_ids
+              properties:
+                apply_row_ids:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+      responses:
+        '200':
+          description: Applied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CostMatchResult'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ForbiddenShop'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+  /billing/plans:
+    get:
+      operationId: listPlans
+      summary: The plans on sale
+      description: 'The price is served by the API rather than held in the client, so a
+
+        price change does not require a client release. A plan lists only what the
+
+        product does today.
+
+        '
+      tags:
+      - Billing
+      security: []
+      responses:
+        '200':
+          description: Plans
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - trial_days
+                - plans
+                properties:
+                  trial_days:
+                    type: integer
+                    example: 14
+                  plans:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Plan'
+  /billing/subscription:
+    get:
+      operationId: getSubscription
+      summary: The account's subscription
+      tags:
+      - Billing
+      responses:
+        '200':
+          description: The subscription, or null before one exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+    post:
+      operationId: startTrial
+      summary: Start the free trial and verify the card
+      description: 'Creates a subscription with a trial and no charge. The response carries
+
+        the client secret of a SetupIntent, and confirming that intent in the browser
+
+        is where Strong Customer Authentication happens. The mandate recorded at that
+
+        moment is what allows the first charge after the trial to be taken off session.
+
+        A trial that reaches its end with no usable card is cancelled rather than left
+
+        owing.
+
+
+        The request names a plan. It never carries a price, because a client that could
+
+        name a price could name the wrong one.
+
+        '
+      tags:
+      - Billing
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - plan
+              properties:
+                plan:
+                  type: string
+                  enum:
+                  - starter
+                  - growth
+                  - pro
+      responses:
+        '200':
+          description: The trial has started, or a card is required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrialStart'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '402':
+          description: The card was declined
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+  /webhooks/stripe:
+    post:
+      operationId: receiveStripeWebhook
+      summary: Stripe events
+      description: 'Authenticated by the Stripe signature header rather than by a bearer
+
+        token, which is why the security requirement is empty. The events that matter
+
+        are `invoice.payment_failed`, which is what moves an account towards suspended,
+
+        and `customer.subscription.updated` and `customer.subscription.deleted`.
+
+        Delivery is at least once, so every handler is idempotent on the event id.
+
+        '
+      tags:
+      - Billing
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Received
+        '400':
+          description: The signature did not verify
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
 components:
   securitySchemes:
     bearerAuth:
@@ -2156,6 +2596,335 @@ components:
           schema:
             $ref: '#/components/schemas/Problem'
   schemas:
+    Settlement:
+      type: object
+      description: 'One TikTok statement. Three money figures sit side by side on purpose.
+
+        `statement_amount` is what the statement says, `total_reserve` is what TikTok
+
+        withheld under its reserve policy, and `payable_amount` is what reaches the
+
+        bank. Only the last one will match the seller''s bank line.
+
+        '
+      required:
+      - id
+      - tiktok_statement_id
+      - statement_time
+      - activity_date
+      - payment_status
+      - statement_amount
+      properties:
+        id:
+          type: string
+          format: uuid
+        tiktok_statement_id:
+          type: string
+        tiktok_payment_id:
+          type: [string, 'null']
+        settlement_reference:
+          type: [string, 'null']
+          description: 'The reference on the seller''s bank line. No TikTok endpoint returns
+            it, so it is null until bank reconciliation comes into scope.'
+        statement_time:
+          type: string
+          format: date-time
+        activity_date:
+          type: string
+          format: date
+          description: The London day the statement covers, which is the day before statement_time.
+        paid_at:
+          type: [string, 'null']
+          format: date-time
+        payment_status:
+          type: string
+          enum:
+          - PAID
+          - PROCESSING
+          - FAILED
+        statement_amount:
+          $ref: '#/components/schemas/Money'
+        total_reserve:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          description: Negative where funds are withheld, positive where they are released.
+        payable_amount:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          description: What TikTok will actually pay. Null where TikTok returned no value.
+        tiktok_invoice_number:
+          type: [string, 'null']
+    SettlementComponents:
+      type: object
+      description: The four figures the statement is made of, as TikTok states them.
+      required:
+      - net_sales
+      - fees
+      - shipping_cost
+      - adjustments
+      properties:
+        net_sales:
+          $ref: '#/components/schemas/Money'
+        fees:
+          $ref: '#/components/schemas/Money'
+        shipping_cost:
+          $ref: '#/components/schemas/Money'
+        adjustments:
+          $ref: '#/components/schemas/Money'
+        difference:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          description: 'The statement total less the sum of its components. Anything other
+            than zero means TikTok''s own statement does not add up.'
+        region_mapping_conflict:
+          type: boolean
+          description: 'True when the statement carries both a local and a cross-border
+            shape, which means the region branch chose wrongly.'
+    SettlementDetail:
+      type: object
+      required:
+      - settlement
+      - components
+      - reconciliation
+      properties:
+        settlement:
+          $ref: '#/components/schemas/Settlement'
+        components:
+          $ref: '#/components/schemas/SettlementComponents'
+        reconciliation:
+          $ref: '#/components/schemas/SettlementReconciliation'
+        orders:
+          type: array
+          description: The orders this statement settled.
+          items:
+            type: object
+            required:
+            - order_id
+            - tiktok_order_id
+            properties:
+              order_id:
+                type: string
+                format: uuid
+              tiktok_order_id:
+                type: string
+              settled:
+                $ref: '#/components/schemas/Money'
+    SettlementReconciliation:
+      type: object
+      description: 'Whether the payout agrees with the orders behind it. A reserve is not
+
+        one of the statement''s components, so it is excluded from net_proceeds and
+
+        reported separately. A statement can reconcile exactly and still pay less than
+
+        it states.
+
+        '
+      required:
+      - orders_settled
+      - net_proceeds
+      - unexplained
+      properties:
+        orders_settled:
+          type: integer
+        net_proceeds:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          description: The sum of the ledger entries carrying this settlement, excluding
+            the payout and any reserve.
+        invoiced_gross:
+          $ref: '#/components/schemas/Money'
+        unexplained:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          description: 'Zero on a statement that agrees with its orders. Anything else is
+            shown to the seller rather than hidden.'
+    OtherChannelMonth:
+      type: object
+      required:
+      - month
+      - amount
+      properties:
+        month:
+          type: string
+          format: date
+          description: The first day of the London month.
+        amount:
+          $ref: '#/components/schemas/Money'
+        updated_at:
+          type: string
+          format: date-time
+    CostUploadSummary:
+      type: object
+      required:
+      - id
+      - filename
+      - status
+      - uploaded_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        filename:
+          type: string
+        status:
+          type: string
+          enum:
+          - uploaded
+          - mapped
+          - matched
+          - applied
+          - failed
+        uploaded_at:
+          type: string
+          format: date-time
+        rows_total:
+          type: integer
+        rows_matched:
+          type: integer
+        rows_unmatched:
+          type: integer
+        rows_duplicate:
+          type: integer
+    CostMatchResult:
+      type: object
+      required:
+      - upload_id
+      - rows_total
+      - rows_matched
+      - rows_unmatched
+      - rows_duplicate
+      - rows
+      properties:
+        upload_id:
+          type: string
+          format: uuid
+        rows_total:
+          type: integer
+        rows_matched:
+          type: integer
+        rows_unmatched:
+          type: integer
+        rows_duplicate:
+          type: integer
+        rows:
+          type: array
+          items:
+            type: object
+            required:
+            - row_id
+            - outcome
+            properties:
+              row_id:
+                type: string
+                format: uuid
+              outcome:
+                type: string
+                enum:
+                - matched
+                - unmatched
+                - duplicate
+              matched_on:
+                type: [string, 'null']
+                enum:
+                - seller_sku
+                - tiktok_sku_id
+                - null
+                description: 'Which key matched. Null on an unmatched row. No SKU is ever
+                  created by a cost upload.'
+              sku_id:
+                type: [string, 'null']
+                format: uuid
+              seller_sku:
+                type: [string, 'null']
+              unit_cost:
+                $ref: '#/components/schemas/Money'
+              reason:
+                type: [string, 'null']
+                description: Why the row did not match, in words a seller can act on.
+    Plan:
+      type: object
+      required:
+      - slug
+      - name
+      - strapline
+      - price
+      - order_limit
+      - history_months
+      - features
+      properties:
+        slug:
+          type: string
+          enum:
+          - starter
+          - growth
+          - pro
+        name:
+          type: string
+        strapline:
+          type: string
+        price:
+          $ref: '#/components/schemas/Money'
+        order_limit:
+          type: integer
+        history_months:
+          type: integer
+        features:
+          type: array
+          items:
+            type: string
+        highlight:
+          type: boolean
+    Subscription:
+      type: object
+      required:
+      - status
+      properties:
+        status:
+          type: string
+          enum:
+          - none
+          - trialing
+          - active
+          - past_due
+          - canceled
+        plan:
+          type: [string, 'null']
+          enum:
+          - starter
+          - growth
+          - pro
+          - null
+        trial_ends_at:
+          type: [string, 'null']
+          format: date-time
+        current_period_end:
+          type: [string, 'null']
+          format: date-time
+        card_last4:
+          type: [string, 'null']
+        cancel_at_period_end:
+          type: boolean
+    TrialStart:
+      type: object
+      required:
+      - status
+      - subscription_id
+      properties:
+        status:
+          type: string
+          enum:
+          - requires_card
+          - trialing
+        subscription_id:
+          type: string
+        trial_ends_at:
+          type: [string, 'null']
+          format: date-time
+        client_secret:
+          type: [string, 'null']
+          description: 'The SetupIntent to confirm in the browser. Null when the account
+            already has a usable card and the trial has started.'
     Money:
       type: object
       description: 'An amount in integer minor units with its currency. Never a decimal, never a
@@ -2819,7 +3588,13 @@ components:
           description: Until this moment the deletion can still be cancelled.
     LedgerCategory:
       type: string
-      description: 'The eighteen categories in `ledger_entries.category`. `unmapped_fee` carries a fee
+      description: 'The twenty-one categories in `ledger_entries.category`. `platform_adjustment`
+
+        carries one of TikTok''s twenty-one documented statement adjustment types, with its
+
+        verbatim type in `tiktok_fee_type`, because a seller must be able to reconcile
+
+        against TikTok''s own screen. `unmapped_fee` carries a fee
 
         TikTok returned that has no category yet, with its TikTok field name kept verbatim
 
@@ -2839,7 +3614,10 @@ components:
       - fbt_operations_fee
       - fbt_shipping_fee
       - fbt_storage_fee
+      - platform_adjustment
       - unmapped_fee
+      - reserve_withheld
+      - reserve_released
       - cost_of_goods_sold
       - seller_shipping
       - return_shipping
@@ -4053,7 +4831,6 @@ components:
             enum:
             - month_summary
             - ledger
-            - accountant
             - transactions
           format:
             type: string

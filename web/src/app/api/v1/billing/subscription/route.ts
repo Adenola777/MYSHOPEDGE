@@ -1,5 +1,5 @@
 /**
- * POST /api/billing/subscription
+ * POST /api/v1/billing/subscription, which is `/billing/subscription` in the contract
  *
  * Starts a 14 day trial and verifies the card without charging it.
  *
@@ -24,6 +24,14 @@ import Stripe from "stripe";
 import { PLANS, TRIAL_DAYS, isPlanSlug } from "@/lib/plans";
 import { stripe } from "@/lib/stripe";
 import { requireAccount } from "@/lib/auth";
+import type { components } from "@/lib/api-types";
+
+/**
+ * The response shape comes from the contract rather than from this file. Rule 1 of A13.
+ * If `TrialStart` changes in openapi.yaml and this handler is not updated, the build
+ * fails here rather than in a seller's browser.
+ */
+type TrialStart = components["schemas"]["TrialStart"];
 
 interface Body {
   plan?: unknown;
@@ -98,20 +106,22 @@ export async function POST(request: NextRequest) {
     if (!setupIntent || typeof setupIntent === "string" || !setupIntent.client_secret) {
       // Stripe returns no setup intent when the customer already has a usable card on
       // file. That is a valid outcome and the trial has started.
-      return NextResponse.json({
+      const started: TrialStart = {
         status: "trialing",
         subscription_id: subscription.id,
         trial_ends_at: isoOrNull(subscription.trial_end),
         client_secret: null,
-      });
+      };
+      return NextResponse.json(started);
     }
 
-    return NextResponse.json({
+    const needsCard: TrialStart = {
       status: "requires_card",
       subscription_id: subscription.id,
       trial_ends_at: isoOrNull(subscription.trial_end),
       client_secret: setupIntent.client_secret,
-    });
+    };
+    return NextResponse.json(needsCard);
   } catch (error) {
     if (error instanceof Stripe.errors.StripeError) {
       // Stripe's own message is shown only when it is written for a cardholder.

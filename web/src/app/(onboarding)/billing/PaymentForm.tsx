@@ -42,7 +42,7 @@ export function PaymentForm() {
     setBusy(true);
     setError(null);
     try {
-      const response = await fetch("/api/billing/subscription", {
+      const response = await fetch("/api/v1/billing/subscription", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ plan, idempotencyKey }),

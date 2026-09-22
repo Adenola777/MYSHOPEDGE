@@ -358,7 +358,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** Cost files the seller has uploaded */
+        get: operations["listCostUploads"];
         put?: never;
         /**
          * Create a cost upload and return a signed URL
@@ -1009,10 +1010,369 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/shops/{shopId}/settlements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The statements TikTok has issued
+         * @description Each row states what the statement says, what was withheld as a reserve,
+         *     and what will actually reach the bank. Those three figures differ whenever
+         *     TikTok holds funds, and a seller who sees only the first will believe they
+         *     have been underpaid.
+         */
+        get: operations["listSettlements"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/shops/{shopId}/settlements/{settlementId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One statement, and whether it reconciles
+         * @description Carries the reconciliation the product exists to perform. `unexplained_minor`
+         *     compares the statement against the entries derived from the orders behind it.
+         *     A non-zero value is the defect this product is built to catch, and it is shown
+         *     to the seller rather than hidden.
+         */
+        get: operations["getSettlement"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/shops/{shopId}/settlements/{settlementId}/invoice": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Record the TikTok fee invoice number
+         * @description No TikTok finance endpoint returns the fee invoice number. It appears
+         *     in Seller Center under Finance, Bills, Invoice, and the seller enters it
+         *     here so the statement can be tied to the document their accountant will ask
+         *     for. This endpoint exists because the API has no path to it, not because
+         *     typing is preferred.
+         */
+        put: operations["recordSettlementInvoice"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/shops/{shopId}/other-sales": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Monthly sales entered from outside TikTok
+         * @description S24 shows the months already entered. Without this the screen can write
+         *     a month and cannot read one back.
+         */
+        get: operations["listOtherChannelSales"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/shops/{shopId}/cost-uploads/{uploadId}/match": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Match the rows of an upload to SKUs
+         * @description Matching never creates a SKU. SKUs exist because TikTok returned them.
+         *     A row naming a SKU TikTok has not returned is reported as unmatched and is
+         *     left alone. Where TikTok returns an empty `seller_sku`, no value is invented:
+         *     matching falls back to TikTok's own `sku_id`, and failing that the seller
+         *     attaches the cost by hand on S20 or S21. Nothing is applied by this call.
+         */
+        post: operations["matchCostUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/shops/{shopId}/cost-uploads/{uploadId}/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Apply the matched rows
+         * @description Applies only the rows the seller confirmed. Unmatched and duplicate rows
+         *     stay unapplied and stay visible. Nothing is applied before this call.
+         */
+        post: operations["applyCostUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/billing/plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The plans on sale
+         * @description The price is served by the API rather than held in the client, so a
+         *     price change does not require a client release. A plan lists only what the
+         *     product does today.
+         */
+        get: operations["listPlans"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/billing/subscription": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The account's subscription */
+        get: operations["getSubscription"];
+        put?: never;
+        /**
+         * Start the free trial and verify the card
+         * @description Creates a subscription with a trial and no charge. The response carries
+         *     the client secret of a SetupIntent, and confirming that intent in the browser
+         *     is where Strong Customer Authentication happens. The mandate recorded at that
+         *     moment is what allows the first charge after the trial to be taken off session.
+         *     A trial that reaches its end with no usable card is cancelled rather than left
+         *     owing.
+         *
+         *     The request names a plan. It never carries a price, because a client that could
+         *     name a price could name the wrong one.
+         */
+        post: operations["startTrial"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/webhooks/stripe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Stripe events
+         * @description Authenticated by the Stripe signature header rather than by a bearer
+         *     token, which is why the security requirement is empty. The events that matter
+         *     are `invoice.payment_failed`, which is what moves an account towards suspended,
+         *     and `customer.subscription.updated` and `customer.subscription.deleted`.
+         *     Delivery is at least once, so every handler is idempotent on the event id.
+         */
+        post: operations["receiveStripeWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * @description One TikTok statement. Three money figures sit side by side on purpose.
+         *     `statement_amount` is what the statement says, `total_reserve` is what TikTok
+         *     withheld under its reserve policy, and `payable_amount` is what reaches the
+         *     bank. Only the last one will match the seller's bank line.
+         */
+        Settlement: {
+            /** Format: uuid */
+            id: string;
+            tiktok_statement_id: string;
+            tiktok_payment_id?: string | null;
+            /** @description The reference on the seller's bank line. No TikTok endpoint returns it, so it is null until bank reconciliation comes into scope. */
+            settlement_reference?: string | null;
+            /** Format: date-time */
+            statement_time: string;
+            /**
+             * Format: date
+             * @description The London day the statement covers, which is the day before statement_time.
+             */
+            activity_date: string;
+            /** Format: date-time */
+            paid_at?: string | null;
+            /** @enum {string} */
+            payment_status: "PAID" | "PROCESSING" | "FAILED";
+            statement_amount: components["schemas"]["Money"];
+            /** @description Negative where funds are withheld, positive where they are released. */
+            total_reserve?: components["schemas"]["Money"];
+            /** @description What TikTok will actually pay. Null where TikTok returned no value. */
+            payable_amount?: components["schemas"]["Money"];
+            tiktok_invoice_number?: string | null;
+        };
+        /** @description The four figures the statement is made of, as TikTok states them. */
+        SettlementComponents: {
+            net_sales: components["schemas"]["Money"];
+            fees: components["schemas"]["Money"];
+            shipping_cost: components["schemas"]["Money"];
+            adjustments: components["schemas"]["Money"];
+            /** @description The statement total less the sum of its components. Anything other than zero means TikTok's own statement does not add up. */
+            difference?: components["schemas"]["Money"];
+            /** @description True when the statement carries both a local and a cross-border shape, which means the region branch chose wrongly. */
+            region_mapping_conflict?: boolean;
+        };
+        SettlementDetail: {
+            settlement: components["schemas"]["Settlement"];
+            components: components["schemas"]["SettlementComponents"];
+            reconciliation: components["schemas"]["SettlementReconciliation"];
+            /** @description The orders this statement settled. */
+            orders?: {
+                /** Format: uuid */
+                order_id: string;
+                tiktok_order_id: string;
+                settled?: components["schemas"]["Money"];
+            }[];
+        };
+        /**
+         * @description Whether the payout agrees with the orders behind it. A reserve is not
+         *     one of the statement's components, so it is excluded from net_proceeds and
+         *     reported separately. A statement can reconcile exactly and still pay less than
+         *     it states.
+         */
+        SettlementReconciliation: {
+            orders_settled: number;
+            /** @description The sum of the ledger entries carrying this settlement, excluding the payout and any reserve. */
+            net_proceeds: components["schemas"]["Money"];
+            invoiced_gross?: components["schemas"]["Money"];
+            /** @description Zero on a statement that agrees with its orders. Anything else is shown to the seller rather than hidden. */
+            unexplained: components["schemas"]["Money"];
+        };
+        OtherChannelMonth: {
+            /**
+             * Format: date
+             * @description The first day of the London month.
+             */
+            month: string;
+            amount: components["schemas"]["Money"];
+            /** Format: date-time */
+            updated_at?: string;
+        };
+        CostUploadSummary: {
+            /** Format: uuid */
+            id: string;
+            filename: string;
+            /** @enum {string} */
+            status: "uploaded" | "mapped" | "matched" | "applied" | "failed";
+            /** Format: date-time */
+            uploaded_at: string;
+            rows_total?: number;
+            rows_matched?: number;
+            rows_unmatched?: number;
+            rows_duplicate?: number;
+        };
+        CostMatchResult: {
+            /** Format: uuid */
+            upload_id: string;
+            rows_total: number;
+            rows_matched: number;
+            rows_unmatched: number;
+            rows_duplicate: number;
+            rows: {
+                /** Format: uuid */
+                row_id: string;
+                /** @enum {string} */
+                outcome: "matched" | "unmatched" | "duplicate";
+                /**
+                 * @description Which key matched. Null on an unmatched row. No SKU is ever created by a cost upload.
+                 * @enum {string|null}
+                 */
+                matched_on?: "seller_sku" | "tiktok_sku_id" | null;
+                /** Format: uuid */
+                sku_id?: string | null;
+                seller_sku?: string | null;
+                unit_cost?: components["schemas"]["Money"];
+                /** @description Why the row did not match, in words a seller can act on. */
+                reason?: string | null;
+            }[];
+        };
+        Plan: {
+            /** @enum {string} */
+            slug: "starter" | "growth" | "pro";
+            name: string;
+            strapline: string;
+            price: components["schemas"]["Money"];
+            order_limit: number;
+            history_months: number;
+            features: string[];
+            highlight?: boolean;
+        };
+        Subscription: {
+            /** @enum {string} */
+            status: "none" | "trialing" | "active" | "past_due" | "canceled";
+            /** @enum {string|null} */
+            plan?: "starter" | "growth" | "pro" | null;
+            /** Format: date-time */
+            trial_ends_at?: string | null;
+            /** Format: date-time */
+            current_period_end?: string | null;
+            card_last4?: string | null;
+            cancel_at_period_end?: boolean;
+        };
+        TrialStart: {
+            /** @enum {string} */
+            status: "requires_card" | "trialing";
+            subscription_id: string;
+            /** Format: date-time */
+            trial_ends_at?: string | null;
+            /** @description The SetupIntent to confirm in the browser. Null when the account already has a usable card and the trial has started. */
+            client_secret?: string | null;
+        };
         /**
          * @description An amount in integer minor units with its currency. Never a decimal, never a
          *     float. 20.84 pounds is `{"amount_minor": 2084, "currency": "GBP"}`.
@@ -1303,12 +1663,15 @@ export interface components {
             cancel_by?: string | null;
         };
         /**
-         * @description The eighteen categories in `ledger_entries.category`. `unmapped_fee` carries a fee
+         * @description The twenty-one categories in `ledger_entries.category`. `platform_adjustment`
+         *     carries one of TikTok's twenty-one documented statement adjustment types, with its
+         *     verbatim type in `tiktok_fee_type`, because a seller must be able to reconcile
+         *     against TikTok's own screen. `unmapped_fee` carries a fee
          *     TikTok returned that has no category yet, with its TikTok field name kept verbatim
          *     so it can be investigated without a re-sync.
          * @enum {string}
          */
-        LedgerCategory: "gross_sales" | "seller_discount" | "refund" | "platform_commission" | "affiliate_commission" | "transaction_fee" | "smart_promotions_fee" | "shipping_fee" | "return_handling_fee" | "fbt_operations_fee" | "fbt_shipping_fee" | "fbt_storage_fee" | "unmapped_fee" | "cost_of_goods_sold" | "seller_shipping" | "return_shipping" | "stock_written_off" | "settlement";
+        LedgerCategory: "gross_sales" | "seller_discount" | "refund" | "platform_commission" | "affiliate_commission" | "transaction_fee" | "smart_promotions_fee" | "shipping_fee" | "return_handling_fee" | "fbt_operations_fee" | "fbt_shipping_fee" | "fbt_storage_fee" | "platform_adjustment" | "unmapped_fee" | "reserve_withheld" | "reserve_released" | "cost_of_goods_sold" | "seller_shipping" | "return_shipping" | "stock_written_off" | "settlement";
         /** @description One line of the calculator. Never merged with another line. */
         CalculatorLine: {
             /** @description TikTok's own name, or the correct accounting term. Never invented shorthand. */
@@ -1763,7 +2126,7 @@ export interface components {
         };
         ShopExportJob: components["schemas"]["ExportJob"] & {
             /** @enum {string} */
-            kind: "month_summary" | "ledger" | "accountant" | "transactions";
+            kind: "month_summary" | "ledger" | "transactions";
             /** @enum {string} */
             format: "xlsx" | "csv";
             basis: components["schemas"]["Basis"];
@@ -2447,6 +2810,37 @@ export interface operations {
             422: components["responses"]["ValidationFailed"];
         };
     };
+    listCostUploads: {
+        parameters: {
+            query?: {
+                limit?: components["parameters"]["Limit"];
+                /** @description The `next_cursor` from a previous response. Opaque, do not parse. */
+                cursor?: components["parameters"]["Cursor"];
+            };
+            header?: never;
+            path: {
+                /** @description The MyShopEdge shop identifier, not the TikTok shop id. */
+                shopId: components["parameters"]["ShopId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Uploads, most recent first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CursorPage"] & {
+                        uploads: components["schemas"]["CostUploadSummary"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["ForbiddenShop"];
+        };
+    };
     createCostUpload: {
         parameters: {
             query?: never;
@@ -2763,7 +3157,7 @@ export interface operations {
             content: {
                 "application/json": {
                     /** @enum {string} */
-                    kind: "month_summary" | "ledger" | "accountant" | "transactions";
+                    kind: "month_summary" | "ledger" | "transactions";
                     /** @enum {string} */
                     format: "xlsx" | "csv";
                     basis: components["schemas"]["Basis"];
@@ -3138,9 +3532,15 @@ export interface operations {
                 /** @description The `next_cursor` from a previous response. Opaque, do not parse. */
                 cursor?: components["parameters"]["Cursor"];
                 category?: components["schemas"]["LedgerCategory"];
-                entry_type?: "sale" | "platform_deduction" | "refund" | "payout" | "return_cost" | "write_off" | "adjustment";
+                entry_type?: "sale" | "platform_deduction" | "refund" | "payout" | "return_cost" | "write_off" | "adjustment" | "reserve";
                 sku_id?: string;
+                /** @description Every entry for a product, across all of its variants. */
+                product_id?: string;
                 order_id?: string;
+                /** @description The entries a return produced, its refund and its costs together. */
+                return_id?: string;
+                /** @description The entries behind one statement, which is what the payout screen links to. */
+                settlement_id?: string;
             };
             header?: never;
             path: {
@@ -3509,6 +3909,338 @@ export interface operations {
             };
             401: components["responses"]["Unauthenticated"];
             403: components["responses"]["ForbiddenShop"];
+        };
+    };
+    listSettlements: {
+        parameters: {
+            query?: {
+                /** @description Local date, Europe/London. Inclusive. */
+                from?: components["parameters"]["PeriodFrom"];
+                /** @description Local date, Europe/London. Inclusive. */
+                to?: components["parameters"]["PeriodTo"];
+                payment_status?: "PAID" | "PROCESSING" | "FAILED";
+                limit?: components["parameters"]["Limit"];
+                /** @description The `next_cursor` from a previous response. Opaque, do not parse. */
+                cursor?: components["parameters"]["Cursor"];
+            };
+            header?: never;
+            path: {
+                /** @description The MyShopEdge shop identifier, not the TikTok shop id. */
+                shopId: components["parameters"]["ShopId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Statements, most recent first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CursorPage"] & {
+                        settlements: components["schemas"]["Settlement"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["ForbiddenShop"];
+        };
+    };
+    getSettlement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The MyShopEdge shop identifier, not the TikTok shop id. */
+                shopId: components["parameters"]["ShopId"];
+                settlementId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The statement and its reconciliation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettlementDetail"];
+                };
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["ForbiddenShop"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    recordSettlementInvoice: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description A client-generated key. A repeat with the same key returns the first result rather
+                 *     than acting twice. Keys are retained for 24 hours.
+                 */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                /** @description The MyShopEdge shop identifier, not the TikTok shop id. */
+                shopId: components["parameters"]["ShopId"];
+                settlementId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    invoice_number: string;
+                    gross?: components["schemas"]["Money"];
+                    net?: components["schemas"]["Money"];
+                    vat?: components["schemas"]["Money"];
+                };
+            };
+        };
+        responses: {
+            /** @description Recorded */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Settlement"];
+                };
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["ForbiddenShop"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    listOtherChannelSales: {
+        parameters: {
+            query?: {
+                /** @description Local date, Europe/London. Inclusive. */
+                from?: components["parameters"]["PeriodFrom"];
+                /** @description Local date, Europe/London. Inclusive. */
+                to?: components["parameters"]["PeriodTo"];
+            };
+            header?: never;
+            path: {
+                /** @description The MyShopEdge shop identifier, not the TikTok shop id. */
+                shopId: components["parameters"]["ShopId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Months entered */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        months: components["schemas"]["OtherChannelMonth"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["ForbiddenShop"];
+        };
+    };
+    matchCostUpload: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description A client-generated key. A repeat with the same key returns the first result rather
+                 *     than acting twice. Keys are retained for 24 hours.
+                 */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                /** @description The MyShopEdge shop identifier, not the TikTok shop id. */
+                shopId: components["parameters"]["ShopId"];
+                uploadId: components["parameters"]["UploadId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The match result, for the seller to review */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CostMatchResult"];
+                };
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["ForbiddenShop"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    applyCostUpload: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description A client-generated key. A repeat with the same key returns the first result rather
+                 *     than acting twice. Keys are retained for 24 hours.
+                 */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                /** @description The MyShopEdge shop identifier, not the TikTok shop id. */
+                shopId: components["parameters"]["ShopId"];
+                uploadId: components["parameters"]["UploadId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    apply_row_ids: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description Applied */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CostMatchResult"];
+                };
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["ForbiddenShop"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    listPlans: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Plans */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example 14 */
+                        trial_days: number;
+                        plans: components["schemas"]["Plan"][];
+                    };
+                };
+            };
+        };
+    };
+    getSubscription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The subscription, or null before one exists */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Subscription"];
+                };
+            };
+            401: components["responses"]["Unauthenticated"];
+        };
+    };
+    startTrial: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description A client-generated key. A repeat with the same key returns the first result rather
+                 *     than acting twice. Keys are retained for 24 hours.
+                 */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    plan: "starter" | "growth" | "pro";
+                };
+            };
+        };
+        responses: {
+            /** @description The trial has started, or a card is required */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrialStart"];
+                };
+            };
+            401: components["responses"]["Unauthenticated"];
+            /** @description The card was declined */
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    receiveStripeWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            /** @description Received */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The signature did not verify */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
         };
     };
 }
