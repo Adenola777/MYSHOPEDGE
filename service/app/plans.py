@@ -40,7 +40,7 @@ PLANS: dict[str, Plan] = {
         price_minor=999,
         currency="GBP",
         order_limit=100,
-        history_months=12,
+        history_months=24,
         highlight=False,
         price_env_var="STRIPE_PRICE_STARTER",
         features=[
@@ -60,7 +60,7 @@ PLANS: dict[str, Plan] = {
         price_minor=2499,
         currency="GBP",
         order_limit=500,
-        history_months=12,
+        history_months=24,
         highlight=True,
         price_env_var="STRIPE_PRICE_GROWTH",
         features=[
@@ -79,7 +79,7 @@ PLANS: dict[str, Plan] = {
         price_minor=4999,
         currency="GBP",
         order_limit=2000,
-        history_months=12,
+        history_months=24,
         highlight=False,
         price_env_var="STRIPE_PRICE_PRO",
         features=[
@@ -96,15 +96,27 @@ PLAN_ORDER = ["starter", "growth", "pro"]
 # Rows from the commercial price sheet of 22 September 2026 that the MVP does not have.
 # None of these is served to a client. Each needs a specification, a schema change and a
 # test before it can be sold.
-PENDING_SCOPE = [
+# Ruled out of the MVP on 22 September 2026. These are not pending decisions any more.
+# They are recorded here so that nobody advertises them and nobody quietly builds them.
+OUT_OF_MVP = [
     "Expense tracking. The product does not collect overheads, ruled in A8. There is no "
     "table, screen or endpoint.",
     "Multiple stores and channels. PRD 6.2 excludes multi-shop and A12.7 states the "
     "interface must not expose it.",
-    "Historical data tiered at 3, 12 and 24 months. The first sync loads 12 and MON-5 "
-    "requires every loaded month to open and reconcile.",
     "Profit and loss reporting. It appears nowhere in the specification pack.",
-    "Order limits as an enforced quota. Nothing counts orders per month, so the limits "
-    "above are a commitment rather than a control.",
     "Advanced analytics. Nothing is named, so nothing can be built or tested.",
+]
+
+# Kept under the old name so nothing that imports it breaks.
+PENDING_SCOPE = OUT_OF_MVP
+
+# Ruled in on 22 September 2026, and not built yet. Unlike the list above, these are work.
+#
+# The order limit is the one with a design question still attached. Counting orders is
+# straightforward. What happens when a seller passes the limit is not, and until that is
+# settled the quota cannot be built, because a counter with no defined consequence is not
+# enforcement. See A16.
+IN_SCOPE_NOT_BUILT = [
+    "Order limits as an enforced quota. Nothing counts orders per billing period yet, so "
+    "100, 500 and 2,000 are commitments rather than controls.",
 ]
