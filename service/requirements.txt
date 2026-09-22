@@ -1,0 +1,6 @@
+fastapi>=0.115
+uvicorn[standard]>=0.32
+pydantic>=2.9
+stripe>=11.0
+psycopg[binary,pool]>=3.2
+python-dateutil>=2.9
