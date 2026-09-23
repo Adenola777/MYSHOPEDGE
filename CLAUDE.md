@@ -83,11 +83,11 @@ The specification is close to complete. The application is not. As of 23 Septemb
 | Layer | State |
 |---|---|
 | Rulings, terminology, screens, data model, API contract | Done |
-| Schema | Through 0021 on staging and development, 22 migrations recorded on each. **Production is at 0016 by the ledger**, with 0019's view fix applied by hand and no row for it, and without 0019's `order_quota` view. It is missing 0017, 0018, 0020 and 0021, so `subscriptions` does not exist there and nobody can subscribe |
+| Schema | Through 0021 on all three branches, 22 migrations recorded on each. Production was brought up on 23 September and its schema fingerprint matches staging exactly. See A28.1 |
 | Backend | 10 of 53 contract paths. Health, billing, settlements, records, products, and the two TikTok connection endpoints |
 | Authentication | ES256 verified against the provider's fetched JWKS, email read from `users_sync`, 9 tests passing. No handler has ever been invoked by a test |
 | Billing | Screens built. The three products and prices exist in the live Stripe account as of 23 September. Nothing is wired to them yet |
-| TikTok integration | The authorisation half is built. `app/connections.py` holds both endpoints, the state store is migration 0021, and eleven smoke cases cover them. **The callback cannot complete**, because `GetAuthorizedShops` is signed and this project does not hold TikTok's signing algorithm. `_authorized_shops` is the one place that gap lives and it raises rather than guessing. See A23 and A27 |
+| TikTok integration | Authorisation is built end to end. `app/connections.py` holds both endpoints, the signing algorithm, AES-256-GCM token storage and the state store in migration 0021. Fourteen smoke cases cover it. `_sign` has never made a live call, so the first real request is its test. See A23, A27 and A28 |
 | Front end | 2 pages of 39 screens |
 | Figma | 18 screens drawn, 20 pending, blocked on the Starter plan call limit |
 | Deployment | Vercel chosen for the front end. Nothing deployed. The Python service has no host |
@@ -230,12 +230,12 @@ file inside this repository. `.gitignore` already excludes `.env` and its varian
 | Whether twenty four months of statements exist | The same shop authorisation |
 | The literal column labels on a settlement export | The same shop authorisation |
 | The remaining 20 Figma screens | The Figma Starter plan call limit |
-| Where the Python service runs | A decision nobody has taken. It also decides where `DATABASE_URL` lives |
+| Where the Python service runs | Decided in A28.4: a long-lived container in London, not serverless, because the connection pool and the token refresh both need a process that outlives a request |
 | Whether single factor authentication is acceptable at launch | A commercial and risk decision. Neon Auth offers no second factor and none can be added |
 | The encryption key for `tiktok_connections.access_token_enc`, `refresh_token_enc` and `shop_cipher_enc` | Where the Python service runs. The host decides where a key can live and how it is rotated. `key_version` exists as a column and resolves to nothing, so no code should write a number there and treat it as meaningful |
 | Whether `authorization_expires_at` is the refresh token's expiry | One real TikTok authorisation. The contract serves the field and `tiktok_connections.refresh_expires_at` looks like the same instant. Nobody has checked, so 0020 adds no column for it |
-| **Completing a shop connection** | TikTok's request signing algorithm. It is not in A23, not anywhere in the pack, and TikTok's docv2 pages do not render for a fetch. The fastest route is to make any call through Partner Center's API Testing Tool and read the signature off the request it builds. See A27 |
-| Refreshing an access token before it lapses | A scheduled job, which needs a host. The access token lives seven days (A23.4), so a connection made on a Wednesday stops working the next one |
+| Refreshing an access token before it lapses | Deploying the service. A28.4 chose a long-lived container so the refresh has somewhere to run. The access token lives seven days (A23.4) |
+| Deploying the service | The 51 local commits reaching GitHub, and the environment variables in A28.4, which carry four secrets |
 
 ## What is next in the code
 

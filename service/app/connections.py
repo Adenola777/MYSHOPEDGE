@@ -14,33 +14,36 @@ Every constant here comes from A23, which was read from TikTok's own authorisati
   * `grant_type` is `authorized_code`. Not `authorization_code`. A23.3 records TikTok's own
     warning about this, and anybody who knows OAuth will correct it once and break it.
 
-WHAT IS NOT FINISHED, AND WHY
-=============================
+SIGNING
+=======
 
-The callback cannot complete. `GetAuthorizedShops` is a signed call and this project does
-not hold TikTok's signing algorithm as a fact. A23.6 says so explicitly, a search of the
-whole pack for `hmac`, `sha256` and `signature` returns nothing, and TikTok's documentation
-pages do not render for a fetch. `_authorized_shops` is the single place that gap lives and
-it raises rather than guessing.
+Read from TikTok's own "Sign your API request" and "Common parameters" pages on the evening
+of 23 September 2026, through a browser, because those pages are a JavaScript application
+and do not render for a plain fetch. That is the only reason the pack went a day without
+them. They are public and need no sign in.
 
-Guessing it would be the A25 failure again: an assumption, a test written from the same
-assumption, and green results that mean nothing. A signature is either right or the request
-is refused, so a wrong one costs an afternoon; a wrong one that happens to be accepted for
-some calls and not others costs much more.
+A27 records the steps and `_sign` implements them. The one that catches people is the
+wrapping: the string is `secret + input + secret` and then that is HMACed with the secret as
+the key, so the secret appears three times.
 
-Everything that does not depend on signing is finished and works: the state, the link, the
-code exchange, the seller type assertion, and the token storage.
+**Unverified against a live call.** The algorithm is implemented from the vendor's stated
+steps and no request has yet been made with it. A signature is either accepted or refused,
+so the first real call is the test. Until then treat `_sign` as written but not proven.
 """
 
 from __future__ import annotations
 
+import base64
 import hashlib
+import hmac
 import os
 import secrets
+import time
 from datetime import datetime, timedelta, timezone
 from typing import Annotated, Any
 
 import httpx
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 
@@ -56,6 +59,20 @@ AUTHORIZE_BASE = "https://services.tiktokshop.com/open/authorize"
 # A23.3 and A23.4. Both on the same host for every market.
 TOKEN_URL = "https://auth.tiktok-shops.com/api/v2/token/get"
 REFRESH_URL = "https://auth.tiktok-shops.com/api/v2/token/refresh"
+
+# Every other call goes here. Not the auth host above, and not the partner host.
+API_BASE = "https://open-api.tiktokglobalshop.com"
+
+# The only version of GetAuthorizedShops in TikTok's own OpenAPI. Confirmed against the
+# bundled snapshot, which lists 202309 for shops, 202403 for DeauthorizeShop, and nothing
+# else under /authorization for either.
+SHOPS_PATH = "/authorization/202309/shops"
+
+# What the MVP can read correctly. A shop outside these returns a different finance field
+# set on every call, so it is connected, listed, and produces no figures. The contract
+# provides exactly this outcome in ConnectionResult.
+SUPPORTED_REGION = "GB"
+SUPPORTED_SELLER_TYPE = "LOCAL"
 
 # The contract states ten minutes. TikTok allows the auth code thirty (A23.4), so the state
 # is the shorter of the two and is therefore what expires first. That is the right way
@@ -187,34 +204,113 @@ def _exchange_code(code: str) -> dict[str, Any]:
     return data
 
 
+def _sign(path: str, query: dict[str, str], body: bytes, secret: str) -> str:
+    """TikTok's request signature. HMAC-SHA256, hex encoded.
+
+    From TikTok's "Sign your API request" page, read 23 September 2026. The steps, in the
+    order the page gives them:
+
+      1. Take every query parameter except `sign` and `access_token`.
+      2. Sort the keys alphabetically.
+      3. Concatenate them as `{key}{value}`, with no separator of any kind.
+      4. Put the request path on the front.
+      5. Append the raw request body, unless Content-Type is multipart/form-data.
+      6. Wrap the result: `secret + input + secret`.
+      7. HMAC-SHA256 it, keyed with the same secret, and hex encode.
+
+    Step 6 with step 7 is the part worth pausing on. The app secret is used twice as
+    padding and again as the HMAC key, so it appears three times. It looks redundant and it
+    is not optional: a signature built without the wrapping is a different string and is
+    refused.
+
+    `access_token` is excluded because for version 202309 and later it travels in the
+    `x-tts-access-token` header and is not signed at all. The exclusion is kept for the
+    legacy endpoints that still put it in the query string.
+    """
+    ordered = "".join(f"{k}{query[k]}" for k in sorted(query) if k not in ("sign", "access_token"))
+    payload = f"{secret}{path}{ordered}".encode("utf-8") + body + secret.encode("utf-8")
+    return hmac.new(secret.encode("utf-8"), payload, hashlib.sha256).hexdigest()
+
+
+def _signed_get(path: str, access_token: str, query: dict[str, str] | None = None) -> dict[str, Any]:
+    """A signed GET against the open API host.
+
+    `timestamp` is ten digits, in seconds. TikTok accepts it from five minutes ago to thirty
+    seconds ahead and answers `36009004 Invalid timestamp` outside that, which is the error
+    this project already met once by hand. A millisecond timestamp is refused, and it is the
+    obvious mistake for anyone reaching for a language whose clock returns milliseconds.
+    """
+    app_key = _config("TIKTOK_APP_KEY")
+    secret = _config("TIKTOK_APP_SECRET")
+
+    params = dict(query or {})
+    params["app_key"] = app_key
+    params["timestamp"] = str(int(time.time()))
+    params["sign"] = _sign(path, params, b"", secret)
+
+    try:
+        response = httpx.get(
+            f"{API_BASE}{path}",
+            params=params,
+            headers={"x-tts-access-token": access_token, "content-type": "application/json"},
+            timeout=HTTP_TIMEOUT,
+        )
+    except httpx.HTTPError:
+        raise Problem(502, "tiktok_unreachable", "TikTok did not answer. Try again shortly.")
+
+    body = response.json() if response.content else {}
+    if response.status_code != 200 or body.get("code") != 0:
+        # TikTok's own message is carried through, because at this point the seller has
+        # already authorised and a bare "something went wrong" makes the failure
+        # undiagnosable. It carries no secret: the token is in a header and the signature is
+        # not echoed.
+        raise Problem(
+            502, "tiktok_call_failed",
+            f"TikTok refused the request: {body.get('message') or response.status_code}",
+        )
+    return body.get("data") or {}
+
+
 def _authorized_shops(access_token: str) -> list[dict[str, Any]]:
     """GET /authorization/202309/shops.
 
-    NOT IMPLEMENTED, and deliberately not attempted.
-
-    This call is signed and the signing algorithm is not a fact this project holds. A23.6
-    states that request signing was not covered by the page A23 was written from. A search
-    of every document, every Python file and the API contract for `hmac`, `sha256` and
-    `signature` returns nothing. TikTok's docv2 pages are a JavaScript application and do
-    not render for a fetch. The bundled `tts-openapi-guide` and `tts-developer-onboarding-guide`
-    skills both refer to signing without specifying it.
-
-    Three ways to obtain it, in the order they are likely to work:
-
-      1. Make any call through Partner Center's own API Testing Tool and read the signature
-         it produces off the generated request. The tool signs on the caller's behalf, which
-         is why the three successful calls in A19 needed no algorithm here.
-      2. Read the signature page in Partner Center's documentation while signed in.
-      3. TikTok's developer support.
-
-    Until one of those happens this raises. It does not guess, and it does not borrow an
-    implementation from a third-party SDK, because a third party's code is not the vendor's
-    statement and rule 7 does not accept it.
+    Takes no query parameters of its own. Each shop carries `id`, `code`, `name`, `region`,
+    `seller_type` and `cipher`, which is every column `shops` needs plus the cipher that
+    `tiktok_connections` holds. The two columns migration 0020 added this evening, `code`
+    and `seller_type`, are both in this response and neither had anywhere to go before it.
     """
-    raise Problem(
-        503, "tiktok_signing_unimplemented",
-        "The shop lookup is not available yet. Your authorisation was not stored.",
-    )
+    return _signed_get(SHOPS_PATH, access_token).get("shops") or []
+
+
+def _encrypt(value: str) -> bytes:
+    """AES-256-GCM, with the nonce on the front of the ciphertext.
+
+    The key comes from `TIKTOK_TOKEN_KEY`, base64 of 32 bytes, and the service refuses to
+    store a token without one rather than falling back to anything weaker.
+
+    `key_version` is written as 1. That number means "the key in TIKTOK_TOKEN_KEY", and
+    nothing yet maps a number to a key, because rotation needs somewhere to keep two keys at
+    once and the service has no host. What is decided here is only the algorithm and where
+    the key is read from. The register is still open, and migration 0021's comment on
+    `key_version` says so.
+    """
+    raw = os.environ.get("TIKTOK_TOKEN_KEY")
+    if not raw:
+        raise Problem(
+            503, "token_encryption_unconfigured",
+            "Connecting a shop is not available on this deployment.",
+        )
+    key = base64.b64decode(raw)
+    if len(key) != 32:
+        raise Problem(
+            503, "token_encryption_unconfigured",
+            "Connecting a shop is not available on this deployment.",
+        )
+    nonce = secrets.token_bytes(12)
+    return nonce + AESGCM(key).encrypt(nonce, value.encode("utf-8"), None)
+
+
+KEY_VERSION = 1
 
 
 class ConnectionResultOut(BaseModel):
@@ -261,11 +357,97 @@ def tiktok_callback(
             "That TikTok account is not a Shop seller account.",
         )
 
-    # Everything past this point needs the signed shop lookup, because shops.tiktok_shop_id
-    # is NOT NULL and the token response does not carry a shop id. The token response gives
-    # seller_name, seller_base_region, open_id and granted_scopes, and none of those identify
-    # the shop. So there is nothing to write until _authorized_shops works, and writing a
-    # partial row would leave a shop that can never be reconciled.
-    _authorized_shops(data["access_token"])
+    shops = _authorized_shops(data["access_token"])
+    if not shops:
+        raise Problem(
+            400, "no_authorised_shop",
+            "That TikTok account has no shop authorised for MyShopEdge.",
+        )
 
-    raise AssertionError("unreachable until _authorized_shops is implemented")
+    # The first shop. TikTok's own description of LOCAL is a seller with exactly one shop,
+    # so for every seller the MVP supports this list has one entry. A CROSS_BORDER seller
+    # can have several and is refused below whichever one is taken, so the choice cannot
+    # change an outcome. A12.7 rules one shop per account.
+    shop = shops[0]
+
+    region = shop.get("region")
+    seller_type = shop.get("seller_type")
+
+    rejection_reason = None
+    if region != SUPPORTED_REGION:
+        rejection_reason = "region_unsupported"
+    elif seller_type != SUPPORTED_SELLER_TYPE:
+        rejection_reason = "seller_type_unsupported"
+    accepted = rejection_reason is None
+
+    now = datetime.now(timezone.utc)
+    access_expires = now + timedelta(seconds=int(data.get("access_token_expire_in") or 0))
+    refresh_expires = now + timedelta(seconds=int(data.get("refresh_token_expire_in") or 0))
+
+    # Encrypted before the transaction opens, so a missing key fails before anything is
+    # written rather than halfway through.
+    enc_access = _encrypt(data["access_token"])
+    enc_refresh = _encrypt(data.get("refresh_token") or "")
+    enc_cipher = _encrypt(shop["cipher"]) if shop.get("cipher") else None
+
+    # The shop row and its tokens are written together. A shop without its connection is a
+    # shop that cannot be read from, and a connection without its shop has nothing to hang
+    # on, so neither may exist alone.
+    with tenant(account_id) as conn:
+        row = conn.execute(
+            "insert into shops (account_id, platform, tiktok_shop_id, tiktok_shop_code, "
+            "  shop_name, region, seller_type, currency, connection_status) "
+            "values (%s, 'tiktok_shop', %s, %s, %s, %s, %s, 'GBP', 'pending') "
+            "on conflict (platform, tiktok_shop_id) do update set "
+            "  tiktok_shop_code = excluded.tiktok_shop_code, shop_name = excluded.shop_name, "
+            "  region = excluded.region, seller_type = excluded.seller_type, "
+            "  connection_status = 'pending' "
+            "returning id",
+            (str(account_id), shop["id"], shop.get("code"), shop.get("name"),
+             region, seller_type),
+        ).fetchone()
+
+        if row is None:
+            # The conflict clause updates rather than doing nothing, so a null here means
+            # the row belongs to another account and row level security hid it. That is the
+            # UNIQUE (platform, tiktok_shop_id) guard doing its job.
+            raise Problem(
+                409, "shop_already_connected",
+                "That shop is already connected to another MyShopEdge account.",
+            )
+        shop_id = row[0]
+
+        conn.execute(
+            "insert into tiktok_connections (shop_id, access_token_enc, refresh_token_enc, "
+            "  shop_cipher_enc, access_expires_at, refresh_expires_at, scopes, key_version, "
+            "  authorised_at) values (%s, %s, %s, %s, %s, %s, %s, %s, now()) "
+            "on conflict (shop_id) do update set "
+            "  access_token_enc = excluded.access_token_enc, "
+            "  refresh_token_enc = excluded.refresh_token_enc, "
+            "  shop_cipher_enc = excluded.shop_cipher_enc, "
+            "  access_expires_at = excluded.access_expires_at, "
+            "  refresh_expires_at = excluded.refresh_expires_at, "
+            "  scopes = excluded.scopes, key_version = excluded.key_version, "
+            "  authorised_at = now(), revoked_at = null",
+            (str(shop_id), enc_access, enc_refresh, enc_cipher, access_expires,
+             refresh_expires, data.get("granted_scopes") or [], KEY_VERSION),
+        )
+
+        conn.execute("select sweep_tiktok_auth_state()")
+
+    return ConnectionResultOut(
+        shop={
+            "id": str(shop_id),
+            "platform": "tiktok_shop",
+            "tiktok_shop_id": shop["id"],
+            "tiktok_shop_code": shop.get("code"),
+            "shop_name": shop.get("name"),
+            "region": region,
+            "seller_type": seller_type,
+            "currency": "GBP",
+            "connection_status": "pending",
+        },
+        accepted=accepted,
+        rejection_reason=rejection_reason,
+        return_to=return_to,
+    )

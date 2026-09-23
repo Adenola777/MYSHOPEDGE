@@ -35,12 +35,25 @@ _pool: ConnectionPool | None = None
 
 
 def pool() -> ConnectionPool:
+    """The process's connection pool.
+
+    The size is configurable because the right answer depends on where this runs, and that
+    was decided in A28. A long-lived server wants a real pool. A serverless invocation is
+    its own process and may be frozen between requests, so a pool of ten there means ten
+    connections held per concurrent invocation and Postgres runs out long before the
+    platform does. On a serverless host set `DB_POOL_MAX` to 1 and point `DATABASE_URL` at
+    Neon's pooled endpoint, which is the hostname carrying `-pooler`.
+
+    The defaults suit a long-lived server, because that is what A28 chose.
+    """
     global _pool
     if _pool is None:
         url = os.environ.get("DATABASE_URL")
         if not url:
             raise RuntimeError("DATABASE_URL is not set.")
-        _pool = ConnectionPool(url, min_size=1, max_size=10, open=True)
+        max_size = int(os.environ.get("DB_POOL_MAX", "10"))
+        min_size = min(int(os.environ.get("DB_POOL_MIN", "1")), max_size)
+        _pool = ConnectionPool(url, min_size=min_size, max_size=max_size, open=True)
     return _pool
 
 

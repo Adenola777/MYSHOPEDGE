@@ -21,7 +21,7 @@ production, so this sits alongside the checks against the real database rather t
 replacing them.
 """
 
-import os, sys, json, hashlib
+import os, sys, json, hashlib, base64
 from datetime import datetime, timezone, date
 from uuid import UUID
 
@@ -277,17 +277,130 @@ def callback_refuses_a_creator_account():
 check("GET callback refuses a TikTok account that is not a seller", callback_refuses_a_creator_account)
 
 
-def callback_stops_at_the_signing_gap():
+def signature_follows_the_documented_steps():
+    """TikTok's algorithm, checked against the four properties its page states.
+
+    There is no worked example with an expected digest on TikTok's page, so this cannot
+    assert a known-good value. It asserts the properties that distinguish the documented
+    algorithm from the obvious wrong implementations of it, which is what a refactor would
+    break. The first live call remains the real test.
+    """
+    sign, secret = connections._sign, "SECRET"
+    base = sign("/authorization/202309/shops", {"app_key": "k", "timestamp": "1"}, b"", secret)
+
+    # sign and access_token are excluded, so adding either changes nothing.
+    _assert(base == sign("/authorization/202309/shops",
+                         {"app_key": "k", "timestamp": "1", "sign": "x"}, b"", secret),
+            "sign must be excluded from its own input")
+    _assert(base == sign("/authorization/202309/shops",
+                         {"app_key": "k", "timestamp": "1", "access_token": "t"}, b"", secret),
+            "access_token must be excluded: it travels in a header and is not signed")
+
+    # The path is part of the input, so the same parameters on another path differ.
+    _assert(base != sign("/authorization/202403/shops",
+                         {"app_key": "k", "timestamp": "1"}, b"", secret),
+            "the request path must be part of the signed input")
+
+    # The body is appended.
+    _assert(base != sign("/authorization/202309/shops",
+                         {"app_key": "k", "timestamp": "1"}, b"{}", secret),
+            "the body must be part of the signed input")
+
+    # Keys sort alphabetically, so a value moved between keys changes the concatenation.
+    _assert(sign("/p", {"a": "1", "b": "2"}, b"", secret)
+            != sign("/p", {"a": "12", "b": ""}, b"", secret),
+            "keys and values must concatenate as {key}{value} in sorted order")
+
+    # Hex SHA-256.
+    _assert(len(base) == 64 and all(c in "0123456789abcdef" for c in base), base)
+check("the signature follows TikTok's documented steps", signature_follows_the_documented_steps)
+
+
+def tokens_round_trip_and_refuse_a_missing_key():
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+    os.environ.pop("TIKTOK_TOKEN_KEY", None)
+    try:
+        connections._encrypt("secret-token")
+        raise AssertionError("a missing key must refuse rather than store in the clear")
+    except Exception as exc:
+        _assert(getattr(exc, "code", None) == "token_encryption_unconfigured", repr(exc))
+
+    key = AESGCM.generate_key(bit_length=256)
+    os.environ["TIKTOK_TOKEN_KEY"] = base64.b64encode(key).decode()
+    blob = connections._encrypt("secret-token")
+    _assert(b"secret-token" not in blob, "the token must not appear in the ciphertext")
+    back = AESGCM(key).decrypt(blob[:12], blob[12:], None).decode()
+    _assert(back == "secret-token", "the token must decrypt to what went in")
+    # A fresh nonce every time, so the same token does not produce the same bytes.
+    _assert(connections._encrypt("secret-token") != blob, "the nonce must not repeat")
+check("tokens encrypt, round trip, and refuse to store without a key", tokens_round_trip_and_refuse_a_missing_key)
+
+
+GB_SHOP = {"id": "7495", "code": "GBGBLCRKQTEX", "name": "My ShopEdge",
+           "region": "GB", "seller_type": "LOCAL", "cipher": "GCP_test"}
+
+
+def _callback_with(shop, written):
     connections.unscoped = _fake_unscoped(
         [("consume_tiktok_auth_state", Result(["a", "r"], [(ACCOUNT.id, "/connect/done")]))]
     )
-    connections._exchange_code = lambda code: {"access_token": "t", "user_type": 0}
-    r = client.get("/v1/connections/tiktok/callback", params={"code": "c", "state": "s"})
-    # Not a pass in the ordinary sense. It asserts that the unfinished part fails loudly and
-    # in one named place, rather than writing a half connection that can never reconcile.
-    _assert(r.status_code == 503, f"status {r.status_code}: {r.text[:300]}")
-    _assert(r.json()["code"] == "tiktok_signing_unimplemented", r.text[:200])
-check("GET callback stops at the signing gap rather than guessing", callback_stops_at_the_signing_gap)
+    connections._exchange_code = lambda code: {
+        "access_token": "act.tok", "refresh_token": "rft.tok", "user_type": 0,
+        "access_token_expire_in": 604800, "refresh_token_expire_in": 2592000,
+        "granted_scopes": ["seller.finance"],
+    }
+    connections._authorized_shops = lambda token: [shop]
+
+    class Writer(Conn):
+        def execute(self, sql, args=None):
+            flat = " ".join(sql.split())
+            if "insert into shops" in flat:
+                written["shop"] = args
+                return Result(["id"], [(SHOP,)])
+            if "insert into tiktok_connections" in flat:
+                written["conn"] = args
+                return Result([], [])
+            return Result([], [])
+
+    @contextlib.contextmanager
+    def fake(_account_id):
+        yield Writer([])
+    connections.tenant = fake
+    return client.get("/v1/connections/tiktok/callback", params={"code": "c", "state": "s"})
+
+
+def callback_connects_a_gb_shop():
+    written = {}
+    r = _callback_with(GB_SHOP, written)
+    _assert(r.status_code == 200, f"status {r.status_code}: {r.text[:400]}")
+    b = r.json()
+    _assert(b["accepted"] is True, b)
+    _assert(b["rejection_reason"] is None, b)
+    _assert(b["shop"]["tiktok_shop_code"] == "GBGBLCRKQTEX", b["shop"])
+    _assert(b["shop"]["seller_type"] == "LOCAL", b["shop"])
+    # The contract says the connection is recorded as pending, not connected.
+    _assert(b["shop"]["connection_status"] == "pending", b["shop"])
+    _assert(b["return_to"] == "/connect/done", b)
+    # Nothing readable reaches the database.
+    enc_access, enc_refresh, enc_cipher = written["conn"][1], written["conn"][2], written["conn"][3]
+    _assert(b"act.tok" not in enc_access, "the access token was stored in the clear")
+    _assert(b"rft.tok" not in enc_refresh, "the refresh token was stored in the clear")
+    _assert(b"GCP_test" not in enc_cipher, "the shop cipher was stored in the clear")
+check("GET callback connects a GB shop and stores nothing readable", callback_connects_a_gb_shop)
+
+
+def callback_lists_but_refuses_an_unsupported_shop():
+    # A28: the shop is stored and listed, and it produces no figures. Refusing outright
+    # would lose the authorisation the seller just granted.
+    for field, value, reason in [("region", "ID", "region_unsupported"),
+                                 ("seller_type", "CROSS_BORDER", "seller_type_unsupported")]:
+        r = _callback_with({**GB_SHOP, field: value}, {})
+        _assert(r.status_code == 200, f"status {r.status_code}: {r.text[:300]}")
+        b = r.json()
+        _assert(b["accepted"] is False, b)
+        _assert(b["rejection_reason"] == reason, b)
+        _assert(b["shop"] is not None, "the shop must still be listed")
+check("GET callback stores an unsupported shop but marks it not accepted", callback_lists_but_refuses_an_unsupported_shop)
 
 
 print()

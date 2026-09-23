@@ -1,5 +1,13 @@
 # Action 27. The two connection handlers, and the one fact that stops them finishing
 
+> **Superseded in part by A28, the same evening.** Section 27.4 below concludes that
+> TikTok's signing algorithm could not be obtained. That conclusion was wrong. The
+> documentation is public and needs no sign in; `WebFetch` returned nothing because the
+> pages are a JavaScript application, and a tool returning nothing is evidence about the
+> tool rather than about the thing being fetched. A28.2 carries the algorithm. This
+> document is left standing because the reasoning in it is still how an unknown should be
+> handled, and because how the mistake was made is worth keeping.
+
 23 September 2026. Adenola asked for the TikTok connection endpoints to be built. Most of
 the work was possible and one part was not, and the part that was not is worth more of this
 document than the part that was.
