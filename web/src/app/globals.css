@@ -1,0 +1,337 @@
+/*
+ * MyShopEdge design tokens and base styles.
+ *
+ * Written 23 September 2026, at the same time as the root layout, because the two pages
+ * that already existed referenced class names that no stylesheet defined and the
+ * application did not build at all.
+ *
+ * The rules this file follows, from A13 and the product standard:
+ *
+ *   - Orange is the brand, on white, with dark neutral text. Orange carries emphasis and
+ *     never carries meaning on its own, because colour alone is not an accessible signal.
+ *   - Money is tabular. A column of figures that does not align is harder to read than one
+ *     that does, and this product is read by people checking numbers.
+ *   - Focus is always visible. Removing an outline without replacing it makes the product
+ *     unusable by keyboard, and several of these screens are forms.
+ *   - Nothing here is decorative for its own sake.
+ */
+
+:root {
+  /* Brand. The mid tone is the one that carries text on white at 4.5:1 or better. */
+  --orange-50:  #fff4ec;
+  --orange-100: #ffe3d0;
+  --orange-300: #ffab70;
+  --orange-500: #f2700f;
+  --orange-600: #cf5a04;
+  --orange-700: #a3470a;
+
+  /* Neutrals. Warm, so they sit with the orange rather than against it. */
+  --ink-900: #1b1714;
+  --ink-700: #3d3631;
+  --ink-500: #6b615a;
+  --ink-300: #a79d96;
+  --ink-200: #d9d2cc;
+  --ink-100: #ece7e3;
+  --ink-50:  #f8f6f4;
+  --white:   #ffffff;
+
+  /* Status. Each is paired with a word or an icon in the markup, never used alone. */
+  --good-600: #17694a;
+  --good-50:  #e8f5ef;
+  --warn-700: #8a5a00;
+  --warn-50:  #fff5e0;
+  --bad-600:  #b3261e;
+  --bad-50:   #fdecea;
+
+  --radius: 10px;
+  --radius-lg: 16px;
+  --shadow-1: 0 1px 2px rgb(27 23 20 / 6%), 0 1px 3px rgb(27 23 20 / 8%);
+  --shadow-2: 0 4px 12px rgb(27 23 20 / 8%), 0 2px 4px rgb(27 23 20 / 6%);
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  --measure: 62ch;
+  --shell: 1120px;
+
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-num: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--ink-50);
+  color: var(--ink-900);
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 { line-height: 1.2; margin: 0 0 var(--space-3); letter-spacing: -0.015em; }
+h1 { font-size: clamp(1.5rem, 1.2rem + 1.4vw, 2rem); }
+h2 { font-size: clamp(1.25rem, 1.1rem + 0.7vw, 1.5rem); }
+h3 { font-size: 1.125rem; }
+p  { margin: 0 0 var(--space-4); max-width: var(--measure); }
+
+a { color: var(--orange-700); text-underline-offset: 2px; }
+a:hover { color: var(--orange-600); }
+
+/* Always visible, never removed. Several of these screens are forms and the product is
+   used by people who tab through them. */
+:focus-visible {
+  outline: 3px solid var(--orange-500);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* Lets a keyboard user reach the content without tabbing the whole header first. */
+.skip {
+  position: absolute;
+  left: var(--space-4);
+  top: -100px;
+  z-index: 100;
+  background: var(--white);
+  color: var(--ink-900);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-2);
+  transition: top 120ms ease;
+}
+.skip:focus { top: var(--space-4); }
+
+/* --- the shell ------------------------------------------------------------------ */
+
+.shell {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.masthead {
+  background: var(--white);
+  border-bottom: 1px solid var(--ink-100);
+}
+.masthead__inner {
+  max-width: var(--shell);
+  margin: 0 auto;
+  padding: var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 650;
+  font-size: 1.0625rem;
+  letter-spacing: -0.02em;
+  color: var(--ink-900);
+  text-decoration: none;
+}
+.wordmark__edge { color: var(--orange-600); }
+.wordmark svg { display: block; flex: none; }
+
+.tagline {
+  color: var(--ink-500);
+  font-size: 0.875rem;
+  margin: 0;
+  padding-left: var(--space-3);
+  border-left: 1px solid var(--ink-200);
+}
+@media (max-width: 34rem) { .tagline { display: none; } }
+
+.content {
+  flex: 1;
+  max-width: var(--shell);
+  width: 100%;
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-4) var(--space-8);
+}
+
+.footer {
+  border-top: 1px solid var(--ink-100);
+  background: var(--white);
+  color: var(--ink-500);
+  font-size: 0.8125rem;
+}
+.footer__inner {
+  max-width: var(--shell);
+  margin: 0 auto;
+  padding: var(--space-4);
+}
+.footer p { margin: 0; max-width: none; }
+
+/* --- money ----------------------------------------------------------------------- */
+
+/* Figures line up in a column and digits keep a constant width, so a table of amounts
+   can be scanned down rather than read across. */
+.money {
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+.money--neg { color: var(--bad-600); }
+
+/* A figure the product cannot compute. It must never render as 0, because a zero reads as
+   a fact and this is the absence of one. */
+.money--unknown { color: var(--ink-300); font-family: var(--font-num); }
+
+/* --- surfaces -------------------------------------------------------------------- */
+
+.card {
+  background: var(--white);
+  border: 1px solid var(--ink-100);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-1);
+}
+
+.note {
+  border-radius: var(--radius);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid;
+  margin: 0 0 var(--space-4);
+}
+.note p:last-child { margin-bottom: 0; }
+.note--info { background: var(--orange-50); border-color: var(--orange-100); color: var(--ink-700); }
+.note--good { background: var(--good-50); border-color: #bfe0d1; color: var(--good-600); }
+.note--warn { background: var(--warn-50); border-color: #f0dcae; color: var(--warn-700); }
+.note--bad  { background: var(--bad-50);  border-color: #f3c9c5; color: var(--bad-600); }
+
+/* --- controls -------------------------------------------------------------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font: inherit;
+  font-weight: 600;
+  padding: var(--space-3) var(--space-5);
+  min-height: 44px;           /* a comfortable target on a phone */
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+.btn--primary { background: var(--orange-600); color: var(--white); }
+.btn--primary:hover:not(:disabled) { background: var(--orange-700); color: var(--white); }
+.btn--quiet { background: var(--white); color: var(--ink-900); border-color: var(--ink-200); }
+.btn--quiet:hover:not(:disabled) { border-color: var(--ink-300); }
+.btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+label { display: block; font-weight: 600; margin-bottom: var(--space-2); }
+
+input, select, textarea {
+  font: inherit;
+  width: 100%;
+  padding: var(--space-3);
+  min-height: 44px;
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius);
+  background: var(--white);
+  color: var(--ink-900);
+}
+input:hover, select:hover, textarea:hover { border-color: var(--ink-300); }
+
+/* --- tables ---------------------------------------------------------------------- */
+
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+table { border-collapse: collapse; width: 100%; font-size: 0.9375rem; }
+caption { text-align: left; color: var(--ink-500); padding-bottom: var(--space-2); }
+th, td { text-align: left; padding: var(--space-3); border-bottom: 1px solid var(--ink-100); }
+th { font-weight: 600; color: var(--ink-700); white-space: nowrap; }
+td.num, th.num { text-align: right; font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+tbody tr:last-child td { border-bottom: 0; }
+
+/* --- states ---------------------------------------------------------------------- */
+
+.state {
+  text-align: center;
+  padding: var(--space-7) var(--space-4);
+  color: var(--ink-500);
+}
+.state h2 { color: var(--ink-900); }
+.state p { margin-left: auto; margin-right: auto; }
+
+.skeleton {
+  background: linear-gradient(90deg, var(--ink-100) 25%, var(--ink-50) 37%, var(--ink-100) 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease infinite;
+  border-radius: var(--radius);
+  color: transparent;
+}
+@keyframes shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%);
+  white-space: nowrap; border: 0;
+}
+
+/* --- billing, the one screen set that already existed ---------------------------- */
+
+.billing { max-width: 880px; margin: 0 auto; }
+.billing__head { margin-bottom: var(--space-6); }
+.billing__lede { color: var(--ink-700); font-size: 1.0625rem; }
+
+.plans {
+  list-style: none;
+  margin: 0 0 var(--space-6);
+  padding: 0;
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+.plan {
+  background: var(--white);
+  border: 1px solid var(--ink-100);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+/* The highlighted plan is marked by a border, a label and its position, never by colour
+   on its own. */
+.plan--highlight { border-color: var(--orange-300); box-shadow: var(--shadow-2); }
+.plan__flag {
+  align-self: flex-start;
+  background: var(--orange-50);
+  color: var(--orange-700);
+  border: 1px solid var(--orange-100);
+  border-radius: 999px;
+  padding: 2px var(--space-3);
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+.plan__price { font-size: 1.75rem; font-weight: 650; letter-spacing: -0.02em; }
+.plan__price small { font-size: 0.875rem; font-weight: 500; color: var(--ink-500); }
+.plan__features { list-style: none; margin: 0; padding: 0; color: var(--ink-700); font-size: 0.9375rem; }
+.plan__features li { padding: var(--space-1) 0; }
