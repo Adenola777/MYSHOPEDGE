@@ -22,8 +22,24 @@ LONDON = ZoneInfo("Europe/London")
 
 def load(n): return json.load(open(os.path.join(P, n)))
 
-def pence(s):
-    return 0 if s in (None, "") else int(round(float(s) * 100))
+# A20.3. This function multiplied by 100 whatever the currency, which is wrong in
+# principle and stayed invisible because the product is GBP only. The real settlement in
+# testdata/real_payloads is IDR with whole-number amounts, which is what exposed it.
+#
+# GBP is the only entry, and it is the only one verified against a real payload. An
+# unverified currency raises rather than guessing, because a wrong power of ten does not
+# fail loudly, it produces plausible numbers that are off by a factor of a hundred.
+MINOR_UNIT_EXPONENT = {"GBP": 2}
+
+def pence(s, currency="GBP"):
+    if currency not in MINOR_UNIT_EXPONENT:
+        raise ValueError(
+            f"No verified minor unit for {currency}. Add it to MINOR_UNIT_EXPONENT only "
+            f"after reading a real payload in that currency."
+        )
+    if s in (None, ""):
+        return 0
+    return int(round(float(s) * 10 ** MINOR_UNIT_EXPONENT[currency]))
 
 def uid(*parts):
     return str(uuid.UUID(hashlib.sha1(":".join(map(str, parts)).encode()).hexdigest()[:32]))
@@ -192,7 +208,15 @@ for o in orders_raw:
                 UNMAPPED.add(field); cat = "unmapped_fee"
             spread(cat, pence(amt), fee_type=field)
         for field, amt in t["fee_tax_breakdown"]["tax"].items():
-            if TAX_MAP.get(field) and pence(amt):
+            # A19.5 and A20.3. This loop used to discard every field absent from TAX_MAP
+            # without recording it, while the fee loop above records its unknowns. The real
+            # payload carries seventeen tax fields and TAX_MAP holds one, so sixteen were
+            # leaving no trace, `vat_amount` and `import_vat_amount` among them. Recording
+            # them costs nothing and makes a future non-zero tax visible instead of silent.
+            if field not in TAX_MAP:
+                UNMAPPED.add(field)
+                continue
+            if TAX_MAP[field] and pence(amt):
                 spread(TAX_MAP[field], pence(amt), fee_type=field)
         for field, amt in t["shipping_cost_breakdown"].items():
             if field == "supplementary_component":
@@ -235,7 +259,6 @@ for s in statements:
         for e in rows["ledger_entries"]:
             if e["order_id"] == ORDER_BY_TT[tt] and e["category"] != "cost_of_goods_sold":
                 e["settlement_id"] = sid
-        e["settlement_month"] = smonth
                 e["settlement_month"] = smonth
                 derived += e["amount_minor"]
         rows["order_settlements"].append(dict(order_id=ORDER_BY_TT[tt], shop_id=SHOP,
@@ -254,7 +277,7 @@ for s in statements:
                  fee_type="reserve_amount", ref=t["reserve_id"])
             e = rows["ledger_entries"][-1]
             e["settlement_id"] = sid
-        e["settlement_month"] = smonth
+            e["settlement_month"] = smonth
             e["order_id"] = ORDER_BY_TT.get(t["associated_order_id"])
             continue
         amt = pence(t["adjustment_amount"])

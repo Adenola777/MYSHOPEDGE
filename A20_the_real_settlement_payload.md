@@ -126,3 +126,51 @@ a GB payload, not this one.
 
 `GBGBLCRKQTEX`, the real British shop, is approved and has no products, so it has no orders
 and no statements. That is the shop whose payload decides the mapping.
+
+## 20.8 The ingest had not parsed since commit 142c3dd
+
+Found while making the corrections above, and it is the worst thing in this document.
+
+`testdata/ingest.py` acquired a stray `e["settlement_month"] = smonth` at the wrong
+indentation in two places, in commit `142c3dd` earlier on 23 September. The file has been an
+`IndentationError` ever since. It could not be imported, let alone run.
+
+Through that entire period `README_v0.2.md` recorded action 12 as "Built. 118 ledger
+entries, five assertions passing", and nothing contradicted it, because nobody ran the file
+and the status line was the only evidence anyone consulted.
+
+Repaired and run. It now produces 119 ledger entries across 20 orders, 3 settlements and 7
+returns, with one unmapped field, `live_specials_fee_amount`. The count is 119 and not 118,
+and the difference has not been investigated, so the previous figure should not be trusted
+either.
+
+This is the third instance of the same pattern on this project. Authentication verified the
+wrong algorithm and its tests passed because the fixtures shared the assumption. Five views
+leaked across tenants while a check that queried base tables reported clean. Now a status
+line asserted a passing test suite for a file that did not compile. Rule 7 exists because of
+the first two. This one happened after the rule was written.
+
+## 20.9 What was corrected on 23 September
+
+Three defects fixed, all verified by running the file afterwards.
+
+**The tax loop records what it does not recognise.** Any field absent from `TAX_MAP` is now
+added to `UNMAPPED` before being skipped, matching what the fee loop already did. Sixteen
+real tax fields, `vat_amount` and `import_vat_amount` among them, previously left no trace.
+
+**`pence()` takes a currency.** It multiplied by 100 regardless. `MINOR_UNIT_EXPONENT` holds
+GBP alone, because GBP is the only currency verified against a real payload, and an
+unverified currency raises rather than guessing. A wrong power of ten does not fail loudly.
+It produces plausible numbers that are wrong by a factor of a hundred.
+
+**The syntax error from 20.8.**
+
+One thing deliberately not done. `FEE_MAP` was not expanded from 7 entries to 57. Under A8
+an unmapped fee is carried at full value with TikTok's own field name kept in
+`tiktok_fee_type`, and index `ledger_unmapped_idx` supports the nightly sweep that raises a
+discrepancy for each one under CLR-4. The design anticipated this. Inventing fifty
+categories for fields that may be permanently zero for a British seller would be
+speculation, which rule 7 forbids. It waits for a payload from `GBGBLCRKQTEX`.
+
+`testdata/check_maps_against_real.py` measures the gap against the real payload on demand,
+importing the maps from the ingest rather than restating them so the two cannot drift.

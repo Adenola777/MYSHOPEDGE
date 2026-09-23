@@ -30,7 +30,7 @@ carries every platform, integration and commercial decision taken since.
 | 9 | Identifiers and reconciliation | Specified and applied |
 | 10 | Platform, region and identity | Decided and provisioned |
 | 11 | Statement ingestion and scope rulings | Specified |
-| 12 | Test data requirements | Built. 118 ledger entries, five assertions passing |
+| 12 | Test data requirements | Built. 119 ledger entries. The ingest did not parse between 142c3dd and 23 September, see A20.8 |
 | 13 | Stack and client contract | Decided. Python and JavaScript, no TypeScript |
 | 14 | The onboarding screen set | Specified. Corrected 23 September for the real provider |
 | 15 | Four screen rulings, the copy pass, VAT | Specified and applied |
