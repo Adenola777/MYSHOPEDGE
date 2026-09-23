@@ -82,7 +82,8 @@ carries every platform, integration and commercial decision taken since.
 | Whether TikTok exposes twenty-four months of statements | Adenola | Whether A16.2 can be delivered |
 | Whether the TikTok invoice number is reachable from Seller Center | Adenola | Reconciliation identifier |
 | The literal column labels on a settlement export | Blocked on the shop | A8 section 3.5 |
-| Which Neon project the product runs on | Adenola | Applying migrations 0017 and 0018 |
+| Which Neon project the product runs on | **Settled 23 September** | `super-mouse-64697125`, the direct Neon account. See below |
+| Applying migrations 0017 and 0018 | Adenola | Nothing blocks it now the project is settled |
 | Repository access for `Adenola777/My-ShopEdge` | Adenola | Every commit so far, none pushed |
 | Backup retention, capped at six hours on the current Neon plan | Commercial | Nothing yet |
 | Immutable storage for the invoice documents | Deferred, see A10.8 | Nothing yet |
@@ -91,6 +92,28 @@ carries every platform, integration and commercial decision taken since.
 | Where Better Auth processes identity data | Confirm before launch | Data protection alignment |
 | Whether single factor authentication is acceptable at launch | Commercial and risk | Nothing technical. A14 section 14.7 |
 | Eight screens specified before the 22 September rulings | Specification | S9, S10, S11, S14, S22, S23, S25, S26 |
+
+## The Vercel, GitHub and Neon wiring
+
+Traced 23 September 2026, because two Neon projects were in play and only one held the work.
+
+| Piece | Value |
+|---|---|
+| GitHub | `Adenola777/My-ShopEdge`. Vercel is wired to this one, not to `MyShopEdge-` |
+| Vercel team | `coterie448-8267's projects`, `team_H7VQC0OWq6IaOif0bUtyZlgg` |
+| Vercel project | `my-shop-edge`, `prj_r4jxHJm7Pw4dJxYmN9RyRV7grwvg`. Framework nextjs, root `web`, functions in `lhr1` |
+| Database | `super-mouse-64697125`, London, in the Neon account under adenola.adegbesan@gmail.com |
+
+**The trap to avoid.** A Neon project provisioned through the Vercel Marketplace lives in a
+Neon organisation that Vercel creates and manages, tied to the Vercel login rather than to
+the Neon account you sign into at neon.com. That is what `holy-glitter-85206770` is, and it
+is why an API key from the direct account cannot see it. It held no schema of ours, and
+`DATABASE_URL` on the Vercel project pointed at it.
+
+The product runs on the direct account's project, because that is where twenty migrations,
+three branches, the seeded seller and the verified row level security live. `DATABASE_URL`
+is set by hand rather than by the marketplace integration, which is one setting in exchange
+for not repeating a day of verification.
 
 ## Counts
 
