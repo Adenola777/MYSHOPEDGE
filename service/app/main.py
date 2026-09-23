@@ -8,7 +8,7 @@ from __future__ import annotations
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 
-from . import billing, records, settlements
+from . import billing, products, records, settlements
 from .problems import problem_handler
 
 app = FastAPI(
@@ -23,6 +23,7 @@ app.add_exception_handler(HTTPException, problem_handler)
 app.add_exception_handler(Exception, problem_handler)
 
 app.include_router(billing.router, prefix="/v1")
+app.include_router(products.router, prefix="/v1")
 app.include_router(records.router, prefix="/v1")
 app.include_router(settlements.router, prefix="/v1")
 
