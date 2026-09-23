@@ -42,6 +42,7 @@ carries every platform, integration and commercial decision taken since.
 | 21 | The first real British order | Order 576955651451099542 on GBGBLCRKQTEX. A11.2 amended. Section 21.3 corrected by A22 |
 | 22 | The unsettled export | Commission measured at 9.00%. Settlement is Delivered plus 8 days. A21.3 corrected |
 | 23 | The authorisation flow, from TikTok's page | Seller link is services.tiktokshop.com, not partner. service_id is a third credential. Runbook corrected |
+| 24 | Two app paths | The ISV app cannot authorise a production shop until review. A Seller Developer custom app is how the build gets real GB data now |
 
 ## Decisions taken, and open to reversal
 
@@ -90,7 +91,7 @@ carries every platform, integration and commercial decision taken since.
 | Item | Owner | Blocks |
 |---|---|---|
 | TikTok app developer approval | **Granted 23 September 09:00** | Four categories, all UK: Finance and Accounting, ERP, Order Management, Product Information Management |
-| App credentials and a shop authorisation | Adenola | Every claim the ingestion makes. Needs `TIKTOK_APP_KEY` and `TIKTOK_APP_SECRET` set as environment variables, which a session reads only at start |
+| A Seller Developer custom app on `GBGBLCRKQTEX` | Adenola | Every claim the ingestion makes. The ISV app cannot authorise a production shop before review, see A24. Needs `TIKTOK_SERVICE_ID`, `TIKTOK_APP_KEY` and `TIKTOK_APP_SECRET` |
 | Whether TikTok exposes twenty-four months of statements | **Still open after 23 September.** The call was made and returned nothing, against a shop with no trading history, so it answered nothing. Needs a shop trading over two years. See A19.3 | Whether A16.2 can be delivered |
 | Whether the TikTok invoice number is reachable from Seller Center | Adenola | Reconciliation identifier |
 | The literal column labels on a settlement export | **Closed 23 September.** Measured from a real payload. See A20 | A8 section 3.5 |
