@@ -83,11 +83,11 @@ The specification is close to complete. The application is not. As of 23 Septemb
 | Layer | State |
 |---|---|
 | Rulings, terminology, screens, data model, API contract | Done |
-| Schema | Through 0020 on staging and development, 21 migrations recorded on each. Production holds through 0016 plus the 0019 security fix, and does not yet have 0020 |
-| Backend | 6 of 58 routes. Health, billing, settlements, records |
+| Schema | Through 0021 on staging and development, 22 migrations recorded on each. **Production is at 0016 by the ledger**, with 0019's view fix applied by hand and no row for it, and without 0019's `order_quota` view. It is missing 0017, 0018, 0020 and 0021, so `subscriptions` does not exist there and nobody can subscribe |
+| Backend | 10 of 53 contract paths. Health, billing, settlements, records, products, and the two TikTok connection endpoints |
 | Authentication | ES256 verified against the provider's fetched JWKS, email read from `users_sync`, 9 tests passing. No handler has ever been invoked by a test |
 | Billing | Screens built. The three products and prices exist in the live Stripe account as of 23 September. Nothing is wired to them yet |
-| TikTok integration | **Does not exist as code**, but the connection is proved. 23 September: no file calls a TikTok host, and the two connection handlers in the contract have no implementation. Three live calls were made by hand through the Partner Center testing tool and all returned `code: 0`. The authorised shop is a sandbox test shop in region ID, not GB. See A19 |
+| TikTok integration | The authorisation half is built. `app/connections.py` holds both endpoints, the state store is migration 0021, and eleven smoke cases cover them. **The callback cannot complete**, because `GetAuthorizedShops` is signed and this project does not hold TikTok's signing algorithm. `_authorized_shops` is the one place that gap lives and it raises rather than guessing. See A23 and A27 |
 | Front end | 2 pages of 39 screens |
 | Figma | 18 screens drawn, 20 pending, blocked on the Starter plan call limit |
 | Deployment | Vercel chosen for the front end. Nothing deployed. The Python service has no host |
@@ -234,6 +234,8 @@ file inside this repository. `.gitignore` already excludes `.env` and its varian
 | Whether single factor authentication is acceptable at launch | A commercial and risk decision. Neon Auth offers no second factor and none can be added |
 | The encryption key for `tiktok_connections.access_token_enc`, `refresh_token_enc` and `shop_cipher_enc` | Where the Python service runs. The host decides where a key can live and how it is rotated. `key_version` exists as a column and resolves to nothing, so no code should write a number there and treat it as meaningful |
 | Whether `authorization_expires_at` is the refresh token's expiry | One real TikTok authorisation. The contract serves the field and `tiktok_connections.refresh_expires_at` looks like the same instant. Nobody has checked, so 0020 adds no column for it |
+| **Completing a shop connection** | TikTok's request signing algorithm. It is not in A23, not anywhere in the pack, and TikTok's docv2 pages do not render for a fetch. The fastest route is to make any call through Partner Center's API Testing Tool and read the signature off the request it builds. See A27 |
+| Refreshing an access token before it lapses | A scheduled job, which needs a host. The access token lives seven days (A23.4), so a connection made on a Wednesday stops working the next one |
 
 ## What is next in the code
 

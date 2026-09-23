@@ -21,7 +21,7 @@ production, so this sits alongside the checks against the real database rather t
 replacing them.
 """
 
-import os, sys, json
+import os, sys, json, hashlib
 from datetime import datetime, timezone, date
 from uuid import UUID
 
@@ -181,6 +181,113 @@ def products_ranking():
     # A product with an unknown cost ranks last rather than first.
     _assert(b["products"][0]["title"] == "Computer Desk 120cm")
 check("GET products returns null kept with a reason, and ranks unknowns last", products_ranking)
+
+
+# --- the two connection handlers
+#
+# These matter more than the readers. The callback is the only unauthenticated endpoint in
+# the service, and the state is the only thing standing between a seller's ledger and a
+# shop they never approved. A handler that accepts any state connects the wrong shop.
+import contextlib
+
+from app import connections
+
+
+def _fake_unscoped(answers):
+    @contextlib.contextmanager
+    def fake():
+        yield Conn(answers)
+    return fake
+
+
+def connection_unconfigured():
+    for var in ("TIKTOK_SERVICE_ID", "TIKTOK_APP_KEY", "TIKTOK_APP_SECRET"):
+        os.environ.pop(var, None)
+    r = client.post("/v1/connections/tiktok/authorize")
+    _assert(r.status_code == 503, f"status {r.status_code}: {r.text[:200]}")
+    _assert(r.json()["code"] == "tiktok_unconfigured", r.text[:200])
+check("POST authorize refuses when TikTok is not configured", connection_unconfigured)
+
+
+def authorize_rejects_open_redirect():
+    os.environ["TIKTOK_SERVICE_ID"] = "7688277529379407633"
+    connections.tenant = with_conn(connections, [("insert into tiktok_auth_state", Result([], []))])
+    # A protocol-relative URL passes a naive "starts with /" check and sends the seller to
+    # another host. That is the account takeover the contract warns about.
+    for bad in ("//evil.example/x", "https://evil.example", "/ok\\evil"):
+        r = client.post("/v1/connections/tiktok/authorize", json={"return_to": bad})
+        _assert(r.status_code == 400, f"{bad!r} was accepted: {r.status_code}")
+        _assert(r.json()["code"] == "return_to_not_allowed", r.text[:200])
+check("POST authorize refuses an off-site return_to", authorize_rejects_open_redirect)
+
+
+def authorize_issues_a_link():
+    os.environ["TIKTOK_SERVICE_ID"] = "7688277529379407633"
+    written = {}
+
+    class Recorder(Conn):
+        def execute(self, sql, args=None):
+            if "insert into tiktok_auth_state" in " ".join(sql.split()):
+                written["digest"], written["account"] = args[0], args[1]
+                return Result([], [])
+            return super().execute(sql, args)
+
+    @contextlib.contextmanager
+    def fake(_account_id):
+        yield Recorder([])
+    connections.tenant = fake
+
+    r = client.post("/v1/connections/tiktok/authorize", json={"return_to": "/connect/done"})
+    _assert(r.status_code == 201, f"status {r.status_code}: {r.text[:300]}")
+    b = r.json()
+    # A23.1. The seller link, not the partner link. Using the partner host is what produced
+    # an Indonesian sandbox shop three times on 23 September.
+    _assert(b["authorization_url"].startswith("https://services.tiktokshop.com/open/authorize"),
+            f"wrong authorisation host: {b['authorization_url']}")
+    _assert("partner.tiktokshop.com" not in b["authorization_url"])
+    _assert(f"state={b['state']}" in b["authorization_url"], "the link must carry the state")
+    _assert(len(b["state"]) >= 32, "the state must be long enough not to be guessed")
+    # The stored value is the digest. A readable copy of the table must be worthless.
+    _assert(written["digest"] != b["state"], "the raw state must never be stored")
+    _assert(written["digest"] == hashlib.sha256(b["state"].encode()).hexdigest())
+    _assert(written["account"] == str(ACCOUNT.id), "the state is bound to this account")
+check("POST authorize issues a seller link and stores only the digest", authorize_issues_a_link)
+
+
+def callback_refuses_unknown_state():
+    # consume_tiktok_auth_state returns no row for unknown, spent and expired alike.
+    connections.unscoped = _fake_unscoped([("consume_tiktok_auth_state", Result(["a", "r"], []))])
+    r = client.get("/v1/connections/tiktok/callback", params={"code": "c", "state": "whatever"})
+    _assert(r.status_code == 400, f"status {r.status_code}: {r.text[:200]}")
+    _assert(r.json()["code"] == "state_invalid", r.text[:200])
+    # The detail must not echo what it was given back into a page the seller may screenshot.
+    _assert("whatever" not in r.text and "c" != r.json()["detail"], "the detail echoed the input")
+check("GET callback refuses a state it did not issue", callback_refuses_unknown_state)
+
+
+def callback_refuses_a_creator_account():
+    connections.unscoped = _fake_unscoped(
+        [("consume_tiktok_auth_state", Result(["a", "r"], [(ACCOUNT.id, "/connect/done")]))]
+    )
+    # A23.3. user_type 1 is a creator. Anything but 0 means the wrong authorisation link.
+    connections._exchange_code = lambda code: {"access_token": "t", "user_type": 1}
+    r = client.get("/v1/connections/tiktok/callback", params={"code": "c", "state": "s"})
+    _assert(r.status_code == 400, f"status {r.status_code}: {r.text[:200]}")
+    _assert(r.json()["code"] == "not_a_seller_account", r.text[:200])
+check("GET callback refuses a TikTok account that is not a seller", callback_refuses_a_creator_account)
+
+
+def callback_stops_at_the_signing_gap():
+    connections.unscoped = _fake_unscoped(
+        [("consume_tiktok_auth_state", Result(["a", "r"], [(ACCOUNT.id, "/connect/done")]))]
+    )
+    connections._exchange_code = lambda code: {"access_token": "t", "user_type": 0}
+    r = client.get("/v1/connections/tiktok/callback", params={"code": "c", "state": "s"})
+    # Not a pass in the ordinary sense. It asserts that the unfinished part fails loudly and
+    # in one named place, rather than writing a half connection that can never reconcile.
+    _assert(r.status_code == 503, f"status {r.status_code}: {r.text[:300]}")
+    _assert(r.json()["code"] == "tiktok_signing_unimplemented", r.text[:200])
+check("GET callback stops at the signing gap rather than guessing", callback_stops_at_the_signing_gap)
 
 
 print()
