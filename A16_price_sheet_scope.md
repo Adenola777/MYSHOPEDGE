@@ -132,4 +132,4 @@ which A14 recorded as open.
 | S2 First sync | "Loading twelve months" becomes twenty-four. Not yet applied, the Figma quota is spent |
 | A12 test data | The generator covers two months of edge cases. No multi-month or BST boundary test exists |
 | Acceptance run | MON-5 has to pass across twenty-four months rather than twelve |
-| The quota | Not buildable until 16.3 is ruled |
+| The quota | Ruled soft. `order_quota` view added by migration 0019. The service applies the limits and the two thresholds, not yet written |
