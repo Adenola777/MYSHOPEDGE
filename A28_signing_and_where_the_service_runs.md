@@ -116,6 +116,20 @@ first real call is the test. The code says so at the top of the module, and this
 same class of unknown as before: the algorithm is now written down from its source rather
 than absent.
 
+**`tests/check_signature_against_tiktok.py` closes that without an approved app.** Make any
+call in Partner Center's API Testing Tool, which signs on your behalf, and pass the request
+URL it built to the script with the app secret in the environment. It recomputes and
+compares. The secret never leaves the machine and the URL carries nothing secret, because
+`sign` is a digest and `app_key` is a public identifier.
+
+A failure names the cause rather than reporting one. The script recomputes the signature
+under each plausible misreading of the documented steps, skipping any that are not actually
+distinguishable on the inputs given, and says which one TikTok's own value matches. Proved
+both ways against constructed signatures on 23 September: it matches a correct one and it
+identifies a deliberately wrong one by name. What it cannot prove is the timestamp window,
+the headers or the endpoint. It proves the digest, which is the part no error message can
+diagnose, because a wrong signature and a wrong secret are refused identically.
+
 ## 28.4 Where the Python service runs
 
 **Decided: a long-lived container in London, not serverless.** Three facts decide it.
