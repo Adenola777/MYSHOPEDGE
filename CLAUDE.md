@@ -83,7 +83,7 @@ The specification is close to complete. The application is not. As of 23 Septemb
 | Layer | State |
 |---|---|
 | Rulings, terminology, screens, data model, API contract | Done |
-| Schema | Through 0019 on staging and development, 20 migrations recorded on each. Production holds through 0016 plus the 0019 security fix |
+| Schema | Through 0020 on staging and development, 21 migrations recorded on each. Production holds through 0016 plus the 0019 security fix, and does not yet have 0020 |
 | Backend | 6 of 58 routes. Health, billing, settlements, records |
 | Authentication | ES256 verified against the provider's fetched JWKS, email read from `users_sync`, 9 tests passing. No handler has ever been invoked by a test |
 | Billing | Screens built. The three products and prices exist in the live Stripe account as of 23 September. Nothing is wired to them yet |
@@ -232,6 +232,8 @@ file inside this repository. `.gitignore` already excludes `.env` and its varian
 | The remaining 20 Figma screens | The Figma Starter plan call limit |
 | Where the Python service runs | A decision nobody has taken. It also decides where `DATABASE_URL` lives |
 | Whether single factor authentication is acceptable at launch | A commercial and risk decision. Neon Auth offers no second factor and none can be added |
+| The encryption key for `tiktok_connections.access_token_enc`, `refresh_token_enc` and `shop_cipher_enc` | Where the Python service runs. The host decides where a key can live and how it is rotated. `key_version` exists as a column and resolves to nothing, so no code should write a number there and treat it as meaningful |
+| Whether `authorization_expires_at` is the refresh token's expiry | One real TikTok authorisation. The contract serves the field and `tiktok_connections.refresh_expires_at` looks like the same instant. Nobody has checked, so 0020 adds no column for it |
 
 ## What is next in the code
 

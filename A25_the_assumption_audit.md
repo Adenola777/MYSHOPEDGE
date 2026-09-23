@@ -96,6 +96,7 @@ and never recounted becomes a claim rather than a measurement.
 | `test_handlers_smoke.py` calls every route | A handler that cannot execute, or that stops keeping a promise |
 | `check_maps_against_real.py` measures the maps against a real payload | Coverage drifting from what TikTok actually sends |
 | `schema/checks/ret7_product_reconciliation.sql` | The product table ceasing to reconcile to the shop figure |
+| `check_contract_against_schema.py` compares the contract's properties to the columns | A field the contract serves that no table can hold. Added 23 September after `Shop` was found to declare two such fields. See A26 |
 
 Four of those five did not exist this morning.
 
