@@ -37,6 +37,7 @@ carries every platform, integration and commercial decision taken since.
 | 16 | The six price sheet rows | Specified. Migration 0018 applied to staging and development |
 | 17 | Endpoint versions checked against the specification | Settlement detail corrected to finance 202501 |
 | 18 | The eight screens the rulings moved | Specified |
+| 19 | The first live TikTok calls | Connection proved. The authorised shop is a sandbox shop in region ID, not GB |
 
 ## Decisions taken, and open to reversal
 
@@ -73,7 +74,9 @@ carries every platform, integration and commercial decision taken since.
     created in the live account on 23 September 2026 and each one reads back as GBP,
     recurring monthly, and exclusive.
 12. **History is twenty-four months on every plan**, not tiered. A16.2. Whether TikTok
-    exposes two years of statements is unverified and cannot be verified without a shop.
+    exposes two years of statements is unverified. It was tested on 23 September and the
+    test answered nothing, because the shop had no trading history. Only a shop that has
+    been trading for over two years can answer it, so connecting any shop is not enough.
 13. **The order limit is enforced softly.** A16.3. The count is shown at eighty per cent
     and at a hundred, the larger plan is offered, and nothing stops. No month closes, no
     export is withheld, no figure stops updating.
@@ -84,7 +87,7 @@ carries every platform, integration and commercial decision taken since.
 |---|---|---|
 | TikTok app developer approval | **Granted 23 September 09:00** | Four categories, all UK: Finance and Accounting, ERP, Order Management, Product Information Management |
 | App credentials and a shop authorisation | Adenola | Every claim the ingestion makes. Needs `TIKTOK_APP_KEY` and `TIKTOK_APP_SECRET` set as environment variables, which a session reads only at start |
-| Whether TikTok exposes twenty-four months of statements | Adenola | Whether A16.2 can be delivered |
+| Whether TikTok exposes twenty-four months of statements | **Still open after 23 September.** The call was made and returned nothing, against a shop with no trading history, so it answered nothing. Needs a shop trading over two years. See A19.3 | Whether A16.2 can be delivered |
 | Whether the TikTok invoice number is reachable from Seller Center | Adenola | Reconciliation identifier |
 | The literal column labels on a settlement export | Blocked on the shop | A8 section 3.5 |
 | Which Neon project the product runs on | **Settled 23 September** | `super-mouse-64697125`, the direct Neon account. See below |

@@ -96,8 +96,13 @@ than assumption:
 
 1. **How far back do the statements go.** A16.2 promises twenty-four months on every plan
    and A17.3 established that TikTok's specification states no limit either way. One call
-   to `/finance/202309/statements` with `statement_time_ge` set two years back settles
-   whether that promise can be kept.
+   to `/finance/202309/statements` with `statement_time_ge` set two years back was made on
+   23 September and returned nothing.
+
+   **That call settles nothing, and this step is corrected because of it.** The shop it ran
+   against had no trading history, so an empty result says nothing about what TikTok
+   retains. Only a shop that has been trading for more than two years can answer this. See
+   A19.3. Do not read an empty statement list from a new or test shop as an answer.
 2. **What a settlement export actually calls its columns.** A8 section 3.5 has carried this
    as open since the terminology standard was written, because the labels are unpublished.
 3. **Whether the invoice number is reachable**, which decides whether the reconciliation
