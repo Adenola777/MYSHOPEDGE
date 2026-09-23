@@ -20,10 +20,18 @@ You need three browser tabs open and signed in.
 
 ## Step 1. Get the app key and app secret
 
-In Partner Center, open **Manage apps** and select your app. The app page shows **App key**
-and **App secret**, with the secret behind a reveal control.
+In Partner Center, open **Manage apps** and select your app. Under **App & Service** the page
+shows three values you need, not two:
 
-Copy both. Do not paste them into the conversation, an email, or a file in the repository.
+| Value | What it is for |
+|---|---|
+| **Service ID** | Building the authorisation link. This is the OAuth client identifier |
+| **App key** | The token exchange |
+| **App secret** | The token exchange |
+
+Copy all three. Do not paste the secret into the conversation, an email, or a file in the
+repository. **Corrected 23 September: this step previously asked for two values and omitted
+the Service ID, which made step 4 impossible to follow.** See A23.2.
 
 ## Step 2. Set the callback URL on the app
 
@@ -52,9 +60,20 @@ while it is only you, and it is far better than a transcript.
 
 ## Step 4. Authorise your shop
 
-From the app page in Partner Center, use the **Authorisation URL** or the test
-authorisation control. It sends you to TikTok, asks you to sign in as the seller, and shows
-the permissions the app is requesting.
+**Corrected 23 September. The domain matters and the wrong one was used all day.** There are
+two authorisation links and they do different things:
+
+```
+seller, your own shop    https://services.tiktokshop.com/open/authorize?service_id=<service id>
+partner, TAP             https://partner.tiktokshop.com/open/authorize?service_id=<service id>
+```
+
+MyShopEdge is a seller-facing product, so **use the `services.tiktokshop.com` link**. Every
+attempt on 23 September went through the partner link and every one of them returned a
+sandbox test shop in Indonesia rather than the real British shop. See A23.1.
+
+Open that link. It asks you to sign in as the seller and shows the permissions the app is
+requesting.
 
 Approve it. TikTok then redirects you to the callback URL from step 2, and the address bar
 carries a parameter:
@@ -66,8 +85,9 @@ http://localhost:3000/connections/tiktok/callback?code=ROW_xxxxxxxxxxxx
 The page will fail to load, because nothing is running on localhost yet. **That does not
 matter.** The value in the address bar is what you need.
 
-Copy that `code` value. It is single use and expires within minutes, so do step 5 straight
-away.
+Copy that `code` value. It is single use and expires in **thirty minutes**, which is the
+figure on TikTok's own page. This runbook previously said "within minutes", which was
+imprecise in the direction that makes people rush.
 
 ## Step 5. Put the code into the environment, then start a new session
 
@@ -84,8 +104,16 @@ Say to the new session: *connect the shop*.
 
 ## What happens next, without you
 
-The session exchanges the authorisation code for an access token and a refresh token, then
-calls `GET /authorization/202309/shops` with the `x-tts-access-token` header. That returns
+**None of this is built.** Checked 23 September: no file in this repository calls a TikTok
+host. The exchange described below is what the code will do once it exists, and A23 holds
+the facts needed to write it.
+
+The exchange is `GET https://auth.tiktok-shops.com/api/v2/token/get`, which is a different
+host from every other call, with `app_key`, `app_secret`, `auth_code` and
+`grant_type=authorized_code`. That spelling is deliberate and TikTok's page warns against
+correcting it. The access token lasts seven days, so a refresh has to be scheduled or the
+connection stops working a week later. Then
+`GET /authorization/202309/shops` with the `x-tts-access-token` header. That returns
 the shop's `id`, `name`, `region`, `seller_type` and, most importantly, its **cipher**.
 
 The cipher is the value every later finance call needs. It is written to the `shops` row

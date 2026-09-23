@@ -41,6 +41,7 @@ carries every platform, integration and commercial decision taken since.
 | 20 | The real settlement payload, measured | A8 section 3.5 closed. 57 fee fields, 24 shipping, 17 tax. Our maps cover 7, 5 and 1 |
 | 21 | The first real British order | Order 576955651451099542 on GBGBLCRKQTEX. A11.2 amended. Section 21.3 corrected by A22 |
 | 22 | The unsettled export | Commission measured at 9.00%. Settlement is Delivered plus 8 days. A21.3 corrected |
+| 23 | The authorisation flow, from TikTok's page | Seller link is services.tiktokshop.com, not partner. service_id is a third credential. Runbook corrected |
 
 ## Decisions taken, and open to reversal
 
