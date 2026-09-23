@@ -91,6 +91,7 @@ carries every platform, integration and commercial decision taken since.
 | Whether Vercel `lhr1` guarantees data at rest in London | Confirm before launch | Data protection alignment |
 | Where Better Auth processes identity data | Confirm before launch | Data protection alignment |
 | Whether single factor authentication is acceptable at launch | Commercial and risk | Nothing technical. A14 section 14.7 |
+| Where the Python service is hosted | Decision | `NEXT_PUBLIC_API_BASE_URL` on Vercel, and where `DATABASE_URL` lives |
 | Eight screens specified before the 22 September rulings | Specification | S9, S10, S11, S14, S22, S23, S25, S26 |
 
 ## The Vercel, GitHub and Neon wiring
@@ -125,6 +126,21 @@ So `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, the legacy `PG*` variables and
 `NEON_AUTH_BASE_URL` are all set automatically, on a project holding the work. **The two
 integrations cannot coexist on one Vercel project**, so the Vercel-managed one is removed
 first.
+
+**None of this is urgent, and it was treated as though it were.** Checked 23 September:
+the Next.js front end never touches the database. It calls the API over HTTP through
+`NEXT_PUBLIC_API_BASE_URL` and contains no Postgres client, no Neon package and no
+reference to `DATABASE_URL`. The database belongs to the Python service, which is not
+hosted on Vercel and has no host decided yet.
+
+So the stale `DATABASE_URL` entries left on the Vercel project by the marketplace
+integration are inert. Nothing reads them. They can stay until the integration is sorted
+out at leisure. The one variable the Vercel project will need is
+`NEXT_PUBLIC_API_BASE_URL`, and that waits on the service having somewhere to run.
+
+**Where the Python service runs is an open item nobody has raised.** Vercel is hosting the
+front end. FastAPI, psycopg and a connection pool are a different shape of deployment, and
+choosing its home also decides where `DATABASE_URL` lives.
 
 `NEON_AUTH_BASE_URL` is the variable the service already falls back to. With it present,
 the JWKS URL, the issuer and the audience are all derived and nothing has to be set by
