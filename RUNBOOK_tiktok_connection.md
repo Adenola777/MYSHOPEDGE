@@ -18,7 +18,7 @@ You need three browser tabs open and signed in.
 | Your seller account | seller-uk.tiktok.com |
 | The cloud environment settings | the environment selector, the cloud icon, in the Claude app |
 
-## Step 1. Get the app key and app secret
+## Step 1. Get the service ID, the app key and the app secret
 
 In Partner Center, open **Manage apps** and select your app. Under **App & Service** the page
 shows three values you need, not two:
@@ -45,15 +45,19 @@ http://localhost:3000/connections/tiktok/callback
 That path matches `tiktokCallback` in `api/openapi.yaml`, so the contract and the app agree.
 When the application has a real address the value changes to that host and the same path.
 
-## Step 3. Put the two values into the environment
+## Step 3. Put the three values into the environment
 
 Open the cloud environment you are using, the same dialog where the allowed domains were
 set, and add to **Environment variables**:
 
 ```
+TIKTOK_SERVICE_ID=<the service id>
 TIKTOK_APP_KEY=<the app key>
 TIKTOK_APP_SECRET=<the app secret>
 ```
+
+The service ID is not a secret and the app secret is. All three live here so that nothing
+has to be typed into a conversation.
 
 The dialog warns that these are visible to anyone using the environment. That is acceptable
 while it is only you, and it is far better than a transcript.
@@ -152,5 +156,8 @@ one app. Re-authorising from step 4 issues a fresh one.
 
 ## What this runbook does not cover
 
-Refreshing the token when it expires, which the service does on its own once the connection
-exists, and disconnecting, which is S29 and is not built yet.
+Refreshing the token when it expires. **This runbook previously said the service does it on
+its own. It does not, and no code anywhere does.** The access token lasts seven days, so a
+connection made today stops working a week later until the refresh call in A23.4 is built.
+
+Disconnecting, which is S29 and is not built either.
