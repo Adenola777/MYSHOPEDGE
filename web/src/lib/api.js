@@ -11,9 +11,18 @@
 const BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/v1";
 
 /**
+ * @typedef {Object} ApiResult
+ * @property {boolean} ok
+ * @property {number} status  0 when the request never reached the service.
+ * @property {any} data
+ * @property {boolean} [unreachable]  True when the service could not be reached at all.
+ * @property {"timeout" | "network"} [reason]  Why, when unreachable.
+ */
+
+/**
  * @param {string} path
- * @param {RequestInit & { idempotencyKey?: string }} [init]
- * @returns {Promise<{ ok: boolean, status: number, data: any }>}
+ * @param {RequestInit & { idempotencyKey?: string, timeoutMs?: number }} [init]
+ * @returns {Promise<ApiResult>}
  */
 export async function api(path, init = {}) {
   const { idempotencyKey, headers: given, timeoutMs = 15000, ...rest } = init;
@@ -73,6 +82,26 @@ export async function api(path, init = {}) {
 export async function fetchPlans() {
   const { ok, data } = await api("/billing/plans", { cache: "no-store" });
   return ok ? data : null;
+}
+
+/**
+ * The product ranking for one shop.
+ *
+ * Returns the whole result rather than just the data, because the screen has to tell a
+ * seller the difference between "we could not reach us", "you are signed out" and "this
+ * shop is not yours". Collapsing those into null would make all three look like an empty
+ * shop, which is the one reading that is never true.
+ *
+ * @param {string} shopId
+ * @param {{ measure?: string, from?: string, to?: string }} [query]
+ */
+export async function fetchProducts(shopId, query = {}) {
+  const qs = new URLSearchParams(
+    Object.entries(query).filter(([, v]) => v !== undefined && v !== ""),
+  ).toString();
+  return api(`/shops/${encodeURIComponent(shopId)}/products${qs ? `?${qs}` : ""}`, {
+    cache: "no-store",
+  });
 }
 
 /**
