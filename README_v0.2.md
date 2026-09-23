@@ -8,7 +8,7 @@ carries every platform, integration and commercial decision taken since.
 
 | Folder | Contents |
 |---|---|
-| `A2` to `A16` | The rulings, one document per action |
+| `A2` to `A18` | The rulings, one document per action |
 | `schema/` | The consolidated v0.2 schema and migrations 0001 to 0018 |
 | `api/` | `openapi.yaml`, 58 operations across 53 paths, 59 schemas |
 | `service/` | The Python service. FastAPI, psycopg 3, PyJWT |
@@ -34,7 +34,9 @@ carries every platform, integration and commercial decision taken since.
 | 13 | Stack and client contract | Decided. Python and JavaScript, no TypeScript |
 | 14 | The onboarding screen set | Specified. Corrected 23 September for the real provider |
 | 15 | Four screen rulings, the copy pass, VAT | Specified and applied |
-| 16 | The six price sheet rows | Specified. Migration 0018 written, not applied |
+| 16 | The six price sheet rows | Specified. Migration 0018 applied to staging and development |
+| 17 | Endpoint versions checked against the specification | Settlement detail corrected to finance 202501 |
+| 18 | The eight screens the rulings moved | Specified |
 
 ## Decisions taken, and open to reversal
 
@@ -92,7 +94,6 @@ carries every platform, integration and commercial decision taken since.
 | Where Better Auth processes identity data | Confirm before launch | Data protection alignment |
 | Whether single factor authentication is acceptable at launch | Commercial and risk | Nothing technical. A14 section 14.7 |
 | Where the Python service is hosted | Decision | `NEXT_PUBLIC_API_BASE_URL` on Vercel, and where `DATABASE_URL` lives |
-| Eight screens specified before the 22 September rulings | Specification | S9, S10, S11, S14, S22, S23, S25, S26 |
 
 ## The Vercel, GitHub and Neon wiring
 
@@ -157,7 +158,7 @@ service derives them with `urlsplit` rather than by appending to the base.
 | Golden datasets | 10 | 12 |
 | Screens ruled | 15 | 39 |
 | Screens drawn in Figma | 0 | 18 |
-| Schema migrations | 0 | 18 |
+| Schema migrations | 0 | 19 |
 | API operations specified | 0 | 58 |
 
 ## Build status
@@ -167,7 +168,7 @@ The specification is nearly complete. The application is not.
 | Layer | State |
 |---|---|
 | Brand, terminology, screen specification, data model, API contract | Done |
-| Schema applied | Through 0016 on all three branches. 0017 on development only. 0018 nowhere |
+| Schema applied | Through 0019 on staging and development, 20 recorded each. Production holds through 0016 plus the 0019 security fix |
 | Backend | 4 of 58 routes. Billing and health |
 | Authentication | Fixed 23 September. EdDSA verified, email from `users_sync`, nine tests passing |
 | Billing | Screens built. The three Stripe products have never been created |
