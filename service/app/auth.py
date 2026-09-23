@@ -1,7 +1,9 @@
 """Turning a request into an account.
 
-Neon Auth provisions Better Auth, which issues the tokens. This service never sees a
-password, never issues a token, and never stores one. The only thing about a seller's
+Neon Auth provisions **Stack Auth** on this project, which issues the tokens. That is the
+`auth_provider` value in the project's own Neon Auth configuration, not an inference from a
+documentation page. This service never sees a password, never issues a token, and never
+stores one. The only thing about a seller's
 identity that reaches our database is ``accounts.auth_subject``.
 
 The chain, and the rule that holds it together.
@@ -17,17 +19,24 @@ The rule is step 3. An account id is never read from a header, a body, a query s
 cookie, because anything a client can set is something a client can forge. The subject is
 taken from the token after verification and from nowhere else.
 
-Two corrections made on 23 September 2026, both of which would have stopped every sign in.
+**The algorithm, and how it was got wrong twice in one day.**
 
-**The algorithm.** This module verified ES256 and RS256. Neon Auth signs EdDSA over
-Ed25519, which the published JWKS states plainly::
+This module first verified ES256 and RS256. On 23 September I narrowed it to EdDSA,
+believing Neon Auth provisions Better Auth, and rewrote the tests to sign EdDSA. Every case
+passed. Every real token would have been refused, because the provider signs ES256.
 
-    {"alg":"EdDSA","crv":"Ed25519","kty":"OKP","kid":"54b08b58-..."}
+The provider's own JWKS, fetched the same evening from the `jwks_url` in this project's
+Neon Auth configuration and recorded at `tests/fixtures/provider_jwks_2026-09-23.json`::
 
-An Ed25519 signature matches neither of the algorithms that were listed, so every real
-token would have been refused as unverifiable. The original tests passed because they were
-signed with the same wrong assumption, which is a test confirming a belief rather than
-checking a fact.
+    {"kty":"EC","crv":"P-256","alg":"ES256","kid":"LhlLhcwrLjOE", ...}
+
+Both mistakes had the same shape. A vendor page was read, the code was changed to match it,
+and the test was changed to match the code. A test that generates its own key can only
+confirm that the code agrees with the test. The configuration was one call away on both
+occasions.
+
+The test now asserts `ALGORITHMS` against that recorded JWKS, so changing this value
+without refetching the provider's keys fails in either direction.
 
 **The email.** This module read ``claims["email"]`` and refused the seller without it, on
 the strength of Neon's overview page saying managed tokens carry "no custom claims". The
@@ -45,9 +54,12 @@ signed up, not a fact, and a financial product must not attach a seller's payout
 an address nobody has proved they control. Where the claim is present and false, the seller
 is refused until they verify.
 
-Configuration, from the same page. Issuer and audience are both the origin of the Neon Auth
-URL, with no path, for example ``https://ep-xxxx.neonauth.c-2.eu-west-2.aws.neon.tech``.
-Access tokens last fifteen minutes.
+**Issuer and audience are configured, not derived.** They used to default to the origin of
+the Neon Auth URL, which came from the same page that named the wrong provider. What Stack
+Auth puts in ``iss`` and ``aud`` has never been observed here, because no real token has
+ever reached this service. Guessing would mean refusing every valid token, or accepting one
+issued for somebody else. So ``NEON_AUTH_AUDIENCE`` and ``NEON_AUTH_ISSUER`` must both be
+set, read off a real token once, and the service refuses to verify until they are.
 """
 
 from __future__ import annotations
@@ -64,10 +76,20 @@ from fastapi import Request
 from .db import create_account_id, lookup_identity, resolve_account_id
 from .problems import Problem
 
-# EdDSA and nothing else. Listing more algorithms than the provider uses is not tolerance,
+# ES256 and nothing else. Listing more algorithms than the provider uses is not tolerance,
 # it is an invitation: every additional algorithm is another verification path an attacker
 # can aim a token at.
-ALGORITHMS = ["EdDSA"]
+#
+# This value has now been wrong twice, in both directions, on the same day. It is ES256
+# because the provider's own JWKS says so, fetched 23 September 2026 from the URL in this
+# project's Neon Auth configuration and recorded verbatim at
+# tests/fixtures/provider_jwks_2026-09-23.json:
+#
+#     {"kty":"EC","crv":"P-256","alg":"ES256","kid":"LhlLhcwrLjOE", ...}
+#
+# Do not change this line on the strength of a documentation page. A test asserts it
+# against that fixture, so a change here without a refetch fails.
+ALGORITHMS = ["ES256"]
 
 
 @dataclass(frozen=True)
@@ -102,12 +124,25 @@ def _base_url() -> str | None:
 
 @lru_cache(maxsize=1)
 def _jwks_client() -> jwt.PyJWKClient:
+    """The JWKS URL is configured, never derived.
+
+    It used to be built by appending `/.well-known/jwks.json` to the Neon Auth base URL.
+    That is wrong for this project. The real URL is on a different host entirely:
+
+        https://api.stack-auth.com/api/v1/projects/<project id>/.well-known/jwks.json
+
+    which `get_neon_auth_config` reports and which no amount of string concatenation from
+    a Neon hostname would ever produce. Deriving it meant every token was checked against
+    a URL that does not exist, and the failure would have looked like a network problem
+    rather than a configuration mistake.
+    """
     url = os.environ.get("NEON_AUTH_JWKS_URL")
     if not url:
-        base = _base_url()
-        if not base:
-            raise Problem(503, "auth_unconfigured", "Authentication is not configured.")
-        url = base.rstrip("/") + "/.well-known/jwks.json"
+        raise Problem(
+            503, "auth_unconfigured",
+            "Authentication is not configured. Set NEON_AUTH_JWKS_URL to the jwks_url "
+            "from the project's Neon Auth configuration.",
+        )
     # The client caches the keys and refetches when it meets a key id it does not hold,
     # which is what makes provider key rotation a non-event.
     return jwt.PyJWKClient(url, cache_keys=True, lifespan=600)
@@ -120,13 +155,24 @@ def verify(token: str) -> dict:
     except Exception as exc:
         raise Problem(401, "token_unverifiable", "Sign in again.") from exc
 
-    # Both default to the origin of the Neon Auth URL, which is what the provider puts in
-    # iss and aud. Under the Neon-managed Vercel integration that means the only variable
-    # anyone has to set is the one the integration sets itself.
-    base = _base_url()
-    default_origin = _origin_of(base) if base else None
-    audience = os.environ.get("NEON_AUTH_AUDIENCE") or default_origin
-    issuer = os.environ.get("NEON_AUTH_ISSUER") or default_origin
+    # Issuer and audience are configured and never guessed.
+    #
+    # These used to default to the origin of the Neon Auth URL, on the strength of a
+    # documentation page describing a different provider from the one this project
+    # actually uses. What Stack Auth puts in `iss` and `aud` has never been observed here,
+    # because no real token has ever reached this service. Guessing would mean either
+    # refusing every valid token or, worse, accepting one issued for somebody else.
+    #
+    # So the service refuses to verify until both are supplied. Read them off a real token
+    # once, with jwt.decode(token, options={"verify_signature": False}), and set them.
+    audience = os.environ.get("NEON_AUTH_AUDIENCE")
+    issuer = os.environ.get("NEON_AUTH_ISSUER")
+    if not audience or not issuer:
+        raise Problem(
+            503, "auth_unconfigured",
+            "Authentication is not configured. Set NEON_AUTH_AUDIENCE and "
+            "NEON_AUTH_ISSUER from a real token's aud and iss claims.",
+        )
 
     try:
         return jwt.decode(

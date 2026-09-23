@@ -7,12 +7,19 @@ signing tokens with it.
 
     python3 tests/test_auth_verification.py
 
-Rewritten 23 September 2026. The previous version generated ES256 keys and signed its
-fixtures with ES256, while the provider signs EdDSA over Ed25519. Every case passed and
-every real token would have been refused. A test that shares the code's assumption cannot
-catch the code being wrong about it, so the key type here is taken from the provider's own
-published JWKS rather than from what the service expects, and the last case below exists
-specifically to fail if anyone widens the algorithm list again.
+Rewritten twice on 23 September 2026, and the second rewrite is the interesting one.
+
+The first version signed ES256 and the service checked ES256. Believing the provider
+signed EdDSA, I changed both, and every case still passed, because a test that generates
+its own key proves only that the code agrees with the test.
+
+The provider signs ES256. Fetched from the jwks_url in this project's own Neon Auth
+configuration and recorded at fixtures/provider_jwks_2026-09-23.json. Both times the
+mistake was reading a vendor page instead of making one call.
+
+So this file no longer decides the algorithm for itself. It reads the recorded JWKS and
+asserts that what the service accepts is what the provider actually publishes. Changing
+ALGORITHMS without refetching that fixture now fails, in either direction.
 """
 
 import json, os, sys, threading, time, http.server, socketserver
@@ -20,11 +27,16 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import jwt
 from cryptography.hazmat.primitives.asymmetric import ed25519, ec
 
-# Ed25519, because that is what https://<project>.neonauth.<region>.aws.neon.tech
-# /neondb/auth/.well-known/jwks.json publishes: {"alg":"EdDSA","crv":"Ed25519","kty":"OKP"}
-key = ed25519.Ed25519PrivateKey.generate()
-jwk = json.loads(jwt.algorithms.OKPAlgorithm.to_jwk(key.public_key()))
-jwk.update({"kid": "test-key-1", "use": "sig", "alg": "EdDSA"})
+# The algorithm is read from what the provider publishes, not chosen here. If the recorded
+# fixture ever carries more than one, this raises rather than silently picking the first.
+HERE = os.path.dirname(os.path.abspath(__file__))
+RECORDED = json.load(open(os.path.join(HERE, "fixtures", "provider_jwks_2026-09-23.json")))
+PROVIDER_ALGS = sorted({k["alg"] for k in RECORDED["keys"]})
+assert PROVIDER_ALGS == ["ES256"], f"Recorded JWKS carries {PROVIDER_ALGS}; update this test."
+
+key = ec.generate_private_key(ec.SECP256R1())
+jwk = json.loads(jwt.algorithms.ECAlgorithm.to_jwk(key.public_key()))
+jwk.update({"kid": "test-key-1", "use": "sig", "alg": "ES256"})
 JWKS = json.dumps({"keys": [jwk]}).encode()
 
 class H(http.server.BaseHTTPRequestHandler):
@@ -53,7 +65,7 @@ def token(**over):
     claims = {"sub": "user_synthetic_uk_shop", "aud": AUD, "iss": ISS,
               "iat": now, "exp": now + 300}
     claims.update(over)
-    return jwt.encode(claims, key, algorithm="EdDSA", headers={"kid": "test-key-1"})
+    return jwt.encode(claims, key, algorithm="ES256", headers={"kid": "test-key-1"})
 
 failures = []
 
@@ -73,7 +85,7 @@ def case(name, fn, expect_code=None):
 
 print("verify()")
 
-c = case("a valid EdDSA token resolves its subject", lambda: verify(token()))
+c = case("a valid ES256 token resolves its subject", lambda: verify(token()))
 assert c and c["sub"] == "user_synthetic_uk_shop"
 
 # The provider's JWT plugin page lists email and emailVerified in the payload, while its
@@ -85,33 +97,40 @@ case("an expired token is refused", lambda: verify(token(exp=int(time.time())-10
      "token_expired")
 case("a token with no exp is refused",
      lambda: verify(jwt.encode({"sub":"x","aud":AUD,"iss":ISS}, key,
-                               algorithm="EdDSA", headers={"kid":"test-key-1"})),
+                               algorithm="ES256", headers={"kid":"test-key-1"})),
      "token_invalid")
 case("a token for another audience is refused", lambda: verify(token(aud="another-project")),
      "token_invalid")
 case("a token from another issuer is refused", lambda: verify(token(iss="https://evil.test")),
      "token_invalid")
 
-other = ed25519.Ed25519PrivateKey.generate()
+other = ec.generate_private_key(ec.SECP256R1())
 forged = jwt.encode({"sub":"user_attacker","aud":AUD,"iss":ISS,
                      "exp":int(time.time())+300},
-                    other, algorithm="EdDSA", headers={"kid":"test-key-1"})
+                    other, algorithm="ES256", headers={"kid":"test-key-1"})
 case("a token signed by another key is refused", lambda: verify(forged), "token_invalid")
 
 unsigned = jwt.encode({"sub":"user_attacker","exp":int(time.time())+300},
                       key=None, algorithm="none")
 case("an unsigned token is refused", lambda: verify(unsigned), "token_unverifiable")
 
-# The regression. An ES256 token must be refused whatever else changes, because accepting
+# The regression. An EdDSA token must be refused whatever else changes, because accepting
 # a second algorithm gives an attacker a second door to try. If somebody widens ALGORITHMS
 # to make an unrelated problem go away, this fails and says why.
-es_key = ec.generate_private_key(ec.SECP256R1())
-es_token = jwt.encode({"sub":"user_attacker","aud":AUD,"iss":ISS,
+ed_key = ed25519.Ed25519PrivateKey.generate()
+ed_token = jwt.encode({"sub":"user_attacker","aud":AUD,"iss":ISS,
                        "exp":int(time.time())+300},
-                      es_key, algorithm="ES256", headers={"kid":"test-key-1"})
-case("an ES256 token is refused, whatever else changes", lambda: verify(es_token),
+                      ed_key, algorithm="EdDSA", headers={"kid":"test-key-1"})
+case("an EdDSA token is refused, whatever else changes", lambda: verify(ed_token),
      "token_invalid")
-assert ALGORITHMS == ["EdDSA"], f"ALGORITHMS widened to {ALGORITHMS}"
+
+# The check that would have caught both mistakes. What the service accepts must be what the
+# provider publishes, and the provider's answer is the recorded fixture rather than anyone's
+# recollection of a documentation page.
+assert ALGORITHMS == PROVIDER_ALGS, (
+    f"The service accepts {ALGORITHMS} but the provider publishes {PROVIDER_ALGS}. "
+    f"Refetch fixtures/provider_jwks_2026-09-23.json before changing either."
+)
 
 # emailVerified false must be refused. An unverified address is a claim by whoever signed
 # up, not a fact, and this product attaches payout history to it.

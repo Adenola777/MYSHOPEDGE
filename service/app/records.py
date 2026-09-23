@@ -19,7 +19,7 @@ sale happens and reads `basis_day`. `cash` recognises it when TikTok pays out an
 `settlement_month`. A figure without a basis is meaningless, which is why the parameter has
 a default rather than being optional in effect.
 
-Verified against the seeded seller on the development branch, 23 September 2026: 118 entries
+Counted on the development branch, 23 September 2026: 119 entries
 across seventeen type and category combinations, including the three new categories that
 A18.5 required, `platform_adjustment`, `unmapped_fee` and `reserve_withheld`.
 """

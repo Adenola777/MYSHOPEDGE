@@ -43,6 +43,7 @@ carries every platform, integration and commercial decision taken since.
 | 22 | The unsettled export | Commission measured at 9.00%. Settlement is Delivered plus 8 days. A21.3 corrected |
 | 23 | The authorisation flow, from TikTok's page | Seller link is services.tiktokshop.com, not partner. service_id is a third credential. Runbook corrected |
 | 24 | Two app paths | The ISV app cannot authorise a production shop until review. A Seller Developer custom app is how the build gets real GB data now |
+| 25 | The assumption audit | The provider is Stack Auth signing ES256, not Better Auth signing EdDSA. No handler had ever been invoked. Four new guards |
 
 ## Decisions taken, and open to reversal
 
@@ -57,9 +58,10 @@ carries every platform, integration and commercial decision taken since.
 4. **Golden dataset numbering.** G10 was already in use for the workbook discrepancy
    dataset. The new datasets are G11, from Action 2, and G12, from Action 4.
 5. **Sign-in pages are hosted by the identity provider.** Settled by Action 10, corrected
-   23 September 2026. The provider is Better Auth 1.4.18, delivered as Neon Auth's Managed
-   Better Auth, and not Stack Auth as A14 originally stated. A14 is now rewritten. Tokens
-   are signed EdDSA over Ed25519, expire in fifteen minutes, and carry `email`,
+   23 September 2026, then corrected again the same evening because the first correction
+   was wrong. The provider is **Stack Auth**, which is what the project's own Neon Auth
+   configuration says and what A14 originally stated. Tokens are signed **ES256** over
+   P-256, verified by fetching the provider's JWKS, and carry `email`,
    `emailVerified`, `name` and `role` among their claims. Issuer and audience are both the
    origin of the Neon Auth URL. **There is no second factor and none can be added**, which
    A14 section 14.7 sets out.
@@ -102,7 +104,7 @@ carries every platform, integration and commercial decision taken since.
 | Immutable storage for the invoice documents | Deferred, see A10.8 | Nothing yet |
 | A Vercel blob store named `myshopedge-seller-files`, provenance unknown | Identify or remove | Nothing yet |
 | Whether Vercel `lhr1` guarantees data at rest in London | Confirm before launch | Data protection alignment |
-| Where Better Auth processes identity data | Confirm before launch | Data protection alignment |
+| Where Stack Auth processes identity data | Confirm before launch | Data protection alignment. `api.stack-auth.com` is not a Neon host |
 | Whether single factor authentication is acceptable at launch | Commercial and risk | Nothing technical. A14 section 14.7 |
 | Where the Python service is hosted | Decision | `NEXT_PUBLIC_API_BASE_URL` on Vercel, and where `DATABASE_URL` lives |
 
@@ -181,12 +183,12 @@ The specification is nearly complete. The application is not.
 | Brand, terminology, screen specification, data model, API contract | Done |
 | Schema applied | Through 0019 on staging and development, 20 recorded each. Production holds through 0016 plus the 0019 security fix |
 | Backend | 4 of 58 routes. Billing and health |
-| Authentication | Fixed 23 September. EdDSA verified, email from `users_sync`, nine tests passing |
+| Authentication | Corrected twice on 23 September. ES256 verified against the provider's fetched JWKS, email from `users_sync`, nine tests passing. Issuer and audience are now configured rather than derived, and unset means the service refuses to verify |
 | Billing | Screens built. The three products and prices were created in the live Stripe account on 23 September. See CLAUDE.md for the identifiers |
 | TikTok integration | Not built. Checked 23 September: nothing in the repository calls a TikTok host. The ingest reads local JSON files. `/connections/tiktok/authorize` and `/connections/tiktok/callback` are specified and unimplemented |
 | Front end | 2 pages of 39 screens |
 | Deployment | Vercel chosen. Nothing deployed |
-| Tests | 1 file, 9 cases, rewritten against Ed25519 with a regression case |
+| Tests | 3 files. Auth 9 cases against ES256 with the algorithm asserted against a recorded JWKS, contract conformance, map coverage. **No test has ever invoked an HTTP handler.** See A25 |
 
 ## Scope check
 

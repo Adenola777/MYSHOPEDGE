@@ -11,9 +11,22 @@ A3 section 3.2 specified those as MyShopEdge screens, with password fields, pass
 weak password refusal, reset, session termination on password change and a six digit second
 factor. None of that is ours to build. This action replaces that specification.
 
-**Corrected 23 September 2026.** This action originally named Stack Auth. The provider is
-Better Auth, delivered as Neon Auth's Managed Better Auth, running Better Auth 1.4.18.
-Tokens are signed EdDSA over Ed25519, expire in fifteen minutes, and carry `id`, `sub`,
+**Corrected twice on 23 September 2026, and the first correction was wrong.**
+
+This action originally named Stack Auth. In the afternoon I changed it to Better Auth on
+the strength of Neon's documentation about Managed Better Auth. That evening the project's
+own Neon Auth configuration was read for the first time:
+
+```
+"auth_provider": "stack",
+"jwks_url": "https://api.stack-auth.com/api/v1/projects/f1762e29-.../.well-known/jwks.json"
+```
+
+**The provider is Stack Auth. The original statement was right and I broke it.** The JWKS
+at that URL publishes two ES256 keys over P-256, recorded verbatim at
+`service/tests/fixtures/provider_jwks_2026-09-23.json`. See A25.
+
+Tokens carry `id`, `sub`,
 `email`, `emailVerified`, `name`, `image`, `role`, `banned`, `createdAt`, `updatedAt`,
 `iat`, `exp`, `iss` and `aud`. Issuer and audience are both the origin of the Neon Auth
 URL, with no path.

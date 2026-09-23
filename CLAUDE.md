@@ -50,6 +50,11 @@ These are standing instructions from the owner. They hold until he changes them.
      gets built on.
    - Mark unverified work as unverified, in the file itself rather than in a message. A
      script that has never run says so at the top.
+   - **A vendor's documentation is not a fact about this project.** It describes what the
+     vendor generally does. What this installation runs is in its own configuration, and
+     reading that costs one call. On 23 September a documentation page was taken as
+     evidence about this project twice, and both times the configuration said something
+     different. The second time it would have stopped every seller signing in. See A25.
 
    The reason is on the record. Authentication verified the wrong signing algorithm for a
    day, and its tests passed because the fixtures were generated from the same assumption.
@@ -80,7 +85,7 @@ The specification is close to complete. The application is not. As of 23 Septemb
 | Rulings, terminology, screens, data model, API contract | Done |
 | Schema | Through 0019 on staging and development, 20 migrations recorded on each. Production holds through 0016 plus the 0019 security fix |
 | Backend | 6 of 58 routes. Health, billing, settlements, records |
-| Authentication | EdDSA verified against Neon Auth, email read from `users_sync`, 9 tests passing |
+| Authentication | ES256 verified against the provider's fetched JWKS, email read from `users_sync`, 9 tests passing. No handler has ever been invoked by a test |
 | Billing | Screens built. The three products and prices exist in the live Stripe account as of 23 September. Nothing is wired to them yet |
 | TikTok integration | **Does not exist as code**, but the connection is proved. 23 September: no file calls a TikTok host, and the two connection handlers in the contract have no implementation. Three live calls were made by hand through the Partner Center testing tool and all returned `code: 0`. The authorised shop is a sandbox test shop in region ID, not GB. See A19 |
 | Front end | 2 pages of 39 screens |
@@ -107,7 +112,7 @@ written to be followed once.
 | Database | Neon project `super-mouse-64697125`, PostgreSQL 16, `aws-eu-west-2`, London |
 | Branches | production `br-plain-sea-zaphlsmw`, staging `br-little-rice-zatxxnda`, development `br-little-mode-zagjq5bg` |
 | Neon account | The direct account under adenola.adegbesan@gmail.com |
-| Identity | Neon Auth, which is Managed Better Auth 1.4.18. It is not Stack Auth |
+| Identity | Neon Auth provisioning **Stack Auth**. `auth_provider: stack` in the project's own configuration. JWKS on `api.stack-auth.com`, signing **ES256** |
 | GitHub | `Adenola777/My-ShopEdge` is the one Vercel is wired to. `MyShopEdge-` also exists |
 | Vercel | team `coterie448-8267's projects`, project `my-shop-edge`, root `web`, functions in `lhr1` |
 | Stripe | live `acct_1RtsbgKUYBix7r5t`, sandbox `acct_1Rtsby4GHrXoTk1L` |
@@ -141,9 +146,12 @@ Each of these was found by running something, and each survived reading.
    `settlement_totals_check` returned 3 and `return_reconciliation` returned 7. The leak
    was invisible with one account, and the earlier check had queried base tables.
 2. **Authentication verified the wrong algorithm.** The code checked ES256 and RS256 against
-   a provider that signs EdDSA over Ed25519. Every real token would have been refused. The
+   a provider that signs ES256. It was then "corrected" to EdDSA, which was also wrong, and
+   the tests were rewritten to share the new assumption and passed again. Every real token
+   would have been refused either way. The
    old tests passed because the fixtures were signed with the same wrong assumption. There
-   is now a regression case asserting `ALGORITHMS == ["EdDSA"]`.
+   test now asserts `ALGORITHMS` against a recorded copy of the provider's real JWKS, so
+   changing it without refetching fails in either direction.
 3. **Settlement detail was pinned to the wrong API version.** A11 said finance `202309`,
    which returns 69 fields. The reserve fields exist only in `202501`, which returns 131.
    Using 202309 would have dropped every reserve. A17 corrects it.
