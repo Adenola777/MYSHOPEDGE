@@ -14,7 +14,7 @@ rather than what was proposed.
 |---|---|---|---|
 | Database platform | PostgreSQL, vendor unnamed | Neon, managed PostgreSQL 16.15 | Plain PostgreSQL. The four hand-rolled roles, the privilege revocations and `FORCE ROW LEVEL SECURITY` apply verbatim, with no vendor identity model to reconcile |
 | Region | AWS London, stated for hosting | `aws-eu-west-2`, AWS Europe West 2, London | UK seller financial records. The Data Protection document assumes UK processing |
-| Identity provider | Managed provider, vendor unnamed | Neon Auth, running on Stack Auth | Satisfies the stated requirement for a managed provider with email login. See the open item in A10.4 |
+| Identity provider | Managed provider, vendor unnamed | Neon Auth, running Managed Better Auth | Satisfies the stated requirement for a managed provider with email login. See the open item in A10.4 |
 | Object storage | Assumed alongside the database | Vercel Blob, region `lhr1`, London | Neon object storage is not offered in the London region. See A10.8 |
 
 ## A10.2 Environments
@@ -66,7 +66,7 @@ as a defect in the function's own comment.
 
 **Two open items on identity.**
 
-The provider is Stack Auth, which is a third party reached through Neon. Where Stack Auth
+The provider is Better Auth, which is a third party reached through Neon. Where Better Auth
 processes and stores identity data has not been confirmed. Having deliberately placed the
 database in London, the same question must be answered for the identity records before
 launch, and the answer belongs in the Data Protection document rather than here.
@@ -177,7 +177,7 @@ the deletion record must say so.
 
 `lhr1` is Vercel's edge region name. That it means data at rest in London needs confirming
 from Vercel directly before a seller's file lands in it, and the answer belongs in the Data
-Protection document alongside the same question about Stack Auth.
+Protection document alongside the same question about Better Auth.
 
 Choosing Vercel Blob leans the hosting decision toward Vercel, which conflicts with the TRD
 line specifying AWS London containers. That conflict already existed. This does not create

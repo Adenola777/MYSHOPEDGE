@@ -12,7 +12,7 @@ revisited.
 | Web application | Next.js App Router, React, written in JavaScript |
 | Type checking, web | JSDoc annotations, checked against generated declarations |
 | Database | Neon PostgreSQL 16, `aws-eu-west-2` |
-| Identity | Neon Auth on Stack Auth |
+| Identity | Neon Auth, Managed Better Auth |
 | Object storage | Vercel Blob, `lhr1`, private |
 | Payments | Stripe |
 | Hosting, web | Vercel |
@@ -64,7 +64,7 @@ API, under the same authentication and the same row level security as any other 
 Next.js server component queries PostgreSQL.
 
 **5. Secrets live only on the server.** The Stripe secret key, the TikTok `app_secret`, the
-database connection string and the Stack Auth server key are read from environment
+database connection string and the Neon Auth server key are read from environment
 variables inside the Python service. None appears in a client bundle, a repository file, or
 a `NEXT_PUBLIC_` variable.
 

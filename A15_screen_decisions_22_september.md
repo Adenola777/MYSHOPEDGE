@@ -27,7 +27,7 @@ This ruling changes the accepted content types on the cost upload endpoint in
 
 ## 15.2 S19 Sign in is cut from the screen set
 
-Stack Auth renders that page. A frame in our pack that documents a page we do not build
+The identity provider renders that page. A frame in our pack that documents a page we do not build
 serves no seller and invites us to design something we cannot ship. What we control about
 it is already written down in A14 section 14.3, and that is where it stays.
 

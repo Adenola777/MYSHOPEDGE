@@ -6,10 +6,17 @@ short by five screens and one state.
 
 ## 14.1 The ruling on the account screens
 
-**Stack Auth hosts sign up, sign in, email verification and password reset.** A3 sections
-3.2 specified those as MyShopEdge screens, with password fields, password rules, weak
-password refusal, reset, session termination on password change and a six digit second
+**The identity provider hosts sign up, sign in, email verification and password reset.**
+A3 section 3.2 specified those as MyShopEdge screens, with password fields, password rules,
+weak password refusal, reset, session termination on password change and a six digit second
 factor. None of that is ours to build. This action replaces that specification.
+
+**Corrected 23 September 2026.** This action originally named Stack Auth. The provider is
+Better Auth, delivered as Neon Auth's Managed Better Auth, running Better Auth 1.4.18.
+Tokens are signed EdDSA over Ed25519, expire in fifteen minutes, and carry `id`, `sub`,
+`email`, `emailVerified`, `name`, `image`, `role`, `banned`, `createdAt`, `updatedAt`,
+`iat`, `exp`, `iss` and `aud`. Issuer and audience are both the origin of the Neon Auth
+URL, with no path.
 
 The consequence worth stating plainly is that MyShopEdge never holds a password. There is
 no hash to leak, no reset flow to get wrong, no lockout policy to tune, and no credential
@@ -40,7 +47,7 @@ Five screens sit off that line and are reached from it when something happens.
 **Purpose.** Send the seller to the provider to create an account or sign in.
 
 **Content.** The logo, the tagline, one sentence saying what happens next, and two actions.
-"Create an account" and "Sign in" both hand off to Stack Auth. Links to the privacy notice
+"Create an account" and "Sign in" both hand off to the identity provider. Links to the privacy notice
 and the terms sit below, which section 11 of the Data Protection Document requires and
 which cannot live on a page we do not control.
 
@@ -78,8 +85,10 @@ specifying one of ours, so that the pack states where the seller actually goes.
 **What we brand.** The provider's theming carries the logo, the brand colours from A7 and
 the product name. What it does not carry is our copy, and that limit is accepted.
 
-**Second factor.** Whether the provider offers one is still unconfirmed and has been open
-since the morning of 22 September. It is the one item in this action that is not settled.
+**Second factor.** Settled 23 September 2026, and the answer is no. Neon's Managed Better
+Auth supports the Admin, Email OTP, JWT, Magic Link, Open API and Phone Number plugins, and
+the Organization plugin in part. The two factor plugin is not among them, and plugins
+cannot be installed into a managed service. See section 14.7.
 
 **Trace.** ACC-2.
 
@@ -189,8 +198,30 @@ thirty-three screens with no way to leave.
 | Onboarding screens | 9 | 11, plus 5 reached from them |
 | Screens we build that hold a password | 3 | 0 |
 
-## 14.7 What is still open
+## 14.7 The second factor, closed as unavailable
 
-The second factor. Whether Neon Auth on Stack Auth offers one has been an open item since
-the morning of 22 September and this action does not close it. For a product holding a
-seller's financial history it is worth knowing before launch rather than after.
+Open since the morning of 22 September, settled on 23 September by reading the provider's
+plugin support page. **There is no second factor, and there is no way to add one while the
+product stays on managed authentication.** Plugins are configured by Neon rather than
+installed by us, and the two factor plugin is not on the supported list.
+
+This is stated plainly rather than softened. A product holding two years of a seller's
+financial history, their payouts and their tax position, protects the account with a single
+factor.
+
+Three things reduce the exposure without pretending to replace a second factor.
+
+**Email OTP and Magic Link are supported**, so sign in can be a code sent to the seller's
+address rather than a password they reuse. That moves the risk from a guessable secret to
+the seller's mailbox, which is an improvement rather than a solution.
+
+**Tokens last fifteen minutes.** A stolen token is useful for a short time, which is one
+reason S37 exists and is a normal path rather than an edge case.
+
+**The product cannot move money.** It reads. A compromised account exposes figures, which is
+serious for a seller's privacy and commercially damaging, and it does not let an attacker
+take anything.
+
+The decision to record is whether single factor is acceptable at launch. It is a commercial
+and risk judgement rather than a technical one, and it now has a definite answer to be made
+against instead of an open question.

@@ -32,7 +32,7 @@ carries every platform, integration and commercial decision taken since.
 | 11 | Statement ingestion and scope rulings | Specified |
 | 12 | Test data requirements | Built. 118 ledger entries, five assertions passing |
 | 13 | Stack and client contract | Decided. Python and JavaScript, no TypeScript |
-| 14 | The onboarding screen set | Specified. **Section 14.1 and 14.3 are now wrong, see below** |
+| 14 | The onboarding screen set | Specified. Corrected 23 September for the real provider |
 | 15 | Four screen rulings, the copy pass, VAT | Specified and applied |
 | 16 | The six price sheet rows | Specified. Migration 0018 written, not applied |
 
@@ -48,11 +48,13 @@ carries every platform, integration and commercial decision taken since.
    which NFR-10 requires. The original orange is kept for large graphics.
 4. **Golden dataset numbering.** G10 was already in use for the workbook discrepancy
    dataset. The new datasets are G11, from Action 2, and G12, from Action 4.
-5. **Sign-in pages are hosted by the identity provider.** Settled by Action 10.
-   **Correction of 22 September:** the provider is Better Auth, delivered as Neon Auth, and
-   not Stack Auth as A14 states. Tokens are EdDSA over Ed25519, expire in fifteen minutes,
-   and carry no custom claims. A14 sections 14.1 and 14.3 describe the wrong provider and
-   have not yet been rewritten.
+5. **Sign-in pages are hosted by the identity provider.** Settled by Action 10, corrected
+   23 September 2026. The provider is Better Auth 1.4.18, delivered as Neon Auth's Managed
+   Better Auth, and not Stack Auth as A14 originally stated. A14 is now rewritten. Tokens
+   are signed EdDSA over Ed25519, expire in fifteen minutes, and carry `email`,
+   `emailVerified`, `name` and `role` among their claims. Issuer and audience are both the
+   origin of the Neon Auth URL. **There is no second factor and none can be added**, which
+   A14 section 14.7 sets out.
 6. **The database is Neon, in London.** Action 10. Plain PostgreSQL 16 with the four
    hand-rolled roles and FORCE row level security applying verbatim.
 7. **Bank reconciliation is out of scope.** Action 11, against PRD 6.2. The consequence is
@@ -81,14 +83,13 @@ carries every platform, integration and commercial decision taken since.
 | Whether the TikTok invoice number is reachable from Seller Center | Adenola | Reconciliation identifier |
 | The literal column labels on a settlement export | Blocked on the shop | A8 section 3.5 |
 | Which Neon project the product runs on | Adenola | Applying migrations 0017 and 0018 |
-| Repository access for `Adenola777/My-ShopEdge` | Adenola | Fifteen commits that cannot be pushed |
+| Repository access for `Adenola777/My-ShopEdge` | Adenola | Every commit so far, none pushed |
 | Backup retention, capped at six hours on the current Neon plan | Commercial | Nothing yet |
 | Immutable storage for the invoice documents | Deferred, see A10.8 | Nothing yet |
 | A Vercel blob store named `myshopedge-seller-files`, provenance unknown | Identify or remove | Nothing yet |
 | Whether Vercel `lhr1` guarantees data at rest in London | Confirm before launch | Data protection alignment |
 | Where Better Auth processes identity data | Confirm before launch | Data protection alignment |
-| Whether the identity provider offers a second factor | Confirm | A14 section 14.7 |
-| Rewriting A14 for Better Auth | Specification | Nothing, but the document is wrong |
+| Whether single factor authentication is acceptable at launch | Commercial and risk | Nothing technical. A14 section 14.7 |
 | Eight screens specified before the 22 September rulings | Specification | S9, S10, S11, S14, S22, S23, S25, S26 |
 
 ## Counts
@@ -113,12 +114,12 @@ The specification is nearly complete. The application is not.
 | Brand, terminology, screen specification, data model, API contract | Done |
 | Schema applied | Through 0016 on all three branches. 0017 on development only. 0018 nowhere |
 | Backend | 4 of 58 routes. Billing and health |
-| Authentication | Written and broken. It verifies ES256 and RS256, the provider signs EdDSA |
+| Authentication | Fixed 23 September. EdDSA verified, email from `users_sync`, nine tests passing |
 | Billing | Screens built. The three Stripe products have never been created |
 | TikTok integration | Proved against generated fixtures only |
 | Front end | 2 pages of 39 screens |
 | Deployment | Vercel chosen. Nothing deployed |
-| Tests | 1 file, which tested the wrong signing algorithm |
+| Tests | 1 file, 9 cases, rewritten against Ed25519 with a regression case |
 
 ## Scope check
 

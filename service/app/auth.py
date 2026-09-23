@@ -29,10 +29,25 @@ token would have been refused as unverifiable. The original tests passed because
 signed with the same wrong assumption, which is a test confirming a belief rather than
 checking a fact.
 
-**The email.** This module read ``claims["email"]`` and refused the seller without it.
-Neon's managed tokens carry no custom claims, so that refusal would have caught everybody.
-The email now comes from ``neon_auth.users_sync``, which the provider maintains, and the
-claim is used only when it happens to be present.
+**The email.** This module read ``claims["email"]`` and refused the seller without it, on
+the strength of Neon's overview page saying managed tokens carry "no custom claims". The
+JWT plugin page contradicts that and lists the payload: ``iat``, ``name``, ``email``,
+``emailVerified``, ``image``, ``createdAt``, ``updatedAt``, ``role``, ``banned``,
+``banReason``, ``banExpires``, ``id``, ``sub``, ``exp``, ``iss`` and ``aud``. The email is
+there.
+
+Two pages of the same vendor's documentation disagree, so this module trusts neither and
+takes the claim when it is present and ``neon_auth.users_sync`` when it is not. That is
+correct whichever page is right, and it survives the provider changing its mind.
+
+``emailVerified`` matters more than ``email``. An unverified address is a claim by whoever
+signed up, not a fact, and a financial product must not attach a seller's payout history to
+an address nobody has proved they control. Where the claim is present and false, the seller
+is refused until they verify.
+
+Configuration, from the same page. Issuer and audience are both the origin of the Neon Auth
+URL, with no path, for example ``https://ep-xxxx.neonauth.c-2.eu-west-2.aws.neon.tech``.
+Access tokens last fifteen minutes.
 """
 
 from __future__ import annotations
@@ -119,6 +134,16 @@ def require_account(request: Request) -> Account:
 
     claims = verify(token)
     subject = claims["sub"]
+
+    # Present and false is a refusal. Absent is not, because the claim's presence depends on
+    # which of the provider's two documentation pages is currently right, and an absent
+    # claim is checked against users_sync further down instead.
+    if claims.get("emailVerified") is False:
+        raise Problem(
+            403,
+            "email_unverified",
+            "Verify your email address with your sign-in provider, then come back.",
+        )
 
     account_id = resolve_account_id(subject)
     if account_id is not None:

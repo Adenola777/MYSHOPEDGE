@@ -76,9 +76,10 @@ print("verify()")
 c = case("a valid EdDSA token resolves its subject", lambda: verify(token()))
 assert c and c["sub"] == "user_synthetic_uk_shop"
 
-# Managed tokens carry no custom claims. This is not a failure, and nothing downstream may
-# assume an email is present. The email comes from neon_auth.users_sync instead.
-assert "email" not in c, "the fixture must not carry claims the provider does not issue"
+# The provider's JWT plugin page lists email and emailVerified in the payload, while its
+# overview page says there are no custom claims. Nothing downstream may depend on either
+# being right, so the bare fixture carries neither and users_sync is the fallback.
+assert "email" not in c, "the bare fixture stands for the no-claims case"
 
 case("an expired token is refused", lambda: verify(token(exp=int(time.time())-10)),
      "token_expired")
@@ -111,6 +112,15 @@ es_token = jwt.encode({"sub":"user_attacker","aud":AUD,"iss":ISS,
 case("an ES256 token is refused, whatever else changes", lambda: verify(es_token),
      "token_invalid")
 assert ALGORITHMS == ["EdDSA"], f"ALGORITHMS widened to {ALGORITHMS}"
+
+# emailVerified false must be refused. An unverified address is a claim by whoever signed
+# up, not a fact, and this product attaches payout history to it.
+from app.auth import require_account
+class Req:
+    def __init__(self, tok): self.headers = {"authorization": "Bearer " + tok}
+case("an unverified email address is refused",
+     lambda: require_account(Req(token(email="x@y.test", emailVerified=False))),
+     "email_unverified")
 
 srv.shutdown()
 print(f"\n{'all cases passed' if not failures else 'FAILURES: ' + ', '.join(failures)}")
