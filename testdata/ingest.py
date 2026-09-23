@@ -158,6 +158,9 @@ def post(order_tt, category, amount, occurred, line=None, fee_type=None, source=
         entry_type=ENTRY_TYPE[category], category=category, amount_minor=amount, currency="GBP",
         occurred_at=datetime.fromtimestamp(occurred, timezone.utc).isoformat(),
         basis_month=dt.replace(day=1).date().isoformat(),
+        # Null until the entry is attached to a settlement. This is the cash basis, and
+        # leaving it null is what made every cash-basis screen return nothing.
+        settlement_month=None,
         source=source, source_ref=ref, tiktok_fee_type=fee_type,
         order_line_id=line["id"] if line else None,
         sku_id=line["sku_id"] if line else None,
@@ -224,10 +227,16 @@ for s in statements:
     # as the negative of what those entries came to. unexplained_minor is then a real
     # comparison between TikTok's stated total and our derived one.
     derived = 0
+    # The month the money settled, in Europe/London, from the statement's own time. The
+    # sales basis asks when the sale happened; the cash basis asks when it was paid, and
+    # they are different months for anything settled near a month end.
+    smonth = london(st).replace(day=1).date().isoformat()
     for tt in stmt_map[s["id"]]:
         for e in rows["ledger_entries"]:
             if e["order_id"] == ORDER_BY_TT[tt] and e["category"] != "cost_of_goods_sold":
                 e["settlement_id"] = sid
+        e["settlement_month"] = smonth
+                e["settlement_month"] = smonth
                 derived += e["amount_minor"]
         rows["order_settlements"].append(dict(order_id=ORDER_BY_TT[tt], shop_id=SHOP,
             status="settled", settlement_id=sid))
@@ -245,12 +254,14 @@ for s in statements:
                  fee_type="reserve_amount", ref=t["reserve_id"])
             e = rows["ledger_entries"][-1]
             e["settlement_id"] = sid
+        e["settlement_month"] = smonth
             e["order_id"] = ORDER_BY_TT.get(t["associated_order_id"])
             continue
         amt = pence(t["adjustment_amount"])
         post(None, "platform_adjustment", amt, st, fee_type=t["type"], ref=t["adjustment_id"])
         e = rows["ledger_entries"][-1]
         e["settlement_id"] = sid
+        e["settlement_month"] = smonth
         e["order_id"] = ORDER_BY_TT.get(t["adjustment_order_id"])
         derived += amt
         rows["discrepancies"].append(dict(id=uid("disc", t["adjustment_id"]), shop_id=SHOP,
@@ -260,6 +271,7 @@ for s in statements:
             note=f'TikTok recorded this as {t["type"]} and gave no further reason'))
     post(None, "settlement", -derived, st, ref=s["id"])
     rows["ledger_entries"][-1]["settlement_id"] = sid
+    rows["ledger_entries"][-1]["settlement_month"] = smonth
 
 for o in orders_raw:
     if o["_flags"].get("unsettled"):
