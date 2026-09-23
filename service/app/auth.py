@@ -55,6 +55,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from functools import lru_cache
+from urllib.parse import urlsplit
 from uuid import UUID
 
 import jwt
@@ -77,11 +78,33 @@ class Account:
     subject: str
 
 
+def _origin_of(url: str) -> str:
+    """The scheme and host, with no path.
+
+    Issuer and audience are both the ORIGIN of the Neon Auth URL, while the JWKS lives
+    under its full path. Deriving one from the other by string concatenation would produce
+    an issuer with `/neondb/auth` on the end, and every token would then be refused for the
+    wrong issuer. The difference is one line and a day of confusion.
+    """
+    parts = urlsplit(url)
+    return f"{parts.scheme}://{parts.netloc}"
+
+
+def _base_url() -> str | None:
+    """The Neon Auth base URL, however the environment happens to supply it.
+
+    The Neon-managed Vercel integration injects NEON_AUTH_BASE_URL. VITE_NEON_AUTH_URL is
+    the same value under the name the browser build uses. Both are read so the service
+    works under the integration without anybody hand-setting a variable.
+    """
+    return os.environ.get("NEON_AUTH_BASE_URL") or os.environ.get("VITE_NEON_AUTH_URL")
+
+
 @lru_cache(maxsize=1)
 def _jwks_client() -> jwt.PyJWKClient:
     url = os.environ.get("NEON_AUTH_JWKS_URL")
     if not url:
-        base = os.environ.get("NEON_AUTH_BASE_URL")
+        base = _base_url()
         if not base:
             raise Problem(503, "auth_unconfigured", "Authentication is not configured.")
         url = base.rstrip("/") + "/.well-known/jwks.json"
@@ -97,8 +120,13 @@ def verify(token: str) -> dict:
     except Exception as exc:
         raise Problem(401, "token_unverifiable", "Sign in again.") from exc
 
-    audience = os.environ.get("NEON_AUTH_AUDIENCE")
-    issuer = os.environ.get("NEON_AUTH_ISSUER")
+    # Both default to the origin of the Neon Auth URL, which is what the provider puts in
+    # iss and aud. Under the Neon-managed Vercel integration that means the only variable
+    # anyone has to set is the one the integration sets itself.
+    base = _base_url()
+    default_origin = _origin_of(base) if base else None
+    audience = os.environ.get("NEON_AUTH_AUDIENCE") or default_origin
+    issuer = os.environ.get("NEON_AUTH_ISSUER") or default_origin
 
     try:
         return jwt.decode(

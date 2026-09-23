@@ -111,9 +111,25 @@ is why an API key from the direct account cannot see it. It held no schema of ou
 `DATABASE_URL` on the Vercel project pointed at it.
 
 The product runs on the direct account's project, because that is where twenty migrations,
-three branches, the seeded seller and the verified row level security live. `DATABASE_URL`
-is set by hand rather than by the marketplace integration, which is one setting in exchange
-for not repeating a day of verification.
+three branches, the seeded seller and the verified row level security live.
+
+**The convenience is kept, by using the other integration.** Ruled 23 September 2026. Neon
+offers three ways to connect to Vercel, not two. The Vercel-managed one provisions a new
+database under Vercel. The **Neon-managed** one, installed from the Neon console and listed
+in the Vercel Marketplace under Connectable Accounts, connects a project that already
+exists and still injects the variables automatically and still creates a database branch
+per preview deployment. Its branch cleanup follows git branches rather than deployments,
+which is the better of the two.
+
+So `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, the legacy `PG*` variables and
+`NEON_AUTH_BASE_URL` are all set automatically, on a project holding the work. **The two
+integrations cannot coexist on one Vercel project**, so the Vercel-managed one is removed
+first.
+
+`NEON_AUTH_BASE_URL` is the variable the service already falls back to. With it present,
+the JWKS URL, the issuer and the audience are all derived and nothing has to be set by
+hand. The issuer and audience are the origin of that URL with no path, which is why the
+service derives them with `urlsplit` rather than by appending to the base.
 
 ## Counts
 
