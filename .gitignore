@@ -1,6 +1,13 @@
 # Nothing secret belongs in this repository.
 .env
 .env.*
+# The examples are the exception and must be committed. `.env.*` above swallowed them,
+# which was found on 23 September when `git add` silently staged nothing: an .env.example
+# that is ignored is an .env.example that does not exist for anybody cloning the
+# repository, and it is the one file that says which variables the service needs.
+# Nothing in either example is a real value.
+!.env.example
+!**/.env.example
 *.pem
 *.key
 node_modules/
