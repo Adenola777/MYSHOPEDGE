@@ -295,3 +295,270 @@ def encode_cursor_offset(offset: int) -> str:
     """
     from datetime import datetime, timezone
     return encode_cursor(datetime.now(timezone.utc), str(offset))
+
+
+# ---------------------------------------------------------------- one product
+
+class CalculatorLine(BaseModel):
+    label: str
+    amount: Money
+    category: str | None = None
+    tiktok_fee_type: str | None = None
+
+
+class CalculatorSection(BaseModel):
+    key: str
+    label: str
+    lines: list[CalculatorLine]
+    subtotal: Money
+    subtotal_label: str | None = None
+
+
+class StockPosition(BaseModel):
+    sku_id: UUID
+    tiktok_sku_id: str | None = None
+    seller_sku: str | None = None
+    product_title: str | None = None
+    tiktok_stock: int = 0
+    adjusted_delta: int = 0
+    on_shelf: int
+    sold_not_posted: int = 0
+    coming_back: int = 0
+    written_off: int = 0
+    state: str
+    days_left: float | None = None
+    as_of: str
+
+
+class SkuRow(BaseModel):
+    sku_id: UUID
+    tiktok_sku_id: str | None = None
+    seller_sku: str | None = None
+    variant_label: str | None = None
+    cost: Money | None = None
+
+
+class ProductDetail(BaseModel):
+    product: ProductRow
+    period: dict[str, Any]
+    per_unit: dict[str, Any]
+    sections: list[CalculatorSection]
+    stock: StockPosition | None = None
+    skus: list[SkuRow] = []
+
+
+# A8: every line carries TikTok's own name or the correct accounting term, never invented
+# shorthand, and nothing is merged. The section a category belongs to is a presentation
+# decision; the labels below are the terminology standard's, not new coinages.
+# The sections follow A4's chain exactly, because the calculator has to arrive at the same
+# You keep the ranking shows. A first attempt grouped refunds with write-offs and took the
+# cost of goods from the ledger, and running it against the Computer Desk gave 900 where
+# the headline said 6000. The gap was the returned unit's cost counted twice, which is
+# precisely the defect A4.1 records.
+#
+#   Sales less refunds and deductions  = Net Proceeds
+#   less cost of goods retained        = Contribution
+#   less Return Loss                   = You keep
+#
+# cost_of_goods_sold is deliberately absent from these lists. The ledger posts it for every
+# unit sold including the ones that came back, so it is replaced by a computed line.
+SECTIONS: list[tuple[str, str, str, tuple[str, ...]]] = [
+    ("sales", "Sales", "Sales after refunds",
+     ("gross_sales", "seller_discount", "refund")),
+    ("deductions", "What TikTok took", "Net proceeds", (
+        "platform_commission", "affiliate_commission", "transaction_fee",
+        "smart_promotions_fee", "shipping_fee", "return_handling_fee",
+        "fbt_operations_fee", "fbt_shipping_fee", "fbt_storage_fee", "unmapped_fee",
+    )),
+    ("your_costs", "Your costs", "Contribution", ("seller_shipping",)),
+    ("return_loss", "Return Loss", "You keep", ("return_shipping", "stock_written_off")),
+]
+
+LABELS = {
+    "gross_sales": "Sales before discounts",
+    "seller_discount": "Your discounts",
+    "platform_commission": "Platform commission",
+    "affiliate_commission": "Affiliate commission",
+    "transaction_fee": "Transaction fee",
+    "smart_promotions_fee": "Smart promotions fee",
+    "shipping_fee": "Shipping fee",
+    "return_handling_fee": "Return handling fee",
+    "fbt_operations_fee": "Fulfilled by TikTok operations fee",
+    "fbt_shipping_fee": "Fulfilled by TikTok shipping fee",
+    "fbt_storage_fee": "Fulfilled by TikTok storage fee",
+    "unmapped_fee": "Fee TikTok did not name in a way we recognise",
+    "refund": "Refunds",
+    "return_shipping": "Return postage",
+    "stock_written_off": "Stock written off",
+    "cost_of_goods_sold": "What the goods cost you, for the units that stayed sold",
+    "seller_shipping": "Postage you paid",
+}
+
+
+@router.get("/shops/{shopId}/products/{productId}", response_model=ProductDetail)
+def get_product(
+    account: Annotated[Account, Depends(require_account)],
+    shop_id: Annotated[UUID, Depends(require_shop)],
+    productId: UUID,
+    basis: Annotated[str, Query(pattern="^(sales|cash)$")] = "sales",
+    period_from: Annotated[date | None, Query(alias="from")] = None,
+    period_to: Annotated[date | None, Query(alias="to")] = None,
+) -> ProductDetail:
+    from .problems import Problem
+
+    today = date.today()
+    start = period_from or today.replace(day=1)
+    end = period_to or today
+    date_column = "le.basis_day" if basis == "sales" else "le.settlement_month"
+
+    with tenant(account.id) as conn:
+        prod = conn.execute(
+            "select id, tiktok_product_id, title from products where id=%s and shop_id=%s",
+            (str(productId), str(shop_id)),
+        ).fetchone()
+        if prod is None:
+            # Same answer as another account's product, for the reason in shops.py.
+            raise Problem(404, "product_not_found", "That product was not found.")
+
+        # One line per category and fee type. Not merged, so an unmapped fee keeps the
+        # name TikTok gave it and a seller can look it up.
+        cur = conn.execute(
+            f"""select le.category, le.tiktok_fee_type,
+                       sum(le.amount_minor) as amount_minor,
+                       coalesce(max(le.currency), 'GBP') as currency
+                  from ledger_entries le
+                  join skus s on s.id = le.sku_id
+                 where le.shop_id = %s and s.product_id = %s
+                   and {date_column} >= %s and {date_column} <= %s
+                 group by le.category, le.tiktok_fee_type
+                 having sum(le.amount_minor) <> 0
+                 order by le.category, le.tiktok_fee_type""",
+            (str(shop_id), str(productId), start, end),
+        )
+        cols = [d.name for d in cur.description]
+        lines = [dict(zip(cols, r)) for r in cur.fetchall()]
+
+        skus = conn.execute(
+            """select s.id, s.tiktok_sku_id, s.seller_sku, s.variant_label,
+                      (select cost_minor from product_costs pc
+                        where pc.sku_id = s.id and pc.superseded_at is null
+                        order by pc.effective_from desc limit 1) as cost_minor
+                 from skus s where s.product_id = %s and s.shop_id = %s
+                order by s.variant_label nulls last""",
+            (str(productId), str(shop_id)),
+        ).fetchall()
+
+        stock_rows = conn.execute(
+            """select sp.sku_id, sk.tiktok_sku_id, sk.seller_sku,
+                      sp.tiktok_stock, sp.adjusted_delta, sp.on_shelf,
+                      sp.sold_not_posted, sp.coming_back, sp.written_off, sp.as_of
+                 from stock_positions sp join skus sk on sk.id = sp.sku_id
+                where sk.product_id = %s and sp.shop_id = %s""",
+            (str(productId), str(shop_id)),
+        ).fetchall()
+
+    currency = lines[0]["currency"] if lines else "GBP"
+
+    # The row for this product, from the same query the ranking uses so the list and the
+    # detail cannot disagree. A figure that differs between two screens is the defect a
+    # seller notices first.
+    ranking = list_products(
+        account=account, shop_id=shop_id, basis=basis,
+        period_from=start, period_to=end, measure="kept", limit=MAX_LIMIT, cursor=None,
+    )
+    row = next((p for p in ranking.products if str(p.product_id) == str(productId)), None)
+    if row is None:
+        row = ProductRow(
+            product_id=productId, tiktok_product_id=prod[1], title=prod[2],
+            units=0, gross_sales=money(0, currency), net_proceeds=money(0, currency),
+        )
+
+    # Cost of goods retained, computed rather than read, for the reason above the SECTIONS
+    # table. Null when any variant has no cost, which is the same condition that makes
+    # `kept` null, so the calculator and the headline agree about what is unknown.
+    retained_minor = None
+    if row.cost_known:
+        retained_minor = (
+            row.net_proceeds.amount_minor
+            - (row.kept.amount_minor if row.kept else 0)
+            - sum(int(l["amount_minor"]) for l in lines
+                  if l["category"] in ("return_shipping", "stock_written_off")) * -1
+        )
+
+    sections: list[CalculatorSection] = []
+    running = 0
+    for key, label, subtotal_label, categories in SECTIONS:
+        rows = [l for l in lines if l["category"] in categories]
+        section_lines = [
+            CalculatorLine(
+                label=(l["tiktok_fee_type"] or LABELS[l["category"]])
+                      if l["category"] == "unmapped_fee"
+                      else LABELS.get(l["category"], l["category"]),
+                amount=money(int(l["amount_minor"]), currency),
+                category=l["category"],
+                tiktok_fee_type=l["tiktok_fee_type"],
+            )
+            for l in rows
+        ]
+        # The computed cost line sits in Your costs, where a seller looks for it.
+        if key == "your_costs" and retained_minor is not None:
+            section_lines.insert(0, CalculatorLine(
+                label=LABELS["cost_of_goods_sold"],
+                amount=money(-retained_minor, currency),
+                category="cost_of_goods_sold",
+                tiktok_fee_type=None,
+            ))
+        if not section_lines:
+            continue
+        running += sum(l.amount.amount_minor for l in section_lines)
+        sections.append(CalculatorSection(
+            key=key, label=label, lines=section_lines,
+            # The subtotal is the running figure, not the section's own sum, because the
+            # seller is reading a chain that ends at You keep rather than four unrelated
+            # piles. The label names which figure of A4 each stage has reached.
+            subtotal=money(running, currency),
+            subtotal_label=subtotal_label,
+        ))
+
+    return ProductDetail(
+        product=row,
+        period={"from": start.isoformat(), "to": end.isoformat(), "basis": basis},
+        per_unit={
+            "units": max(row.units, 1),
+            "sections": [
+                CalculatorSection(
+                    key=s.key, label=s.label,
+                    lines=[
+                        CalculatorLine(
+                            label=l.label,
+                            amount=money(l.amount.amount_minor // max(row.units, 1), currency),
+                            category=l.category, tiktok_fee_type=l.tiktok_fee_type,
+                        ) for l in s.lines
+                    ],
+                    subtotal=money(s.subtotal.amount_minor // max(row.units, 1), currency),
+                ) for s in sections
+            ],
+        },
+        sections=sections,
+        # The contract carries one StockPosition and a product can have several SKUs, so a
+        # single position is only honest for a single-variant product. For a multi-variant
+        # product it is omitted rather than picking one arbitrarily or summing positions
+        # that belong to different shelves. Recorded as a contract gap in A25.
+        stock=(
+            StockPosition(
+                sku_id=stock_rows[0][0], tiktok_sku_id=stock_rows[0][1],
+                seller_sku=stock_rows[0][2], product_title=prod[2],
+                tiktok_stock=stock_rows[0][3], adjusted_delta=stock_rows[0][4],
+                on_shelf=stock_rows[0][5], sold_not_posted=stock_rows[0][6],
+                coming_back=stock_rows[0][7], written_off=stock_rows[0][8],
+                state="in_stock" if stock_rows[0][5] > 0 else "out_of_stock",
+                as_of=stock_rows[0][9].isoformat(),
+            ) if len(stock_rows) == 1 else None
+        ),
+        skus=[
+            SkuRow(
+                sku_id=s[0], tiktok_sku_id=s[1], seller_sku=s[2], variant_label=s[3],
+                cost=money(int(s[4]), currency) if s[4] is not None else None,
+            ) for s in skus
+        ],
+    )
