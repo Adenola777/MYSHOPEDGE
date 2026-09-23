@@ -122,7 +122,7 @@ TikTok returns a different field set by region, and the differences are not cosm
 |---|---|
 | The calculator | `GET /finance/202501/orders/{order_id}/statement_transactions` |
 | Settlement list and payment status | `GET /finance/202309/statements`, `sort_field=statement_time` |
-| Settlement detail | `GET /finance/202309/statements/{id}/statement_transactions`, `sort_field=order_create_time` |
+| Settlement detail | `GET /finance/202501/statements/{statement_id}/statement_transactions`, `sort_field=order_create_time` |
 | Awaiting settlement | `GET /finance/202507/orders/unsettled`, `sort_field=order_create_time` |
 | VAT registration at onboarding | `GET /finance/202504/tax_information` |
 | Orders | `POST /order/202309/orders/search`, `GET /order/202309/orders` |
