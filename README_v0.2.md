@@ -175,7 +175,7 @@ The specification is nearly complete. The application is not.
 | Backend | 4 of 58 routes. Billing and health |
 | Authentication | Fixed 23 September. EdDSA verified, email from `users_sync`, nine tests passing |
 | Billing | Screens built. The three products and prices were created in the live Stripe account on 23 September. See CLAUDE.md for the identifiers |
-| TikTok integration | Proved against generated fixtures only |
+| TikTok integration | Not built. Checked 23 September: nothing in the repository calls a TikTok host. The ingest reads local JSON files. `/connections/tiktok/authorize` and `/connections/tiktok/callback` are specified and unimplemented |
 | Front end | 2 pages of 39 screens |
 | Deployment | Vercel chosen. Nothing deployed |
 | Tests | 1 file, 9 cases, rewritten against Ed25519 with a regression case |

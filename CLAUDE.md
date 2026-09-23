@@ -82,7 +82,7 @@ The specification is close to complete. The application is not. As of 23 Septemb
 | Backend | 6 of 58 routes. Health, billing, settlements, records |
 | Authentication | EdDSA verified against Neon Auth, email read from `users_sync`, 9 tests passing |
 | Billing | Screens built. The three products and prices exist in the live Stripe account as of 23 September. Nothing is wired to them yet |
-| TikTok integration | Proved against generated fixtures only. No real shop has been connected |
+| TikTok integration | **Does not exist as code.** Verified 23 September: no file calls a TikTok host, and the two connection handlers in the contract have no implementation. What exists is the specification, the token and cipher columns on `shops`, a payload generator, and an ingest that reads nine JSON files from `testdata/payloads` and makes no network call |
 | Front end | 2 pages of 39 screens |
 | Figma | 18 screens drawn, 20 pending, blocked on the Starter plan call limit |
 | Deployment | Vercel chosen for the front end. Nothing deployed. The Python service has no host |
