@@ -69,7 +69,9 @@ carries every platform, integration and commercial decision taken since.
     a cost from one means guessing, and a wrong cost is worse than a missing one.
 11. **The three prices are exclusive of VAT.** A15.6. Starter, Growth and Pro are £9.99,
     £24.99 and £49.99 plus VAT. Stripe prices are immutable once created, so
-    `tax_behavior: "exclusive"` has to be right first time.
+    `tax_behavior: "exclusive"` had to be right first time. It was. The three prices were
+    created in the live account on 23 September 2026 and each one reads back as GBP,
+    recurring monthly, and exclusive.
 12. **History is twenty-four months on every plan**, not tiered. A16.2. Whether TikTok
     exposes two years of statements is unverified and cannot be verified without a shop.
 13. **The order limit is enforced softly.** A16.3. The count is shown at eighty per cent
@@ -172,7 +174,7 @@ The specification is nearly complete. The application is not.
 | Schema applied | Through 0019 on staging and development, 20 recorded each. Production holds through 0016 plus the 0019 security fix |
 | Backend | 4 of 58 routes. Billing and health |
 | Authentication | Fixed 23 September. EdDSA verified, email from `users_sync`, nine tests passing |
-| Billing | Screens built. The three Stripe products have never been created |
+| Billing | Screens built. The three products and prices were created in the live Stripe account on 23 September. See CLAUDE.md for the identifiers |
 | TikTok integration | Proved against generated fixtures only |
 | Front end | 2 pages of 39 screens |
 | Deployment | Vercel chosen. Nothing deployed |

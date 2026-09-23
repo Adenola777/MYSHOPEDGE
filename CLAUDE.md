@@ -55,7 +55,7 @@ The specification is close to complete. The application is not. As of 23 Septemb
 | Schema | Through 0019 on staging and development, 20 migrations recorded on each. Production holds through 0016 plus the 0019 security fix |
 | Backend | 6 of 58 routes. Health, billing, settlements, records |
 | Authentication | EdDSA verified against Neon Auth, email read from `users_sync`, 9 tests passing |
-| Billing | Screens built. The three Stripe products have never been created |
+| Billing | Screens built. The three products and prices exist in the live Stripe account as of 23 September. Nothing is wired to them yet |
 | TikTok integration | Proved against generated fixtures only. No real shop has been connected |
 | Front end | 2 pages of 39 screens |
 | Figma | 18 screens drawn, 20 pending, blocked on the Starter plan call limit |
@@ -139,6 +139,29 @@ Each of these was found by running something, and each survived reading.
 - Bank reconciliation is out of scope, so `settlements.settlement_reference` has no
   automatic source.
 
+## The Stripe products, created 23 September 2026
+
+These live in `acct_1RtsbgKUYBix7r5t`, which is the live account. `plans.py` reads the price
+identifier from an environment variable and never from a browser, so these three values are
+what those variables hold. A price identifier is not a secret, because Stripe Checkout sends
+it from the client by design.
+
+| Plan | Product | Price | Environment variable |
+|---|---|---|---|
+| Starter | `prod_VJS0gANslYxL4f` | `price_1UIp77KUYBix7r5t8CZvvdaj` | `STRIPE_PRICE_STARTER` |
+| Growth | `prod_VJS0v6ZFvMl3if` | `price_1UIp7CKUYBix7r5tVgIsyIfC` | `STRIPE_PRICE_GROWTH` |
+| Pro | `prod_VJS1MeCHyH5b6b` | `price_1UIp7EKUYBix7r5t8LIvxFd6` | `STRIPE_PRICE_PRO` |
+
+Each price is GBP, recurring monthly at `interval_count` 1, `usage_type` licensed, and
+`tax_behavior` exclusive. The amounts are 999, 2499 and 4999 in minor units, which matches
+`price_minor` in `plans.py`. The tax code on all three is `txcd_10103101`.
+
+**One older object is in the account and must not be used.** `prod_VIt8w0nPWOoQEv`, named
+plainly MyShopEdge, carries `price_1UIHMSKUYBix7r5tDtHTJgvl`. That price is one time rather
+than recurring and it has no amount, because it was created as a customer chooses the amount
+price. It charges nothing and it cannot be edited into shape. Archive it rather than reuse
+it.
+
 ## Running things
 
 The service needs Python 3.10 or later and the packages in `service/requirements.txt`.
@@ -168,7 +191,7 @@ file inside this repository. `.gitignore` already excludes `.env` and its varian
 
 | Item | Blocked on |
 |---|---|
-| Creating the three Stripe products | The sandbox account reaching a session. The live account is live mode only and must not be used for this |
+| Testing billing end to end | The sandbox account reaching a session. Only the live account is reachable, so no test charge can be made |
 | Every claim the TikTok ingestion makes | A real shop authorisation. The runbook covers it |
 | Whether twenty four months of statements exist | The same shop authorisation |
 | The literal column labels on a settlement export | The same shop authorisation |
