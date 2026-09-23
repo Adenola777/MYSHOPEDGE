@@ -80,7 +80,8 @@ carries every platform, integration and commercial decision taken since.
 
 | Item | Owner | Blocks |
 |---|---|---|
-| A UK shop, live or sandbox, for the integration spike | Adenola | Every claim the ingestion makes |
+| TikTok app developer approval | **Granted 23 September 09:00** | Four categories, all UK: Finance and Accounting, ERP, Order Management, Product Information Management |
+| App credentials and a shop authorisation | Adenola | Every claim the ingestion makes. Needs `TIKTOK_APP_KEY` and `TIKTOK_APP_SECRET` set as environment variables, which a session reads only at start |
 | Whether TikTok exposes twenty-four months of statements | Adenola | Whether A16.2 can be delivered |
 | Whether the TikTok invoice number is reachable from Seller Center | Adenola | Reconciliation identifier |
 | The literal column labels on a settlement export | Blocked on the shop | A8 section 3.5 |
