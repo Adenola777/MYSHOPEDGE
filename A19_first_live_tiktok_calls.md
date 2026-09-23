@@ -130,6 +130,38 @@ not a judgement call and it changes no figure today. It is not yet applied.
 | Whether TikTok exposes twenty four months of statements | Open. Needs a shop trading for over two years. The sandbox cannot answer it |
 | What a settlement export calls its columns | Open. A8 section 3.5. May be answerable from a shop with settlements, in the shop's own region |
 | Whether the invoice number is reachable | Open |
-| Whether a GB sandbox shop can be created | Open. One command on a machine that can hold a token: `tts_open_toolkit sandbox shop list --region-code GB` |
+| Whether a GB sandbox shop can be created | **Settled 23 September. It can.** See 19.7 for what that does and does not give us |
 | Where the four growth package fees belong | Open. A product judgement. Left alone they land in `unmapped_fee`, so the arithmetic is right and only the label differs |
-| Whether to fix the tax loop | Open, and not a judgement call |
+| Whether to fix the tax loop | **Deferred 23 September by decision.** Not forgotten and not disputed. It changes no figure today because the four new tax fields return `"0"` in the UK. It becomes urgent the day TikTok populates them |
+
+## 19.7 A GB sandbox shop can be created, and what that is worth
+
+Confirmed 23 September 2026. This removes the region problem in 19.2. A GB sandbox shop
+settles in GBP and carries the UK fee structure, so tests against it exercise the same
+arithmetic a British seller will meet rather than an Indonesian one.
+
+`testdata/sandbox_probe.sh` already defaults to `REGION=GB`, so it runs against such a shop
+as written.
+
+**What a GB sandbox shop gives.** Orders, order status transitions, returns through the
+reverse flow, and webhook delivery, all in GBP with UK fee fields. That covers the order and
+return half of A11 properly, replacing fixtures that only prove the code agrees with the
+assumptions that generated them.
+
+**What it does not give, and this should not be discovered later by someone trusting a green
+test.** Nothing in the sandbox catalogue creates a settlement. The 42 sandbox endpoints
+cover the order lifecycle and stop there. So a GB sandbox shop will produce orders and
+returns and no statements, which means:
+
+- the settlement ingestion stays proved against generated fixtures only
+- A8 section 3.5, the literal column labels on a settlement export, stays open
+- A16.2, twenty four months of history, stays open and is unanswerable here for the reason
+  in 19.3
+
+Two of the three questions this project has been carrying since the terminology standard
+was written are finance questions, and the sandbox reaches neither.
+
+**One thing worth testing there that nobody has asked for.** Statements are generated daily
+at 00:00 UTC and `basis_day` is Europe/London. A GB sandbox shop is the only place the
+British Summer Time boundary can be exercised before a real seller meets it, and the test
+data covering July and August 2026 has never touched it.
