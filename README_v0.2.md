@@ -39,6 +39,7 @@ carries every platform, integration and commercial decision taken since.
 | 18 | The eight screens the rulings moved | Specified |
 | 19 | The first live TikTok calls | Connection proved. The authorised shop is a sandbox shop in region ID, not GB |
 | 20 | The real settlement payload, measured | A8 section 3.5 closed. 57 fee fields, 24 shipping, 17 tax. Our maps cover 7, 5 and 1 |
+| 21 | The first real British order | Order 576955651451099542 on GBGBLCRKQTEX. A11.2 amended: supplementary_component is never summed, and must be read for attribution |
 
 ## Decisions taken, and open to reversal
 
