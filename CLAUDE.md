@@ -31,6 +31,32 @@ These are standing instructions from the owner. They hold until he changes them.
 6. **Run the query rather than reading the code.** Every serious fault on this project was
    found by executing something, and none were found by reading. The list is in the section
    on faults below.
+7. **No assumption coding. Facts only.** This is a hard rule and it outranks speed.
+
+   A fact is something that was read from the file, returned by the query, printed by the
+   call, or written in the vendor's own documentation. Everything else is an assumption,
+   including a recollection of what a file contains, a reasonable inference about how an
+   API behaves, and a memory of a decision taken earlier in the project.
+
+   In practice this means five things.
+
+   - Before stating what code does, open it. Do not describe a function from its name.
+   - Before stating what an API returns, call it or cite the vendor's page. A field is not
+     present because it would be sensible for it to be present.
+   - Before stating what a table holds, query it. A migration having been written is not
+     evidence that it was applied.
+   - When a fact cannot be obtained, say so plainly and name what is unknown. An unanswered
+     question recorded as unanswered is worth more than a plausible guess, because the guess
+     gets built on.
+   - Mark unverified work as unverified, in the file itself rather than in a message. A
+     script that has never run says so at the top.
+
+   The reason is on the record. Authentication verified the wrong signing algorithm for a
+   day, and its tests passed because the fixtures were generated from the same assumption.
+   Five views leaked across tenants while a row level security check that queried base
+   tables reported clean. The settlement endpoint was pinned to an API version that omits
+   every reserve field, on the strength of a document rather than a call. None of these were
+   careless. Each was a reasonable assumption that nobody checked.
 
 ## The contract is the source of truth
 
