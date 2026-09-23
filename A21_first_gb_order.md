@@ -115,3 +115,16 @@ Indonesian, which is the condition A20.7 set on the fifty-field mapping decision
 
 A settled GB statement still requires this order to ship, deliver, and pass the return
 window. That is real time and nothing can shorten it.
+
+---
+
+## 21.7 Section 21.3 is corrected by A22
+
+Written 23 September at 17:30, after the unsettled orders export arrived.
+
+21.3 said £3.99 of the £8.00 was "already spent". The unsettled export shows TikTok's
+estimated settlement is `8.00 − 0.72 = 7.28`, with the shipping lines netting to zero. The
+£3.99 is forgone revenue the customer would have paid, not money leaving the settlement.
+
+The real uncaptured cost on this order is the postage the seller pays a carrier to send a
+453 gram parcel, which appears in no TikTok figure at all. A22.1 has the detail.
