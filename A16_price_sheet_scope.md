@@ -34,8 +34,21 @@ The screen says "Loading twelve months" and has to be changed.
 That doubles the surface the reconciliation has to be correct across, and it doubles what
 the acceptance run has to prove.
 
-**The test data covers twelve months.** A12 generated a year. It has to be extended before
-the twenty-four month claim can be tested at all.
+**The test data covers two months, not twelve.** Corrected 23 September 2026 after
+reading the generator rather than assuming. `testdata/generate_payloads.py` produces a
+dense set of hand-built cases dated July and August 2026: allocation across lines, a blank
+seller SKU, cancellations, refund only, resellable and damaged returns, FBT, affiliate,
+promotions, reserves and adjustments. It is a month of edge cases, not a year of volume.
+
+That is the right shape for what it was built to prove, and it means something else is
+missing entirely. **Nothing in the test set exercises behaviour across many months.** MON-5
+requires every loaded month to open and reconcile, the schema takes considerable trouble
+over Europe/London generated columns and the British Summer Time boundary, and neither has
+ever been tested across more than two months. Twenty-four months does not need twenty-four
+times the fixtures. It needs a date spread that crosses the BST boundary in both directions
+and proves each month closes independently.
+
+That work is not done, and it is larger than extending a constant.
 
 **TikTok may not offer twenty-four months.** A11 records no history limit because none was
 established. Whether the finance endpoints expose two years of statements, or cap at one,
@@ -117,6 +130,6 @@ which A14 recorded as open.
 |---|---|
 | `service/app/plans.py` | `history_months` 12 becomes 24 on all three plans. `PENDING_SCOPE` becomes `OUT_OF_MVP` with four rows. `IN_SCOPE_NOT_BUILT` carries the quota |
 | S2 First sync | "Loading twelve months" becomes twenty-four. Not yet applied, the Figma quota is spent |
-| A12 test data | The generator covers twelve months and has to be extended |
+| A12 test data | The generator covers two months of edge cases. No multi-month or BST boundary test exists |
 | Acceptance run | MON-5 has to pass across twenty-four months rather than twelve |
 | The quota | Not buildable until 16.3 is ruled |
