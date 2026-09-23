@@ -76,6 +76,26 @@ def resolve_account_id(subject: str) -> UUID | None:
     return row[0] if row and row[0] else None
 
 
+def lookup_identity(subject: str) -> tuple[str | None, str | None] | None:
+    """Reads the email and name the identity provider synced, or None if no row exists.
+
+    Neon Auth maintains ``neon_auth.users_sync``. It is the only place a managed token's
+    email can be found, because those tokens carry no custom claims. ``mse_app`` holds
+    SELECT on it and nothing more, granted by migration 0016.
+
+    The distinction between a missing row and a row with a null email matters. A missing
+    row is a sync that has not caught up, which clears on its own. A null email is a real
+    dead end. The caller treats them differently and must not collapse them.
+    """
+    with unscoped() as conn:
+        row = conn.execute(
+            "select email, name from neon_auth.users_sync "
+            "where id = %s and deleted_at is null",
+            (subject,),
+        ).fetchone()
+    return (row[0], row[1]) if row else None
+
+
 def create_account_id(subject: str, email: str, display_name: str | None) -> UUID:
     """Creates the account on a first verified sign in, or returns the existing one.
 
