@@ -38,6 +38,7 @@ carries every platform, integration and commercial decision taken since.
 | 17 | Endpoint versions checked against the specification | Settlement detail corrected to finance 202501 |
 | 18 | The eight screens the rulings moved | Specified |
 | 19 | The first live TikTok calls | Connection proved. The authorised shop is a sandbox shop in region ID, not GB |
+| 20 | The real settlement payload, measured | A8 section 3.5 closed. 57 fee fields, 24 shipping, 17 tax. Our maps cover 7, 5 and 1 |
 
 ## Decisions taken, and open to reversal
 
@@ -89,7 +90,7 @@ carries every platform, integration and commercial decision taken since.
 | App credentials and a shop authorisation | Adenola | Every claim the ingestion makes. Needs `TIKTOK_APP_KEY` and `TIKTOK_APP_SECRET` set as environment variables, which a session reads only at start |
 | Whether TikTok exposes twenty-four months of statements | **Still open after 23 September.** The call was made and returned nothing, against a shop with no trading history, so it answered nothing. Needs a shop trading over two years. See A19.3 | Whether A16.2 can be delivered |
 | Whether the TikTok invoice number is reachable from Seller Center | Adenola | Reconciliation identifier |
-| The literal column labels on a settlement export | Blocked on the shop | A8 section 3.5 |
+| The literal column labels on a settlement export | **Closed 23 September.** Measured from a real payload. See A20 | A8 section 3.5 |
 | Which Neon project the product runs on | **Settled 23 September** | `super-mouse-64697125`, the direct Neon account. See below |
 | Applying migrations 0017 and 0018 | Adenola | Nothing blocks it now the project is settled |
 | Repository access for `Adenola777/My-ShopEdge` | Adenola | Every commit so far, none pushed |
