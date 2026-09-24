@@ -300,6 +300,92 @@ def money_etag():
 check("GET money answers 304 when nothing has changed", money_etag)
 
 
+# --- today, which reuses the calculator and counts what needs the seller
+from datetime import timedelta
+from app import today_view
+
+SHOP_MONEY_COLS = ["status","amount_minor","orders","currency"]
+SHOP_MONEY_ROWS = [("delivered_awaiting_settlement", 1850, 1, "GBP"),
+                   ("settled", 45838, 18, "GBP"),
+                   ("waiting_delivery", 1850, 1, "GBP")]
+NEEDS_COLS = ["returns_to_check","open_discrepancies","out_of_stock","missing_costs",
+              "unmapped_fees","unmapped_fee_minor","last_synced_at","connection_status",
+              "access_expires_at","refresh_expires_at","revoked_at","connections"]
+
+
+def _needs(**over):
+    base = dict(returns_to_check=0, open_discrepancies=1, out_of_stock=1, missing_costs=0,
+                unmapped_fees=1, unmapped_fee_minor=199, last_synced_at=None,
+                connection_status="connected", access_expires_at=None,
+                refresh_expires_at=None, revoked_at=None, connections=1)
+    base.update(over)
+    return Result(NEEDS_COLS, [tuple(base[c] for c in NEEDS_COLS)])
+
+
+def _today(products_rows, needs):
+    today_view.tenant = with_conn(today_view, [
+        ("count(*) filter (where le.settlement_id is null", Result(MONEY_LINE_COLS, MONEY_LINES)),
+        ("with scoped as", Result(PRODUCT_COLS, products_rows)),
+        ("left join order_settlements os", Result(SHOP_MONEY_COLS, SHOP_MONEY_ROWS)),
+        ("seller_check_status = 'pending'", needs),
+    ])
+    r = client.get(f"/v1/shops/{SHOP}/today")
+    _assert(r.status_code == 200, f"status {r.status_code}: {r.text[:300]}")
+    return r.json()
+
+
+def today_complete():
+    b = _today([DESK], _needs())
+    _assert(b["hero"]["label"] == "gross_profit_after_returns", b["hero"]["label"])
+    _assert(b["hero"]["value"]["amount_minor"] == 35426)
+    _assert(b["hero"]["confidence"] == "estimated")
+    _assert(b["month"]["gross"]["amount_minor"] == 86200)
+    _assert(b["month"]["kept"]["amount_minor"] == 35426)
+    sm = b["shop_money"]
+    # LED-4: paid out plus awaiting equals generated.
+    _assert(sm["generated"]["amount_minor"] == 49538)
+    _assert(sm["paid_out"]["amount_minor"] == 45838)
+    _assert(sm["awaiting"]["amount_minor"] == 3700)
+    _assert(sm["paid_out"]["amount_minor"] + sm["awaiting"]["amount_minor"]
+            == sm["generated"]["amount_minor"])
+    _assert([a["status"] for a in sm["awaiting_breakdown"]]
+            == ["delivered_awaiting_settlement", "waiting_delivery"])
+    # Never synced means stale, and the list runs warning before info, money first.
+    _assert(b["stale"] is True)
+    types = [(i["type"], i["severity"]) for i in b["needs_you"]]
+    _assert(types == [("unmapped_fees", "warning"), ("open_discrepancies", "warning"),
+                      ("first_sync_pending", "info"), ("out_of_stock", "info")], types)
+    _assert(b["needs_you"][0]["amount_at_stake"]["amount_minor"] == 199)
+check("GET today leads with gross profit after returns and reconciles Shop Money", today_complete)
+
+
+def today_incomplete():
+    b = _today([DESK, NOCOST], _needs(missing_costs=1))
+    _assert(b["hero"]["label"] == "net_proceeds", "A8 withdrew Left after TikTok")
+    _assert(b["hero"]["value"]["amount_minor"] == 51176)
+    _assert(b["hero"]["confidence"] == "incomplete")
+    _assert(b["month"]["kept"] is None and b["month"]["kept_reason"] == "incomplete_costs")
+    _assert(any(i["type"] == "missing_costs" and i["severity"] == "info" for i in b["needs_you"]))
+check("GET today falls back to net proceeds when a cost is missing", today_incomplete)
+
+
+def today_connection():
+    now = datetime.now(timezone.utc)
+    b = _today([DESK], _needs(last_synced_at=now - timedelta(hours=2),
+                               refresh_expires_at=now + timedelta(days=10),
+                               access_expires_at=now + timedelta(days=3)))
+    _assert(b["stale"] is False, "synced two hours ago is not stale")
+    warn = [i["type"] for i in b["needs_you"] if i["severity"] == "warning"]
+    # Within a severity, the item with money at stake leads, then the others by count.
+    _assert(warn == ["unmapped_fees", "connection_expiring", "open_discrepancies"], warn)
+    b = _today([DESK], _needs(last_synced_at=now - timedelta(hours=30), revoked_at=now))
+    _assert(b["stale"] is True)
+    _assert(b["needs_you"][0]["type"] == "connection_action_required")
+    _assert(b["needs_you"][0]["severity"] == "critical")
+    _assert(any(i["type"] == "stale_data" for i in b["needs_you"]))
+check("GET today puts a broken connection first and flags a stale sync", today_connection)
+
+
 # --- the two connection handlers
 #
 # These matter more than the readers. The callback is the only unauthenticated endpoint in
