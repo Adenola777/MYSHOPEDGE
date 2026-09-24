@@ -88,8 +88,8 @@ The specification is close to complete. The application is not. As of 23 Septemb
 | Authentication | ES256 verified against the provider's fetched JWKS, email read from `users_sync`, 9 tests passing. No handler has ever been invoked by a test |
 | Billing | Screens built. The three products and prices exist in the live Stripe account as of 23 September. Nothing is wired to them yet |
 | TikTok integration | Authorisation is built end to end. `app/connections.py` holds both endpoints, the signing algorithm, AES-256-GCM token storage and the state store in migration 0021. Fourteen smoke cases cover it. `_sign` has never made a live call, so the first real request is its test. See A23, A27 and A28 |
-| Front end | 2 pages of 39 screens |
-| Figma | 18 screens drawn, 20 pending, blocked on the Starter plan call limit |
+| Front end | 3 screens of 36 live. S9 products, S33 billing, S34 payment confirmed. `SCREENS.md` is the register and corrects the old count of 39 |
+| Figma | Unreadable. The Starter plan call limit refuses every read of the file, on 22 and 24 September. It holds frames that predate A15, so it is out of date whatever it holds. `SCREENS.md` explains. The wireframes are committed at `design/wireframes/` |
 | Deployment | Vercel chosen for the front end. Nothing deployed. The Python service has no host |
 
 The honest summary is that the thinking is done and the building has started.

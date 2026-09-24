@@ -1,0 +1,38 @@
+MyShopEdge wireframes and workflows
+Extracted 24 September 2026 from MyShopEdge_Wireframes_and_Workflows.docx
+(document MSE-WFW-001 v0.1, draft for review, dated 20 September 2026).
+
+14 figures. Every one is an image lifted from the document unchanged.
+
+THE 15 SCREENS, on 8 sheets
+  Files 02 to 09. Each sheet carries two screens side by side except the last,
+  which carries S15 alone. The S number is printed on each screen in the image.
+  Only files 02 and 09 have their screen titles in the filename, because those
+  are the two I opened and read. Files 03 to 08 are numbered by their position
+  in the document and their titles are on the images themselves.
+
+THE 5 WORKFLOWS
+  01  End-to-end platform workflow
+  10  Onboarding workflow
+  11  Product Costs upload and matching workflow
+  12  Return lifecycle workflow
+  13  Discrepancy detection and resolution workflow
+  14  Backend orchestration, from trigger to notification
+
+  That is six diagrams, and the document says "one end-to-end workflow and four
+  detailed workflows". The sixth, file 14, is backend orchestration, which is
+  arguably not a user workflow. The count in the document's own summary is one
+  short of what the document contains.
+
+WHAT THIS IS NOT
+  These are low-fidelity wireframes. The document says so itself: they "show
+  structure, content and behaviour, not final visual design".
+  They cover S1 to S15 only. S16 to S39 were ruled later, in A3, A14 and A18,
+  and were never wireframed.
+  At least one is out of date against a later ruling: S2 shows "Orders, last 12
+  months", and history is now twenty four months on every plan.
+
+NOT FROM FIGMA
+  The Figma file Lv1sLPt9MeE27TeKGy4hOT, "MyShopEdge Onboarding", could not be
+  read. The Figma account is on the Starter plan and its tool call limit refuses
+  every read of that file. It refused on 22 September and again today.
