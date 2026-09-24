@@ -1,0 +1,43 @@
+# Runs the checks a contributor runs locally, on every push and pull request.
+#
+# Each command below passed on 24 September 2026 in a clean environment with Python 3.11
+# and Node 22. None of the tests needs a database, credentials or the network, so no
+# secret is configured here and none should be.
+
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  service:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - run: python tests/test_auth_verification.py
+      - run: python tests/test_contract_conformance.py
+      - run: python tests/test_handlers_smoke.py
+
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      # There is no lockfile, because .gitignore excludes web/package-lock.json.
+      - run: npm install
+      - run: npm run check
+      - run: npm run build

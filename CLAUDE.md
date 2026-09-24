@@ -235,7 +235,7 @@ file inside this repository. `.gitignore` already excludes `.env` and its varian
 | The encryption key for `tiktok_connections.access_token_enc`, `refresh_token_enc` and `shop_cipher_enc` | Where the Python service runs. The host decides where a key can live and how it is rotated. `key_version` exists as a column and resolves to nothing, so no code should write a number there and treat it as meaningful |
 | Whether `authorization_expires_at` is the refresh token's expiry | One real TikTok authorisation. The contract serves the field and `tiktok_connections.refresh_expires_at` looks like the same instant. Nobody has checked, so 0020 adds no column for it |
 | Refreshing an access token before it lapses | Deploying the service. A28.4 chose a long-lived container so the refresh has somewhere to run. The access token lives seven days (A23.4) |
-| Deploying the service | The 51 local commits reaching GitHub, and the environment variables in A28.4, which carry four secrets |
+| Deploying the service | The environment variables in A28.4, which carry four secrets. The commits it also waited on reached GitHub on 24 September 2026, when `main` was restored to `555cd16` with 58 commits |
 
 ## What is next in the code
 
