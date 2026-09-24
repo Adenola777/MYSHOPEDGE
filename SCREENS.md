@@ -22,7 +22,7 @@ Five things were checked, and each is named against the line it produced:
 | Cut by a later ruling | **2** | S18 and S19, both cut by A15 |
 | **Live screens** | **36** | This is the number that matters |
 | Wireframed | 15 | S1 to S15 only |
-| Built in code | 10 | S6, S7, S9, S10, S11, S14, S22, S26, S33, S34. None has run against a real API yet |
+| Built in code | 12 | S6, S7, S9, S10, S11, S14, S21, S22, S25, S26, S33, S34. None has run against a real API yet, because the front end sends no sign-in token |
 
 **`CLAUDE.md` and `README_v0.2.md` both said "39 screens". That number is wrong twice.**
 No ruling defines an S39. The only place S39 appears in the whole repository is
@@ -64,11 +64,11 @@ by side, except the last, which carries S15 alone.
 | ~~S18~~ | ~~Return~~ | | **Cut by A15.3** | | |
 | ~~S19~~ | ~~Sign in~~ | | **Cut by A15.2** | | |
 | S20 | Manual cost entry | Onboarding | A3 | | |
-| S21 | Add or edit a product cost | Products | A3 | | |
+| S21 | Add or edit a product cost | Products | A3 | | Inline on each variant of `shops/[shopId]/products/[productId]` |
 | S22 | Records behind a figure | Money | A3, revised A18 | | `shops/[shopId]/records` |
 | S23 | Export | Money | A3, revised A18 | | |
 | S24 | Other-channel sales | Money | A3 | | |
-| S25 | Stock adjustment | Stock | A3, revised A18 | | |
+| S25 | Stock adjustment | Stock | A3, revised A18 | | At the top of `shops/[shopId]/stock/[skuId]` |
 | S26 | Stock movement history | Stock | A3, revised A18 | | `shops/[shopId]/stock/[skuId]` |
 | S27 | Alert settings | Settings | A3 | | |
 | S28 | Connection problem | Onboarding | A3 | | |
@@ -134,9 +134,9 @@ written at the top of the file, and summarised here.
 |---|---|---|
 | S6 Today | The VAT line, and the congratulation A15.5 keeps | A29.8 puts VAT out of scope. Nothing tells the screen that onboarding has just finished |
 | S7 Stock | The units in hand totals, and the order by what runs out first | `getStock` serves no totals and pages by variant |
-| S10 Product detail | Editing a cost, the insight, the return rate | No cost endpoint, no insight source, no return rate in the contract |
-| S11 Money | The period switch, expected payouts by week, the export | The contract cannot name a period. No payout or export endpoint is built |
-| S14 Discrepancy detail | A page for one discrepancy, and the three actions | No endpoint for one discrepancy. `resolveDiscrepancy` is not built |
+| S10 Product detail | The insight, the return rate | No insight source, no return rate in the contract |
+| S11 Money | The period switch, expected payouts by week, the export | The contract cannot name a period. Expected payouts need TikTok's unsettled orders. The export needs a file store the service can write to |
+| S14 Discrepancy detail | A page for one discrepancy | No endpoint for one discrepancy. The three actions were added on 24 September, and "Correct my record" appears only where the service serves `correctable` |
 | S22 Records | The discrepancy marker on affected rows | A ledger entry does not say which discrepancy touches it |
 | S26 Movements | The resulting count on each row, the opening balance, links to orders and returns | `getStockMovements` serves no balance. No order or return screen exists |
 

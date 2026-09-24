@@ -410,3 +410,11 @@ tbody tr:last-child td { border-bottom: 0; }
 .muted { color: var(--ink-500); }
 .pager { margin-top: var(--space-4); text-align: right; }
 .money { white-space: nowrap; }
+
+/* --- forms on the shop screens, built 24 September -------------------------------- */
+.inline-form { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; margin-top: var(--space-2); }
+.inline-form input { width: 9rem; min-height: 40px; }
+.inline-form .btn { min-height: 40px; padding: var(--space-2) var(--space-4); }
+.inline-form .form-error { flex-basis: 100%; }
+.actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.form-error { color: var(--bad-600); margin: 0; }

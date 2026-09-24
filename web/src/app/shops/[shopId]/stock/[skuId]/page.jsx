@@ -18,6 +18,7 @@ import Link from "next/link";
 import { fetchShop, formatDate } from "@/lib/api";
 import { apiProblem } from "@/components/ApiProblem";
 import { MOVEMENT } from "@/lib/terms";
+import { AdjustForm } from "@/components/AdjustForm";
 
 export const metadata = { title: "Stock movements" };
 
@@ -52,6 +53,9 @@ export default async function MovementsPage({ params, searchParams }) {
         <p>Every change to this variant&rsquo;s count, newest first.</p>
       </header>
 
+      <AdjustForm shopId={shopId} skuId={skuId} />
+
+      <h2 style={{ marginTop: "var(--space-5)" }}>History</h2>
       {movements.length === 0 ? (
         <section className="state">
           <h2>No movements recorded for this variant.</h2>

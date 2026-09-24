@@ -57,12 +57,14 @@ from datetime import datetime
 from typing import Annotated, Any, Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Path, Query
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, Header, Path, Query
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
 
 from .auth import Account, require_account
 from .dates import business_today, now_utc
 from .db import tenant
+from .idempotency import record, replay, request_hash
 from .problems import Problem
 from .settlements import MAX_LIMIT, decode_cursor, encode_cursor
 from .shops import require_shop
@@ -159,6 +161,7 @@ pos as (
     left join pace on pace.sku_id = sp.sku_id
    where sp.shop_id = %(shop)s
      and (%(product)s::uuid is null or k.product_id = %(product)s::uuid)
+     and (%(sku)s::uuid is null or sp.sku_id = %(sku)s::uuid)
 ),
 stated as (
   select pos.*,
@@ -185,6 +188,7 @@ def positions(
     after: str | None = None,
     limit: int | None = None,
     product_id: UUID | None = None,
+    sku_id: UUID | None = None,
 ) -> list[StockPosition]:
     """Every stock position with its state and days left, computed once, here.
 
@@ -201,6 +205,7 @@ def positions(
         "state": state,
         "after": after,
         "product": str(product_id) if product_id else None,
+        "sku": str(sku_id) if sku_id else None,
         # LIMIT NULL is no limit in Postgres.
         "limit": limit,
     }
@@ -282,3 +287,89 @@ def get_stock_movements(
         next_cursor = encode_cursor(rows[-1]["occurred_at"], rows[-1]["id"])
 
     return MovementPage(movements=[StockMovement(**r) for r in rows], next_cursor=next_cursor)
+
+
+# --- createStockAdjustment, STK-4 ----------------------------------------------------------
+#
+# The adjustment moves `adjusted_delta` in MyShopEdge only. PRD 6.2 excludes writing stock
+# back to TikTok, and TikTok's own figure is left untouched. A reason is required here and
+# by the database (`stock_movements_check`), as STK-4 requires.
+#
+# **Derived, not ruled.** An adjustment of zero is refused, because it records nothing. An
+# adjustment that would take stock on hand below zero is refused, because a negative shelf
+# cannot be counted and would read as a sale that never happened. A variant with no stock
+# position yet is refused, because a position arrives with the first sync and inventing one
+# here would give it a TikTok count of zero that TikTok never reported.
+
+
+class AdjustmentIn(BaseModel):
+    quantity: int
+    reason: str = Field(min_length=1, max_length=500)
+
+
+class AdjustmentOut(BaseModel):
+    movement: StockMovement
+    position: StockPosition
+
+
+@router.post("/shops/{shopId}/stock/{skuId}/adjustments", status_code=201,
+             response_model=AdjustmentOut)
+def create_stock_adjustment(
+    body: AdjustmentIn,
+    account: Annotated[Account, Depends(require_account)],
+    shop_id: Annotated[UUID, Depends(require_shop)],
+    sku_id: Annotated[UUID, Path(alias="skuId")],
+    idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None,
+):
+    reason = body.reason.strip()
+    if not reason:
+        raise Problem(422, "validation_failed", "An adjustment needs a reason.")
+    if body.quantity == 0:
+        raise Problem(422, "validation_failed", "An adjustment of zero units changes nothing.")
+
+    op = "createStockAdjustment"
+    digest = request_hash(str(shop_id), str(sku_id), body.quantity, reason)
+    with tenant(account.id) as conn:
+        again = replay(conn, account.id, op, idempotency_key, digest)
+        if again:
+            return JSONResponse(status_code=again[0], content=again[1])
+
+        pos = conn.execute(
+            "select sp.on_shelf from stock_positions sp join skus k on k.id = sp.sku_id "
+            "where sp.sku_id = %s and sp.shop_id = %s for update of sp",
+            (str(sku_id), str(shop_id)),
+        ).fetchone()
+        if pos is None:
+            known = conn.execute(
+                "select 1 from skus where id = %s and shop_id = %s", (str(sku_id), str(shop_id))
+            ).fetchone()
+            if known is None:
+                raise Problem(404, "sku_not_found", "That product variant was not found.")
+            raise Problem(
+                422, "no_stock_position",
+                "This variant has no stock count yet. It arrives with the next sync.",
+            )
+        if pos[0] + body.quantity < 0:
+            raise Problem(
+                422, "validation_failed",
+                f"That would take stock on hand below zero. {pos[0]} are on hand now.",
+            )
+
+        cur = conn.execute(
+            "insert into stock_movements (shop_id, sku_id, movement_type, quantity, reason, "
+            "created_by) values (%s, %s, 'manual_adjustment', %s, %s, %s) "
+            "returning id, movement_type, quantity, occurred_at, order_id, return_id, "
+            "reason, created_by",
+            (str(shop_id), str(sku_id), body.quantity, reason, str(account.id)),
+        )
+        cols = [d.name for d in cur.description]
+        movement = StockMovement(**dict(zip(cols, cur.fetchone(), strict=True)))
+        conn.execute(
+            "update stock_positions set adjusted_delta = adjusted_delta + %s "
+            "where sku_id = %s and shop_id = %s",
+            (body.quantity, str(sku_id), str(shop_id)),
+        )
+        position = positions(conn, shop_id, sku_id=sku_id)[0]
+        out = AdjustmentOut(movement=movement, position=position)
+        record(conn, account.id, op, idempotency_key, digest, 201, out.model_dump(mode="json"))
+    return out

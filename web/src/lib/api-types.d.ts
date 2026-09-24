@@ -1417,12 +1417,12 @@ export interface components {
         Period: {
             /**
              * Format: date
-             * @description Local date
+             * @description Local date, Europe/London.
              */
             from: string;
             /**
              * Format: date
-             * @description Local date
+             * @description Local date, Europe/London. Inclusive.
              */
             to: string;
             basis: components["schemas"]["Basis"];
@@ -1510,7 +1510,7 @@ export interface components {
                 /** @enum {string} */
                 domain: "orders" | "products" | "inventory" | "finance" | "returns";
                 /** @enum {string} */
-                status: "scheduled" | "fetching" | "persisting" | "processing" | "completed" | "retry_wait" | "failed" | "needs_reconnect";
+                status: "scheduled" | "fetching" | "persisting" | "processing" | "completed" | "partial" | "retry_wait" | "failed" | "needs_reconnect";
                 /** Format: date-time */
                 last_success_at?: string | null;
                 /**
@@ -1565,7 +1565,7 @@ export interface components {
                 label: string;
                 /**
                  * Format: date
-                 * @description Local date
+                 * @description Local date, Europe/London.
                  */
                 date: string;
                 rule_key: string;
@@ -1942,7 +1942,7 @@ export interface components {
             occurred_at: string;
             /**
              * Format: date
-             * @description Local date
+             * @description Local date, Europe/London.
              */
             basis_day: string;
             /** Format: date */
@@ -2138,6 +2138,8 @@ export interface components {
             note?: string | null;
             /** @description What the discrepancy changes if resolved the other way. */
             effect?: Record<string, never> | null;
+            /** @description True when the seller may correct their own side. Ruling 3 of migration 0013 allows a correction only where the disputed fact is the seller's own, never on a fact TikTok owns, and never once resolved. Served so that the rule lives in the service alone (A29.1). */
+            correctable?: boolean;
             /** Format: date-time */
             opened_at: string;
             /** Format: date-time */
@@ -3125,6 +3127,7 @@ export interface operations {
             };
             401: components["responses"]["Unauthenticated"];
             403: components["responses"]["ForbiddenShop"];
+            404: components["responses"]["NotFound"];
             422: components["responses"]["ValidationFailed"];
         };
     };
@@ -3733,6 +3736,7 @@ export interface operations {
             };
             401: components["responses"]["Unauthenticated"];
             403: components["responses"]["ForbiddenShop"];
+            404: components["responses"]["NotFound"];
             422: components["responses"]["ValidationFailed"];
         };
     };
