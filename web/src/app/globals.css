@@ -273,9 +273,10 @@ a:hover { color: var(--orange-700); }
   font-weight: 650;
   white-space: nowrap;
 }
-/* A deduction is shown with its minus sign in navy. Red is for money that has not arrived
-   (A7.10), and a fee is not that. */
-.money--neg { color: var(--navy-900); }
+/* A deduction is shown in red with its minus sign. Ruled by the owner on 24 September
+   2026, amending A7.10: red marks money going out as well as money that has not arrived.
+   #B3261E is 5.58 : 1 on white, so it passes AA. */
+.money--neg { color: var(--bad-600); }
 .money--unknown { color: var(--ink-500); font-weight: 500; }
 
 /* --- surfaces -------------------------------------------------------------------- */
