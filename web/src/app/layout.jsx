@@ -13,7 +13,7 @@
  */
 
 import "./globals.css";
-import { StackProvider } from "@stackframe/stack";
+import { StackProvider, StackTheme } from "@stackframe/stack";
 import { stackApp } from "@/lib/stack";
 
 export const metadata = {
@@ -76,8 +76,18 @@ export default function RootLayout({ children }) {
 
           <main id="main" className="content">
             {/* The provider serves Stack's own pages under /handler. It is left out when
-                sign-in is not configured, because it cannot exist without a project id. */}
-            {stackApp ? <StackProvider app={stackApp}>{children}</StackProvider> : children}
+                sign-in is not configured, because it cannot exist without a project id.
+                StackTheme is required, not decoration: in 2.8.108 it is what renders the
+                TooltipProvider that Stack's sign-in form needs. Without it the live sign-up
+                page crashed on 24 September with "`Tooltip` must be used within
+                `TooltipProvider`". */}
+            {stackApp ? (
+              <StackProvider app={stackApp}>
+                <StackTheme>{children}</StackTheme>
+              </StackProvider>
+            ) : (
+              children
+            )}
           </main>
 
           <footer className="footer">
