@@ -122,6 +122,25 @@ plus awaiting now equals net proceeds less that postage rather than net proceeds
 Return postage the seller paid outside TikTok carries no `settlement_id` and is outside Shop
 Money, because it never passes through TikTok.
 
+**The owner's ruling on Paid out, 24 September 2026, in his words.**
+
+> Paid Out represents the actual amount successfully paid or credited to the seller by
+> TikTok Shop, based on the payout record. Settlement components such as shipping, return
+> postage, fees and adjustments remain separately traceable in the settlement ledger and
+> must not be added back to Paid Out merely because they are separately classified. Where a
+> settlement component is deducted before payout, Paid Out reflects the resulting cash
+> amount actually transferred.
+
+So on the development data Paid out is 453.88, and the 4.50 of return postage is stated on
+its own line. That is what the code above already serves, and it was checked against the
+ledger: the three `settlement` payout entries total 453.88, and the Shop Money query's paid
+out on the same branch was 453.88.
+
+**This overrides the master skill.** `instruction-going-further` §16 and §51 say return
+postage "is excluded from Paid Out under A4". The owner ruled that this wording mixes the
+ledger classification with the cash payout. Where that skill and this section disagree,
+this section is the rule for this repository.
+
 ## 29.8 VAT
 
 **Not changed, and recorded as open.** The amendment asked for `sales.vat` on Today. Three
