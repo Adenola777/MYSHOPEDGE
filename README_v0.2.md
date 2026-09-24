@@ -181,12 +181,12 @@ The specification is nearly complete. The application is not.
 | Layer | State |
 |---|---|
 | Brand, terminology, screen specification, data model, API contract | Done |
-| Schema applied | Through 0021 on all three branches (CLAUDE.md, A28.1). 0022 and 0023 are written and not applied |
+| Schema applied | Through 0024 on all three branches, 25 migrations each, fingerprints identical (24 September). 0024 closed the Neon Data API exposure that CLAUDE.md describes |
 | Backend | 27 of 53 contract paths. See CLAUDE.md |
 | Authentication | Corrected twice on 23 September. ES256 verified against the provider's fetched JWKS, email from `users_sync`, nine tests passing. Issuer and audience are now configured rather than derived, and unset means the service refuses to verify |
 | Billing | Screens built. The three products and prices were created in the live Stripe account on 23 September. See CLAUDE.md for the identifiers |
 | TikTok integration | Authorisation is built (`app/connections.py`) and has never made a live call. Ingestion still reads local JSON files |
-| Front end | 12 screens of 36 built, none signed in yet. See `SCREENS.md` |
+| Front end | 13 screens of 36 built, with S17 Start and Stack's sign-in pages added on 24 September. Requests carry the seller's token. No real sign-in has happened yet. See `SCREENS.md` |
 | Deployment | The front end is live on Vercel production. The Python service has no host |
 | Tests | Five files run in CI: auth, contract conformance, 44 handler smoke cases that call every served route, the London business date, and the cost file rules |
 

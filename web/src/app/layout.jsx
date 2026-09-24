@@ -13,6 +13,8 @@
  */
 
 import "./globals.css";
+import { StackProvider } from "@stackframe/stack";
+import { stackApp } from "@/lib/stack";
 
 export const metadata = {
   title: {
@@ -73,7 +75,9 @@ export default function RootLayout({ children }) {
           </header>
 
           <main id="main" className="content">
-            {children}
+            {/* The provider serves Stack's own pages under /handler. It is left out when
+                sign-in is not configured, because it cannot exist without a project id. */}
+            {stackApp ? <StackProvider app={stackApp}>{children}</StackProvider> : children}
           </main>
 
           <footer className="footer">

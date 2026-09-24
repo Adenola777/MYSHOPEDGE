@@ -83,12 +83,12 @@ The specification is close to complete. The application is not. As of 23 Septemb
 | Layer | State |
 |---|---|
 | Rulings, terminology, screens, data model, API contract | Done |
-| Schema | Through 0021 on all three branches, 22 migrations recorded on each. Production was brought up on 23 September and its schema fingerprint matches staging exactly. See A28.1. **0022 and 0023 are written and not applied.** Today and Needs you need 0022. A write carrying an Idempotency-Key needs 0023 |
+| Schema | Through 0024 on all three branches, 25 migrations recorded on each, and the three schema fingerprints match exactly (checked 24 September). 0022, 0023 and 0024 were applied on 24 September with the owner's authority through the Neon connection, which runs as `mse_migrator`, rather than through `migrate.py`, so that no connection string entered the session. Each migration and its `schema_migrations` row went in one transaction with the file's SHA-256, as the runner does, so `migrate.py --status` reads them as applied. The notes inside 0022 and 0023 saying "not yet applied" are stale and stay, because an applied migration is never edited. See the Data API section below for 0024 |
 | Backend | 27 of 53 contract paths. Added on 24 September: me, shops, a variant's cost, cost coverage, resolving a discrepancy, a stock adjustment, Needs you, sync status, the returns list, return metrics, and listing and updating notifications. Cost uploads, exports and expected payouts are not served, for the reasons in the blocked table below |
-| Authentication | ES256 verified against the provider's fetched JWKS, email read from `users_sync`, 9 tests passing. No handler has ever been invoked by a test |
+| Authentication | ES256 verified against the provider's fetched JWKS, email read from `users_sync`, 15 tests passing. `NEON_AUTH_ISSUER` and `NEON_AUTH_AUDIENCE` are not set on Render, because no real token has been seen. Until they are, the service answers 503 `auth_unconfigured` and logs the `iss` and `aud` of any token whose signature checks out, and nothing else from it |
 | Billing | Screens built. The three products and prices exist in the live Stripe account as of 23 September. Nothing is wired to them yet |
 | TikTok integration | Authorisation is built end to end. `app/connections.py` holds both endpoints, the signing algorithm, AES-256-GCM token storage and the state store in migration 0021. Fourteen smoke cases cover it. `_sign` has never made a live call, so the first real request is its test. See A23, A27 and A28 |
-| Front end | 12 screens of 36 built: S6, S7, S9, S10, S11, S14 with its actions, S21, S22, S25, S26, S33 and S34, plus `/shops`, which takes a seller to their shop. None has met a real API, because **no request the front end makes carries a sign-in token**: `web/src/lib/api.js` sends no Authorization header, and every shop route requires one. `SCREENS.md` is the register |
+| Front end | 13 screens of 36 built: S6, S7, S9, S10, S11, S14 with its actions, S17, S21, S22, S25, S26, S33 and S34, plus `/shops`, which takes a seller to their shop, and `/handler`, Stack's own sign-in pages. `web/src/lib/api.js` attaches the signed in seller's token to every request since 24 September. No real sign-in has happened yet, so that path is unverified. S17 lacks the privacy notice and terms links A14 requires, because neither page exists. `SCREENS.md` is the register |
 | Figma | Unreadable. The Starter plan call limit refuses every read of the file, on 22 and 24 September. It holds frames that predate A15, so it is out of date whatever it holds. `SCREENS.md` explains. The wireframes are committed at `design/wireframes/` |
 | Deployment | The front end is live on Vercel production and redeploys on every merge to `main`, checked 24 September. It has no API behind it: `/billing` was checked and shows its error state. The Python service has no host |
 
@@ -139,6 +139,22 @@ Four hand rolled roles exist: `mse_owner`, `mse_app`, `mse_analytics`, `mse_migr
 entirely. Migration 0019 fixed five views that leaked across tenants and added a `DO` block
 that raises if any public view lacks the setting. Adding a view without it will fail that
 check, and that is deliberate.
+
+## The Neon Data API is off, and must stay off
+
+On 24 September the Neon Data API was found active on production, exposing `public` over
+HTTP to any signed in Stack user as the role `authenticated`. A default privilege on
+`mse_migrator` granted that role every right on every new table, sequence and function.
+Tenant tables held, because a Data API client cannot set `app.account_id`, but
+`schema_migrations` and `reference_rules` were writable and the six SECURITY DEFINER
+functions were callable, including `create_subscription` and `apply_subscription_event`.
+Production held no accounts, so nothing was harmed.
+
+The Data API on production was deleted the same day, and migration 0024 revoked every right
+`authenticated` and `anonymous` held in `public`, removed the default privileges, and dropped
+Neon's sample table `playing_with_neon`. Its closing check raises if either role regains a
+table right or a SECURITY DEFINER function. The product never uses the Data API: the front
+end calls the service and the service connects as `mse_app`. Do not switch it back on.
 
 ## Faults that cost real time, so they are not repeated
 
@@ -255,7 +271,7 @@ file inside this repository. `.gitignore` already excludes `.env` and its varian
 | Whether `authorization_expires_at` is the refresh token's expiry | One real TikTok authorisation. The contract serves the field and `tiktok_connections.refresh_expires_at` looks like the same instant. Nobody has checked, so 0020 adds no column for it |
 | Refreshing an access token before it lapses | Deploying the service. A28.4 chose a long-lived container so the refresh has somewhere to run. The access token lives seven days (A23.4) |
 | Deploying the service | The environment variables in A28.4, which carry four secrets. The commits it also waited on reached GitHub on 24 September 2026, when `main` was restored to `555cd16` with 58 commits. The service also reads `ALLOWED_ORIGINS`, the front end's origins, and sends no CORS headers without it, so a browser write fails until it is set |
-| Signing in from the front end | Wiring Stack Auth into `web`, which needs the Stack project's client keys and the S17 screen. Until then no screen can load a seller's figures |
+| Signing in from the front end | `NEXT_PUBLIC_STACK_PROJECT_ID` and `NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY` on Vercel, then one real sign-in, whose `iss` and `aud` the service logs for `NEON_AUTH_ISSUER` and `NEON_AUTH_AUDIENCE` on Render. The code is built |
 | The four cost upload operations and `createExport` | How a file reaches Vercel Blob (A10.8). Vercel documents signed upload URLs only for its JavaScript SDK (`issueSignedToken`, `presignUrl`), not as an HTTP call or a signing scheme a Python service can follow. The parser and matcher are built and tested in `cost_files.py`. `createExport` also needs a worker, because it answers 202 |
 | `checkReturnItem` | Four rulings, because it writes to the append-only ledger. A4 says what a check does, and not: (1) which order line a write-off or return postage attaches to, since the ledger requires one and the test ingest uses the order's first line rather than the returned variant's; (2) whether a write-off uses the cost in force today or when the unit sold; (3) which date the entries carry, the check or the refund; (4) whether a check takes units off `coming_back`, which nothing yet adds to. `returns.py` says so |
 | `getExpectedPayouts` | A source for TikTok's unsettled orders. The contract says it is read from that endpoint, nothing ingests it, and the ledger holds the week a sale happened, not the week TikTok will pay |
