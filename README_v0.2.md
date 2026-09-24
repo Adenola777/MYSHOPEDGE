@@ -169,7 +169,7 @@ service derives them with `urlsplit` rather than by appending to the base.
 | Of which Must | 64 | 78 |
 | Test cases | 84 | 107 |
 | Golden datasets | 10 | 12 |
-| Screens ruled | 15 | 39 |
+| Screens ruled | 15 | 36 live, 38 defined, 2 cut by A15. See `SCREENS.md` |
 | Screens drawn in Figma | 0 | 18 |
 | Schema migrations | 0 | 19 |
 | API operations specified | 0 | 58 |
@@ -186,7 +186,7 @@ The specification is nearly complete. The application is not.
 | Authentication | Corrected twice on 23 September. ES256 verified against the provider's fetched JWKS, email from `users_sync`, nine tests passing. Issuer and audience are now configured rather than derived, and unset means the service refuses to verify |
 | Billing | Screens built. The three products and prices were created in the live Stripe account on 23 September. See CLAUDE.md for the identifiers |
 | TikTok integration | Not built. Checked 23 September: nothing in the repository calls a TikTok host. The ingest reads local JSON files. `/connections/tiktok/authorize` and `/connections/tiktok/callback` are specified and unimplemented |
-| Front end | 2 pages of 39 screens |
+| Front end | 3 screens of 36 live. See `SCREENS.md` |
 | Deployment | Vercel chosen. Nothing deployed |
 | Tests | 3 files. Auth 9 cases against ES256 with the algorithm asserted against a recorded JWKS, contract conformance, map coverage. **No test has ever invoked an HTTP handler.** See A25 |
 
