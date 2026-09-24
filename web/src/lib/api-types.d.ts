@@ -1417,12 +1417,12 @@ export interface components {
         Period: {
             /**
              * Format: date
-             * @description Local date
+             * @description Local date, Europe/London.
              */
             from: string;
             /**
              * Format: date
-             * @description Local date
+             * @description Local date, Europe/London. Inclusive.
              */
             to: string;
             basis: components["schemas"]["Basis"];
@@ -1510,7 +1510,7 @@ export interface components {
                 /** @enum {string} */
                 domain: "orders" | "products" | "inventory" | "finance" | "returns";
                 /** @enum {string} */
-                status: "scheduled" | "fetching" | "persisting" | "processing" | "completed" | "retry_wait" | "failed" | "needs_reconnect";
+                status: "scheduled" | "fetching" | "persisting" | "processing" | "completed" | "partial" | "retry_wait" | "failed" | "needs_reconnect";
                 /** Format: date-time */
                 last_success_at?: string | null;
                 /**
@@ -1565,7 +1565,7 @@ export interface components {
                 label: string;
                 /**
                  * Format: date
-                 * @description Local date
+                 * @description Local date, Europe/London.
                  */
                 date: string;
                 rule_key: string;
@@ -1942,7 +1942,7 @@ export interface components {
             occurred_at: string;
             /**
              * Format: date
-             * @description Local date
+             * @description Local date, Europe/London.
              */
             basis_day: string;
             /** Format: date */
@@ -3125,6 +3125,7 @@ export interface operations {
             };
             401: components["responses"]["Unauthenticated"];
             403: components["responses"]["ForbiddenShop"];
+            404: components["responses"]["NotFound"];
             422: components["responses"]["ValidationFailed"];
         };
     };
@@ -3733,6 +3734,7 @@ export interface operations {
             };
             401: components["responses"]["Unauthenticated"];
             403: components["responses"]["ForbiddenShop"];
+            404: components["responses"]["NotFound"];
             422: components["responses"]["ValidationFailed"];
         };
     };

@@ -791,6 +791,201 @@ def product_and_money_use_the_same_words():
 check("Product and Money calculators use A8's words and no withdrawn label", product_and_money_use_the_same_words)
 
 
+# --- who is signed in, and which shops
+from app import me
+
+def me_and_shops():
+    acct = (ACCOUNT.id, "owner@synthetic-uk-shop.test", "Synthetic UK Shop Ltd", "en-GB",
+            "Europe/London", "active", NOW, 1)
+    shop = (SHOP, "tiktok_shop", "7495000000000000001", None, "Synthetic UK Shop", "GB",
+            None, "GBP", "connected", None, None)
+    me.tenant = with_conn(me, [
+        ("from accounts a", Result(["id","email","display_name","locale","timezone","status",
+                                    "created_at","shop_count"], [acct])),
+        ("from shops where connection_status", Result(["id","platform","tiktok_shop_id",
+            "tiktok_shop_code","shop_name","region","seller_type","currency",
+            "connection_status","first_synced_at","last_synced_at"], [shop])),
+    ])
+    r = client.get("/v1/me")
+    _assert(r.status_code == 200, f"status {r.status_code}: {r.text[:300]}")
+    _assert(r.json()["shop_count"] == 1 and "ETag" in r.headers)
+    r2 = client.get("/v1/me", headers={"If-None-Match": r.headers["ETag"]})
+    _assert(r2.status_code == 304, f"expected 304, got {r2.status_code}")
+    s = client.get("/v1/shops")
+    _assert(s.status_code == 200, f"status {s.status_code}: {s.text[:300]}")
+    b = s.json()["shops"][0]
+    _assert(b["id"] == str(SHOP) and b["authorization_expires_at"] is None, b)
+check("GET me and shops return the caller's own rows with an ETag", me_and_shops)
+
+
+# --- cost prices
+from app import costs
+
+def put_cost_supersedes():
+    prev = UUID("d08179cb-76e4-ad96-2847-829e1d5cdc95")
+    costs.tenant = with_conn(costs, [
+        ("from skus k join shops s", Result(["c"], [("GBP",)])),
+        ("update product_costs set superseded_at", Result(["id"], [(prev,)])),
+        ("insert into product_costs", Result([], [])),
+    ])
+    r = client.put(f"/v1/shops/{SHOP}/skus/{SKU}/cost",
+                   json={"cost": {"amount_minor": 3600, "currency": "GBP"}})
+    _assert(r.status_code == 200, f"status {r.status_code}: {r.text[:300]}")
+    b = r.json()
+    _assert(b["supersedes"] == str(prev) and b["source"] == "manual", b)
+    _assert(b["cost"]["amount_minor"] == 3600)
+    bad = client.put(f"/v1/shops/{SHOP}/skus/{SKU}/cost",
+                     json={"cost": {"amount_minor": 3600, "currency": "USD"}})
+    _assert(bad.status_code == 422, f"a USD cost on a GBP shop gave {bad.status_code}")
+    neg = client.put(f"/v1/shops/{SHOP}/skus/{SKU}/cost",
+                     json={"cost": {"amount_minor": -1, "currency": "GBP"}})
+    _assert(neg.status_code == 422)
+    costs.tenant = with_conn(costs, [("from skus k join shops s", Result(["c"], []))])
+    nf = client.put(f"/v1/shops/{SHOP}/skus/{SKU}/cost",
+                    json={"cost": {"amount_minor": 1, "currency": "GBP"}})
+    _assert(nf.status_code == 404 and nf.json()["code"] == "sku_not_found")
+check("PUT cost supersedes the current cost and refuses a wrong currency", put_cost_supersedes)
+
+def coverage():
+    cols = ["sku_id","product_title","units","gross_minor","has_cost","currency"]
+    rows = [(UUID(int=1), "Desk", 3, 36000, False, "GBP"),
+            (UUID(int=2), "Brush", 7, 14000, True, "GBP")]
+    costs.tenant = with_conn(costs, [("with sold as", Result(cols, rows))])
+    b = client.get(f"/v1/shops/{SHOP}/costs/coverage?from=2026-07-01&to=2026-08-31").json()
+    _assert(b["units_total"] == 10 and b["units_with_cost"] == 7, b)
+    _assert(abs(b["coverage"] - 0.7) < 1e-9 and b["skus_missing_cost"] == 1)
+    _assert(b["top_missing"][0]["gross_sales"]["amount_minor"] == 36000)
+    _assert(b["period"]["basis"] == "sales")
+    costs.tenant = with_conn(costs, [("with sold as", Result(cols, []))])
+    _assert(client.get(f"/v1/shops/{SHOP}/costs/coverage").json()["coverage"] == 1.0,
+            "with nothing sold, nothing is uncosted")
+check("GET cost coverage is the share of sold units with a cost", coverage)
+
+
+# --- resolving a discrepancy, and adjusting stock
+D_ID = UUID("0407a537-ca4d-627c-3829-74249d317c38")
+
+def _disc(kind="amount", status="open", seller=None, resolution=None, note="PLATFORM_PENALTY"):
+    return (D_ID, kind, "settlement", None, "adjustment_amount", "-5.00", seller, "-5.00",
+            status, resolution, note, None, NOW, NOW if status == "resolved" else None)
+
+def resolve_rules():
+    class Log(Result):
+        def __init__(self): super().__init__([], [])
+    def answers(kind, after):
+        return [
+            ("delete from idempotency_keys", Result([], [])),
+            ("select request_hash", Result(["h","s","r"], [])),
+            ("for update", Result(DISC_COLS + ["old_seller"], [_disc(kind) + (None,)])),
+            ("update discrepancies set status", Result(DISC_COLS, [after])),
+            ("insert into change_log", Log()),
+            ("insert into idempotency_keys", Result([], [])),
+        ]
+    discrepancies.tenant = with_conn(discrepancies, answers("amount", _disc(status="resolved", resolution="explained", note="Confirmed")))
+    r = client.post(f"/v1/shops/{SHOP}/discrepancies/{D_ID}/resolve",
+                    json={"resolution": "explained", "note": "Confirmed"},
+                    headers={"Idempotency-Key": "resolve-0001"})
+    _assert(r.status_code == 200, f"status {r.status_code}: {r.text[:300]}")
+    b = r.json()
+    _assert(b["discrepancy"]["status"] == "resolved" and b["adjustment_posted"] is None, b)
+    # A statement amount is TikTok's own fact, so it cannot be corrected (0013 ruling 3).
+    r = client.post(f"/v1/shops/{SHOP}/discrepancies/{D_ID}/resolve",
+                    json={"resolution": "corrected_seller", "applied_value": "-4.00"})
+    _assert(r.status_code == 422 and r.json()["code"] == "not_correctable", r.text)
+    # A product code is the seller's own record, so it can be, and only seller_value moves.
+    discrepancies.tenant = with_conn(discrepancies, answers("product_code",
+        _disc("product_code", "resolved", seller="P002", resolution="corrected_seller")))
+    r = client.post(f"/v1/shops/{SHOP}/discrepancies/{D_ID}/resolve",
+                    json={"resolution": "corrected_seller", "applied_value": "P002"})
+    _assert(r.status_code == 200, r.text)
+    _assert(r.json()["discrepancy"]["applied_value"] == "-5.00", "the applied value must not move")
+    r = client.post(f"/v1/shops/{SHOP}/discrepancies/{D_ID}/resolve",
+                    json={"resolution": "corrected_seller"})
+    _assert(r.status_code == 422, "a correction without its value")
+check("POST resolve closes the flag, never corrects a TikTok fact, and moves no money", resolve_rules)
+
+def resolve_replays_and_refuses_reuse():
+    stored = {"discrepancy": {"id": str(D_ID)}, "adjustment_posted": None}
+    from app.idempotency import request_hash
+    body = {"resolution": "explained", "note": "x", "applied_value": None}
+    h = request_hash(str(SHOP), str(D_ID), body)
+    discrepancies.tenant = with_conn(discrepancies, [
+        ("delete from idempotency_keys", Result([], [])),
+        ("select request_hash", Result(["h","s","r"], [(h, 200, stored)])),
+    ])
+    r = client.post(f"/v1/shops/{SHOP}/discrepancies/{D_ID}/resolve", json=body,
+                    headers={"Idempotency-Key": "resolve-0001"})
+    _assert(r.status_code == 200 and r.json() == stored, f"a repeat must return the first result: {r.text}")
+    r = client.post(f"/v1/shops/{SHOP}/discrepancies/{D_ID}/resolve",
+                    json={"resolution": "accepted_tiktok"}, headers={"Idempotency-Key": "resolve-0001"})
+    _assert(r.status_code == 422 and r.json()["code"] == "idempotency_key_reused", r.text)
+check("A repeated key returns the first result, and a reused key is refused", resolve_replays_and_refuses_reuse)
+
+def adjustment_rules():
+    move = (UUID(int=11), "manual_adjustment", -2, NOW, None, None, "Two damaged", ACCOUNT.id)
+    stock.tenant = with_conn(stock, [
+        # First, because the positions query also contains the text of the lock below.
+        ("with settings as", Result(STOCK_COLS, [_stock_row(SKU, 17, None, "healthy")])),
+        ("from stock_positions sp join skus k", Result(["on_shelf"], [(19,)])),
+        ("insert into stock_movements", Result(MOVE_COLS, [move])),
+        ("update stock_positions set adjusted_delta", Result([], [])),
+    ])
+    r = client.post(f"/v1/shops/{SHOP}/stock/{SKU}/adjustments",
+                    json={"quantity": -2, "reason": "Two damaged"})
+    _assert(r.status_code == 201, f"status {r.status_code}: {r.text[:300]}")
+    b = r.json()
+    _assert(b["movement"]["quantity"] == -2 and b["position"]["on_shelf"] == 17, b)
+    for bad in ({"quantity": 0, "reason": "x"}, {"quantity": 1, "reason": "  "},
+                {"quantity": -20, "reason": "More than there are"}):
+        r = client.post(f"/v1/shops/{SHOP}/stock/{SKU}/adjustments", json=bad)
+        _assert(r.status_code == 422, f"{bad} gave {r.status_code}")
+    stock.tenant = with_conn(stock, [
+        ("from stock_positions sp join skus k", Result(["on_shelf"], [])),
+        ("select 1 from skus", Result(["x"], [])),
+    ])
+    r = client.post(f"/v1/shops/{SHOP}/stock/{SKU}/adjustments", json={"quantity": 1, "reason": "x"})
+    _assert(r.status_code == 404, r.text)
+check("POST adjustment records a movement with its reason and refuses what it cannot count", adjustment_rules)
+
+
+# --- Needs you on its own, and sync status
+from app import sync_status, today_view as _tv
+
+def needs_you_alone():
+    _tv.tenant = with_conn(_tv, [
+        ("returns_to_check", _needs(latest_sync_statuses=["failed"])),
+        ("select trim(currency) from shops", Result(["c"], [("GBP",)])),
+    ])
+    r = client.get(f"/v1/shops/{SHOP}/needs-you")
+    _assert(r.status_code == 200, f"status {r.status_code}: {r.text[:300]}")
+    items = r.json()["items"]
+    types = [i["type"] for i in items]
+    # The same order as Today: warnings with money at stake first, info last (A29.6).
+    _assert(types[0] == "unmapped_fees" and types[-1] in ("out_of_stock", "first_sync_pending"), types)
+    hrefs = {i["type"]: i["href"] for i in items}
+    _assert(hrefs["open_discrepancies"] == f"/shops/{SHOP}/discrepancies?status=open", hrefs)
+    _assert(hrefs["sync_failed"] is None)
+check("GET needs-you serves Today's items, order and links", needs_you_alone)
+
+def sync_status_rules():
+    from app.dates import now_utc
+    now = now_utc()
+    rows = [("finance", "completed", 1, 7, now - timedelta(hours=2)),
+            ("orders", "failed", 2, 0, now - timedelta(hours=30)),
+            ("returns", "partial", 1, 3, None)]
+    sync_status.tenant = with_conn(sync_status, [
+        ("from sync_runs r", Result(["domain","status","attempt","records_written","last_success_at"], rows)),
+    ])
+    r = client.get(f"/v1/shops/{SHOP}/sync")
+    _assert(r.status_code == 200, f"status {r.status_code}: {r.text[:300]}")
+    d = {x["domain"]: x for x in r.json()["domains"]}
+    _assert(d["finance"]["stale"] is False, d["finance"])
+    _assert(d["orders"]["stale"] is True and d["orders"]["status"] == "failed", d["orders"])
+    _assert(d["returns"]["stale"] is True, "never completed is stale (A29.3)")
+    _assert("overall" not in r.json(), "overall is not served, because nothing defines it")
+check("GET sync reports each domain's latest run, stale after 24 hours", sync_status_rules)
+
+
 print()
 if failures:
     print(f"{len(failures)} failure(s)")

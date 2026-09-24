@@ -114,7 +114,8 @@ select
      from tiktok_connections where shop_id = %(shop)s) as missing_scopes,
   (select array_agg(status order by domain) from (
      select distinct on (domain) domain, status from sync_runs
-      where shop_id = %(shop)s order by domain, created_at desc) latest) as latest_sync_statuses
+      where shop_id = %(shop)s
+      order by domain, coalesce(started_at, created_at) desc, id desc) latest) as latest_sync_statuses
 """
 
 
@@ -203,6 +204,22 @@ def needs_href(kind: str, shop_id: UUID, today: date) -> str | None:
         "missing_costs": f"{base}/products",
         "out_of_stock": f"{base}/stock?state=out",
     }.get(kind)
+
+
+def _needs_row(conn, shop_id: UUID, month_start: date, today: date) -> dict[str, Any]:
+    cur = conn.execute(NEEDS_YOU_SQL, {"shop": str(shop_id),
+                                       "month_start": month_start, "today": today})
+    cols = [d.name for d in cur.description]
+    return dict(zip(cols, cur.fetchone(), strict=True))
+
+
+def needs_you_items(needs: dict[str, Any], shop_id: UUID, now: datetime,
+                    currency: str) -> tuple[bool, list[NeedsYouItem]]:
+    """Needs you as Today shows it and as getNeedsYou serves it, from one place."""
+    stale, items = _needs_you(needs, now, currency)
+    for item in items:
+        item.href = needs_href(item.type, shop_id, business_today(now))
+    return stale, items
 
 
 def _needs_you(r: dict[str, Any], now: datetime, currency: str) -> tuple[bool, list[NeedsYouItem]]:
@@ -307,10 +324,7 @@ def get_today(
         cols = [d.name for d in cur.description]
         settlement = [dict(zip(cols, r, strict=True)) for r in cur.fetchall()]
 
-        cur = conn.execute(NEEDS_YOU_SQL, {"shop": str(shop_id),
-                                           "month_start": month_start, "today": today})
-        cols = [d.name for d in cur.description]
-        needs = dict(zip(cols, cur.fetchone(), strict=True))
+        needs = _needs_row(conn, shop_id, month_start, today)
 
     currency = month.totals.net_proceeds.currency
 
@@ -347,9 +361,7 @@ def get_today(
         ],
     )
 
-    stale, items = _needs_you(needs, now, currency)
-    for item in items:
-        item.href = needs_href(item.type, shop_id, business_today(now))
+    stale, items = needs_you_items(needs, shop_id, now, currency)
 
     return TodayView(
         as_of=now,
@@ -366,3 +378,28 @@ def get_today(
         shop_money=shop_money,
         needs_you=items,
     )
+
+
+class NeedsYouView(BaseModel):
+    as_of: datetime
+    items: list[NeedsYouItem]
+
+
+@router.get("/shops/{shopId}/needs-you", response_model=NeedsYouView)
+def get_needs_you(
+    account: Annotated[Account, Depends(require_account)],
+    shop_id: Annotated[UUID, Depends(require_shop)],
+) -> NeedsYouView:
+    """DSH-10. The same items, severities, order and links as Today's Needs you (A29.6).
+
+    Reads the migration 0022 columns, so like Today it needs 0022 applied first.
+    """
+    now = now_utc()
+    today = business_today(now)
+    with tenant(account.id) as conn:
+        needs = _needs_row(conn, shop_id, today.replace(day=1), today)
+        currency = conn.execute(
+            "select trim(currency) from shops where id = %s", (str(shop_id),)
+        ).fetchone()[0]
+    _, items = needs_you_items(needs, shop_id, now, currency)
+    return NeedsYouView(as_of=now, items=items)

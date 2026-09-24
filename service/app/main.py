@@ -11,12 +11,15 @@ from fastapi.responses import JSONResponse
 from . import (
     billing,
     connections,
+    costs,
     discrepancies,
+    me,
     money_view,
     products,
     records,
     settlements,
     stock,
+    sync_status,
     today_view,
 )
 from .problems import problem_handler
@@ -34,12 +37,15 @@ app.add_exception_handler(Exception, problem_handler)
 
 app.include_router(billing.router, prefix="/v1")
 app.include_router(connections.router, prefix="/v1")
+app.include_router(costs.router, prefix="/v1")
 app.include_router(discrepancies.router, prefix="/v1")
+app.include_router(me.router, prefix="/v1")
 app.include_router(money_view.router, prefix="/v1")
 app.include_router(products.router, prefix="/v1")
 app.include_router(records.router, prefix="/v1")
 app.include_router(settlements.router, prefix="/v1")
 app.include_router(stock.router, prefix="/v1")
+app.include_router(sync_status.router, prefix="/v1")
 app.include_router(today_view.router, prefix="/v1")
 
 
