@@ -213,6 +213,13 @@ These three appear on settlement, on expected payouts, on a payout's own screen 
 refund's status. They are not used for anything else, so that red on this product always
 means money that has not arrived.
 
+**Amended by the owner on 24 September 2026: deductions are shown in red.** Every amount
+that comes off a figure, such as a fee, a discount, a refund, a cost or a write-off, is
+printed in `#B3261E` with its minus sign. Red on this product therefore means money going
+out as well as money that has not arrived. The minus sign stays, so the meaning never rests
+on colour alone (section 7 of the Wireframes document). The other two status colours are
+unchanged and remain for payment status only.
+
 Every value above passes WCAG 2.2 AA, which NFR-10 requires. The ratios were measured
 rather than judged by eye.
 
