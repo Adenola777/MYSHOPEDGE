@@ -70,8 +70,8 @@ export default async function ProductsPage({ params, searchParams }) {
   if (!result.ok || !result.data) {
     return (
       <Problem
-        title="Something went wrong loading your products."
-        note="Your data is safe. Try again in a moment."
+        title="Your products could not be loaded."
+        note="MyShopEdge did not answer, so no figures are shown rather than wrong ones. Try again in a moment."
         retry
       />
     );

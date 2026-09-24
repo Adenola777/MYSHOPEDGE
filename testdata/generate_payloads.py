@@ -10,7 +10,8 @@ Two rules this file obeys, both taken from observed TikTok behaviour:
      revenue_amount is null for UK and US sellers.
 """
 import json, os, hashlib
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
+from decimal import ROUND_HALF_UP, Decimal
 
 OUT = os.path.join(os.path.dirname(__file__), "payloads")
 os.makedirs(OUT, exist_ok=True)
@@ -18,6 +19,11 @@ os.makedirs(OUT, exist_ok=True)
 SHOP_ID = "7495000000000000001"
 SHOP_CIPHER = "GBP_SyntheticCipherAAAAAAAAAAAAAA"
 SHOP_CODE = "GBSYNTH0001"
+
+def _pence(v):
+    """Decimal, never float: A13 rule 3."""
+    return int((Decimal(str(v)) * 100).quantize(Decimal(1), rounding=ROUND_HALF_UP))
+
 
 def p(pence):
     """TikTok returns amounts as strings with two decimals."""
@@ -152,8 +158,8 @@ def statement_transactions(o):
         refund = gross if (f.get("refund_only") or f.get("return_resellable") or f.get("return_damaged") or f.get("cancelled")) else 0
         rev = {"subtotal_before_discount_amount": p(gross), "seller_discount_amount": p(-disc),
                "refund_subtotal_before_discount_amount": p(-refund), "seller_discount_refund_amount": "0.00"}
-        fee_total = sum(int(round(float(v) * 100)) for v in fee.values())
-        ship_total = sum(int(round(float(v) * 100)) for k, v in ship.items() if k != "supplementary_component")
+        fee_total = sum(_pence(v) for v in fee.values())
+        ship_total = sum(_pence(v) for k, v in ship.items() if k != "supplementary_component")
         rev_total = gross - disc - refund
         sku_tx.append({"sku_id": sku_id, "sku_name": SKU[sku_id][2],
                        "product_name": PRODUCT_NAME[SKU[sku_id][1]], "quantity": str(len(ls)),
@@ -165,10 +171,10 @@ def statement_transactions(o):
     return {"code": 0, "message": "Success", "request_id": "SYNTH-" + o["_ref"],
             "data": {"order_id": o["id"], "order_create_time": o["create_time"],
                      "currency": "GBP", "total_count": len(sku_tx),
-                     "fee_and_tax_amount": p(sum(int(round(float(t["fee_tax_amount"]) * 100)) for t in sku_tx)),
-                     "shipping_cost_amount": p(sum(int(round(float(t["shipping_cost_amount"]) * 100)) for t in sku_tx)),
+                     "fee_and_tax_amount": p(sum(_pence(t["fee_tax_amount"]) for t in sku_tx)),
+                     "shipping_cost_amount": p(sum(_pence(t["shipping_cost_amount"]) for t in sku_tx)),
                      "revenue_amount": None,          # null for a UK seller
-                     "settlement_amount": p(sum(int(round(float(t["settlement_amount"]) * 100)) for t in sku_tx)),
+                     "settlement_amount": p(sum(_pence(t["settlement_amount"]) for t in sku_tx)),
                      "sku_transactions": sku_tx}}
 
 tx = {o["id"]: statement_transactions(o) for o in orders}
@@ -186,9 +192,9 @@ for sid, stime, grp, status in GROUPS:
     for o in grp:
         for t in tx[o["id"]]["data"]["sku_transactions"]:
             t["statement_id"] = sid
-            net  += int(round(float(t["revenue_amount"]) * 100))
-            fee  += int(round(float(t["fee_tax_amount"]) * 100))
-            ship += int(round(float(t["shipping_cost_amount"]) * 100))
+            net  += _pence(t["revenue_amount"])
+            fee  += _pence(t["fee_tax_amount"])
+            ship += _pence(t["shipping_cost_amount"])
     adj = -500 if sid.endswith("0003") else 0     # an adjustment TikTok gives no reason for
     res = -1000 if sid.endswith("0002") else 0    # funds withheld under the reserve policy
     settle = net + fee + ship + adj

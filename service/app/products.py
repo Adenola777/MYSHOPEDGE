@@ -210,7 +210,7 @@ def list_products(
     with tenant(account.id) as conn:
         cur = conn.execute(sql, args)
         cols = [d.name for d in cur.description]
-        rows = [dict(zip(cols, r)) for r in cur.fetchall()]
+        rows = [dict(zip(cols, r, strict=True)) for r in cur.fetchall()]
 
     currency = rows[0]["currency"] if rows else "GBP"
 
@@ -437,7 +437,7 @@ def get_product(
             (str(shop_id), str(productId), start, end),
         )
         cols = [d.name for d in cur.description]
-        lines = [dict(zip(cols, r)) for r in cur.fetchall()]
+        lines = [dict(zip(cols, r, strict=True)) for r in cur.fetchall()]
 
         skus = conn.execute(
             """select s.id, s.tiktok_sku_id, s.seller_sku, s.variant_label,

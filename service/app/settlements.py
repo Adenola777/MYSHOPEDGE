@@ -183,7 +183,7 @@ def list_settlements(
     with tenant(account.id) as conn:
         cur = conn.execute(sql, args)
         cols = [d.name for d in cur.description]
-        rows = [dict(zip(cols, r)) for r in cur.fetchall()]
+        rows = [dict(zip(cols, r, strict=True)) for r in cur.fetchall()]
 
     next_cursor = None
     if len(rows) > limit:
@@ -216,7 +216,7 @@ def get_settlement(
         if row is None:
             # Same answer as a settlement on another account, for the reason in shops.py.
             raise Problem(404, "settlement_not_found", "That settlement was not found.")
-        s = dict(zip(cols, row))
+        s = dict(zip(cols, row, strict=True))
 
         rec = conn.execute(
             "select orders_settled, net_proceeds_minor, invoiced_gross_minor, "

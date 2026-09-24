@@ -21,6 +21,7 @@ it is missing every platform fee would be worse than no figure.
 from __future__ import annotations
 
 import argparse, csv, os, sys
+from decimal import ROUND_HALF_UP, Decimal
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 EXPORT = os.path.join(HERE, "real_payloads", "order_export_gb_2026-09-23.csv")
@@ -41,7 +42,8 @@ def money(cell: str) -> int:
     code, amount = parts
     if code != "GBP":
         raise ValueError(f"This ingest is GBP only. Export carries {code}.")
-    return int(round(float(amount) * 100))
+    # Decimal, never float: A13 rule 3.
+    return int((Decimal(str(amount)) * 100).quantize(Decimal(1), rounding=ROUND_HALF_UP))
 
 
 def p(minor: int) -> str:

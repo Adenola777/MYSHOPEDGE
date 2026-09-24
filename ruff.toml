@@ -1,0 +1,15 @@
+# Lint for correctness, not style. A29 and the master skill ask for lint in CI; these rules
+# catch faults: undefined or unused names (F), likely bugs such as a closure over a loop
+# variable (B), a datetime without a timezone (DTZ, because a seller's day is a London day),
+# and an exception caught and ignored (BLE, S110).
+target-version = "py311"
+
+[lint]
+select = ["E9", "F", "B", "DTZ", "BLE", "S110"]
+
+[lint.per-file-ignores]
+# Test harnesses, checkers and scripts catch every exception on purpose, so that one failing
+# case is reported and the rest still run.
+"service/tests/**" = ["BLE001", "DTZ001"]
+"service/scripts/**" = ["BLE001"]
+"testdata/**" = ["BLE001", "S110"]

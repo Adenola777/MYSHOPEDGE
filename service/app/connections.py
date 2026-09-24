@@ -183,11 +183,11 @@ def _exchange_code(code: str) -> dict[str, Any]:
     }
     try:
         response = httpx.get(TOKEN_URL, params=params, timeout=HTTP_TIMEOUT)
-    except httpx.HTTPError:
+    except httpx.HTTPError as err:
         raise Problem(
             502, "tiktok_unreachable",
             "TikTok did not answer. Start the connection again.",
-        )
+        ) from err
 
     # The detail must never carry the code, the state or anything from params, because a
     # problem response is shown to the seller and is very likely to end up in a screenshot.
@@ -255,8 +255,8 @@ def _signed_get(path: str, access_token: str, query: dict[str, str] | None = Non
             headers={"x-tts-access-token": access_token, "content-type": "application/json"},
             timeout=HTTP_TIMEOUT,
         )
-    except httpx.HTTPError:
-        raise Problem(502, "tiktok_unreachable", "TikTok did not answer. Try again shortly.")
+    except httpx.HTTPError as err:
+        raise Problem(502, "tiktok_unreachable", "TikTok did not answer. Try again shortly.") from err
 
     body = response.json() if response.content else {}
     if response.status_code != 200 or body.get("code") != 0:

@@ -42,7 +42,7 @@ recorded in the pull request. The handler itself has not run against a real data
 
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import Annotated, Any
 from uuid import UUID
 
@@ -289,12 +289,12 @@ def get_today(
         cur = conn.execute(SHOP_MONEY_SQL, {"shop": str(shop_id),
                                             "np": list(NET_PROCEEDS_CATEGORIES)})
         cols = [d.name for d in cur.description]
-        settlement = [dict(zip(cols, r)) for r in cur.fetchall()]
+        settlement = [dict(zip(cols, r, strict=True)) for r in cur.fetchall()]
 
         cur = conn.execute(NEEDS_YOU_SQL, {"shop": str(shop_id),
                                            "month_start": month_start, "today": today})
         cols = [d.name for d in cur.description]
-        needs = dict(zip(cols, cur.fetchone()))
+        needs = dict(zip(cols, cur.fetchone(), strict=True))
 
     currency = month.totals.net_proceeds.currency
 

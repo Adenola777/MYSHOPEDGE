@@ -152,7 +152,7 @@ def get_records(
             page_args,
         )
         cols = [d.name for d in cur.description]
-        rows = [dict(zip(cols, r)) for r in cur.fetchall()]
+        rows = [dict(zip(cols, r, strict=True)) for r in cur.fetchall()]
 
     next_cursor = None
     if len(rows) > limit:

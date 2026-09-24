@@ -249,11 +249,11 @@ def calculate(conn, shop_id: UUID, start: date, end: date, basis: str,
 
     cur = conn.execute(LINES_SQL.format(date_column=date_column), args)
     cols = [d.name for d in cur.description]
-    rows = [dict(zip(cols, r)) for r in cur.fetchall()]
+    rows = [dict(zip(cols, r, strict=True)) for r in cur.fetchall()]
 
     cur = conn.execute(PRODUCTS_SQL.format(date_column=date_column), args)
     cols = [d.name for d in cur.description]
-    products = [dict(zip(cols, r)) for r in cur.fetchall()]
+    products = [dict(zip(cols, r, strict=True)) for r in cur.fetchall()]
 
     currency = rows[0]["currency"] if rows else "GBP"
     by_category: dict[str, int] = {}

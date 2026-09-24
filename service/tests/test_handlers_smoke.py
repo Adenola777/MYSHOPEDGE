@@ -21,7 +21,7 @@ production, so this sits alongside the checks against the real database rather t
 replacing them.
 """
 
-import os, sys, json, hashlib, base64
+import os, sys, hashlib, base64
 from datetime import datetime, timezone, date
 from uuid import UUID
 

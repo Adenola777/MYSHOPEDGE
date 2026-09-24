@@ -64,7 +64,7 @@ def contract_properties(schema_name: str) -> list[str]:
     try:
         start = next(i for i, l in enumerate(lines) if l == f"    {schema_name}:")
     except StopIteration:
-        raise SystemExit(f"{schema_name} is not in {CONTRACT.name}. The contract moved.")
+        raise SystemExit(f"{schema_name} is not in {CONTRACT.name}. The contract moved.") from None
 
     end = next(
         (i for i, l in enumerate(lines[start + 1:], start + 1)
