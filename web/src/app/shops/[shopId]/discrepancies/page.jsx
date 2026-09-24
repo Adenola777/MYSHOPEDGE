@@ -11,14 +11,15 @@
  * done nothing wrong and that the money is counted.
  *
  * The three actions on the wireframe (accept TikTok's value, correct my record, mark as
- * explained) are not shown. `resolveDiscrepancy` is not built, and a button that does
- * nothing is a promise the product cannot keep (A18.6).
+ * explained) go through `resolveDiscrepancy`. "Correct my record" appears only where the
+ * service says the fact is the seller's own (`correctable`).
  */
 
 import Link from "next/link";
 import { fetchShop, formatDate } from "@/lib/api";
 import { apiProblem } from "@/components/ApiProblem";
 import { DISCREPANCY_KIND, RESOLUTION, chipClass } from "@/lib/terms";
+import { ResolveActions } from "@/components/ResolveActions";
 
 export const metadata = { title: "Discrepancies" };
 
@@ -97,6 +98,9 @@ export default async function DiscrepanciesPage({ params, searchParams }) {
                 </ul>
               )}
               {d.note && <p className="rows__sub" style={{ marginTop: "var(--space-3)" }}>{d.note}</p>}
+              {d.status === "open" && (
+                <ResolveActions shopId={shopId} id={d.id} correctable={Boolean(d.correctable)} />
+              )}
             </article>
           ))}
         </div>

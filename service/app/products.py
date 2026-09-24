@@ -257,7 +257,11 @@ def list_products(
             kept=money(int(r["kept_minor"]), currency) if r["kept_minor"] is not None else None,
             kept_reason=(
                 None if r["kept_minor"] is not None
-                else f"{int(r['skus_without_cost'])} variant(s) have no cost uploaded"
+                else (
+                    "One variant has no cost price yet."
+                    if int(r["skus_without_cost"]) == 1
+                    else f"{int(r['skus_without_cost'])} variants have no cost price yet."
+                )
             ),
             returns_units=int(r["returns_units"]),
             cost_known=r["kept_minor"] is not None,

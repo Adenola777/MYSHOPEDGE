@@ -2138,6 +2138,8 @@ export interface components {
             note?: string | null;
             /** @description What the discrepancy changes if resolved the other way. */
             effect?: Record<string, never> | null;
+            /** @description True when the seller may correct their own side. Ruling 3 of migration 0013 allows a correction only where the disputed fact is the seller's own, never on a fact TikTok owns, and never once resolved. Served so that the rule lives in the service alone (A29.1). */
+            correctable?: boolean;
             /** Format: date-time */
             opened_at: string;
             /** Format: date-time */

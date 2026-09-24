@@ -6,7 +6,7 @@
  * and computes nothing. A18.2 requires the screen to say that the figures are allocated,
  * because TikTok reports deductions per order, not per product.
  *
- * Not yet here: editing a cost, because no cost endpoint is built; the rule based insight,
+ * A cost is set per variant through `putSkuCost` (S21). Not yet here: the rule based insight,
  * because nothing serves one; and the return rate, which the contract does not carry for a
  * product. The stock block appears only for a product with a single variant, which is what
  * the service serves (products.py records why).
@@ -15,6 +15,7 @@
 import Link from "next/link";
 import { fetchShop } from "@/lib/api";
 import { apiProblem } from "@/components/ApiProblem";
+import { CostForm } from "@/components/CostForm";
 import { Figure } from "@/components/Figure";
 import { BEFORE_OVERHEADS, STOCK_STATE, chipClass } from "@/lib/terms";
 
@@ -121,7 +122,7 @@ export default async function ProductDetailPage({ params, searchParams }) {
           <h2>Variants and their costs</h2>
           <ul className="rows">
             {(d.skus ?? []).map((s) => (
-              <li key={s.sku_id}>
+              <li key={s.sku_id} style={{ flexWrap: "wrap" }}>
                 <span>
                   <Link href={`/shops/${shopId}/stock/${s.sku_id}`}>
                     {s.variant_label || s.seller_sku || "Variant"}
@@ -131,6 +132,12 @@ export default async function ProductDetailPage({ params, searchParams }) {
                   </div>
                 </span>
                 <Figure amount={s.cost} reason="No cost price yet" />
+                {s.sku_id && (
+                  <div style={{ flexBasis: "100%" }}>
+                    <CostForm shopId={shopId} skuId={s.sku_id}
+                              currency={s.cost?.currency ?? p.gross_sales.currency ?? "GBP"} />
+                  </div>
+                )}
               </li>
             ))}
           </ul>

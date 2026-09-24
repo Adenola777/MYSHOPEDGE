@@ -4846,6 +4846,12 @@ components:
           - object
           - 'null'
           description: What the discrepancy changes if resolved the other way.
+        correctable:
+          type: boolean
+          description: 'True when the seller may correct their own side. Ruling 3 of
+            migration 0013 allows a correction only where the disputed fact is the
+            seller''s own, never on a fact TikTok owns, and never once resolved. Served so
+            that the rule lives in the service alone (A29.1).'
         opened_at:
           type: string
           format: date-time

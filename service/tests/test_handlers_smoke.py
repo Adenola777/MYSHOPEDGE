@@ -732,6 +732,7 @@ def discrepancies_page():
     _assert(b["open_count"] == 2, "TC-DSC-05: the open count ignores the page filters")
     _assert(b["discrepancies"][0]["kind"] == "unmapped_fee")
     _assert(b["discrepancies"][0]["applied_value"] == "-5.00")
+    _assert(b["discrepancies"][0]["correctable"] is False, "an unmapped fee is TikTok's fact")
 check("GET discrepancies serves the seventh kind and an unfiltered open count", discrepancies_page)
 
 
@@ -985,6 +986,14 @@ def sync_status_rules():
     _assert("overall" not in r.json(), "overall is not served, because nothing defines it")
 check("GET sync reports each domain's latest run, stale after 24 hours", sync_status_rules)
 
+
+
+def cors_is_configuration():
+    # Unset, no origin is allowed and no CORS header is sent.
+    r = client.options("/v1/me", headers={"Origin": "https://evil.example",
+                                           "Access-Control-Request-Method": "GET"})
+    _assert("access-control-allow-origin" not in {k.lower() for k in r.headers}, dict(r.headers))
+check("No origin is allowed across sites unless ALLOWED_ORIGINS names it", cors_is_configuration)
 
 print()
 if failures:

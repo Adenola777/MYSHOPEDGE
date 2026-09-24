@@ -83,12 +83,12 @@ The specification is close to complete. The application is not. As of 23 Septemb
 | Layer | State |
 |---|---|
 | Rulings, terminology, screens, data model, API contract | Done |
-| Schema | Through 0021 on all three branches, 22 migrations recorded on each. Production was brought up on 23 September and its schema fingerprint matches staging exactly. See A28.1 |
-| Backend | 15 of 53 contract paths. Health, billing, settlements, records, products, money, today, stock, stock movements, discrepancies, and the two TikTok connection endpoints |
+| Schema | Through 0021 on all three branches, 22 migrations recorded on each. Production was brought up on 23 September and its schema fingerprint matches staging exactly. See A28.1. **0022 and 0023 are written and not applied.** Today and Needs you need 0022. A write carrying an Idempotency-Key needs 0023 |
+| Backend | 23 of 53 contract paths. Added on 24 September: me, shops, a variant's cost, cost coverage, resolving a discrepancy, a stock adjustment, Needs you and sync status. Cost uploads, exports and expected payouts are not served, for the reasons in the blocked table below |
 | Authentication | ES256 verified against the provider's fetched JWKS, email read from `users_sync`, 9 tests passing. No handler has ever been invoked by a test |
 | Billing | Screens built. The three products and prices exist in the live Stripe account as of 23 September. Nothing is wired to them yet |
 | TikTok integration | Authorisation is built end to end. `app/connections.py` holds both endpoints, the signing algorithm, AES-256-GCM token storage and the state store in migration 0021. Fourteen smoke cases cover it. `_sign` has never made a live call, so the first real request is its test. See A23, A27 and A28 |
-| Front end | 10 screens of 36 built: S6, S7, S9, S10, S11, S14, S22, S26, S33 and S34. The seven built on 24 September were rendered against canned responses and have never met a real API. `SCREENS.md` is the register |
+| Front end | 12 screens of 36 built: S6, S7, S9, S10, S11, S14 with its actions, S21, S22, S25, S26, S33 and S34, plus `/shops`, which takes a seller to their shop. None has met a real API, because **no request the front end makes carries a sign-in token**: `web/src/lib/api.js` sends no Authorization header, and every shop route requires one. `SCREENS.md` is the register |
 | Figma | Unreadable. The Starter plan call limit refuses every read of the file, on 22 and 24 September. It holds frames that predate A15, so it is out of date whatever it holds. `SCREENS.md` explains. The wireframes are committed at `design/wireframes/` |
 | Deployment | The front end is live on Vercel production and redeploys on every merge to `main`, checked 24 September. It has no API behind it: `/billing` was checked and shows its error state. The Python service has no host |
 
@@ -254,17 +254,20 @@ file inside this repository. `.gitignore` already excludes `.env` and its varian
 | The encryption key for `tiktok_connections.access_token_enc`, `refresh_token_enc` and `shop_cipher_enc` | Where the Python service runs. The host decides where a key can live and how it is rotated. `key_version` exists as a column and resolves to nothing, so no code should write a number there and treat it as meaningful |
 | Whether `authorization_expires_at` is the refresh token's expiry | One real TikTok authorisation. The contract serves the field and `tiktok_connections.refresh_expires_at` looks like the same instant. Nobody has checked, so 0020 adds no column for it |
 | Refreshing an access token before it lapses | Deploying the service. A28.4 chose a long-lived container so the refresh has somewhere to run. The access token lives seven days (A23.4) |
-| Deploying the service | The environment variables in A28.4, which carry four secrets. The commits it also waited on reached GitHub on 24 September 2026, when `main` was restored to `555cd16` with 58 commits |
+| Deploying the service | The environment variables in A28.4, which carry four secrets. The commits it also waited on reached GitHub on 24 September 2026, when `main` was restored to `555cd16` with 58 commits. The service also reads `ALLOWED_ORIGINS`, the front end's origins, and sends no CORS headers without it, so a browser write fails until it is set |
+| Signing in from the front end | Wiring Stack Auth into `web`, which needs the Stack project's client keys and the S17 screen. Until then no screen can load a seller's figures |
+| The four cost upload operations and `createExport` | How a file reaches Vercel Blob (A10.8). Vercel documents signed upload URLs only for its JavaScript SDK (`issueSignedToken`, `presignUrl`), not as an HTTP call or a signing scheme a Python service can follow. The parser and matcher are built and tested in `cost_files.py`. `createExport` also needs a worker, because it answers 202 |
+| `getExpectedPayouts` | A source for TikTok's unsettled orders. The contract says it is read from that endpoint, nothing ingests it, and the ledger holds the week a sale happened, not the week TikTok will pay |
+| Profit figures for past months after a cost changes | A ruling. The figure queries read only a variant's current cost, so a new cost changes past months too. The contract says they should not. `costs.py` records it |
 
 ## What is next in the code
 
-The stock, movements and discrepancies endpoints were built on 24 September. Days left in
-`service/app/stock.py` uses the PRD's fourteen day pace, which disagrees with the QA
-document's thirty day example, and it cannot yet exclude days with no stock because no
-daily stock history is stored. The file says both. `listProducts`, `getProduct`, `getMoney`
-and `getToday` are also served. Both money screens apply owner
-decisions of 24 September, recorded at the top of `service/app/money_view.py` and
-`service/app/today_view.py`. `settlements.py` and `records.py` are the pattern to
-follow. Both use keyset pagination rather than offset, both return RFC 9457 problem details,
-and both answer a request for another tenant's row with the same 404 as a row that does not
-exist.
+On 24 September the seller's own routes, costs, the two actions and Needs you were built.
+The next pieces of code are unblocked only as the blocked table above clears, except for the
+contract's remaining reading operations (returns, tax, notifications, alert settings and
+account deletion). `settlements.py` and `records.py` remain the pattern: keyset
+pagination, RFC 9457 problem details, and the same 404 for another tenant's row as for one
+that does not exist. A write follows `stock.create_stock_adjustment`: the Idempotency-Key
+through `idempotency.py`, the write and its key in one transaction, and a smoke case that
+replays the key. Every write is checked on the development branch as `mse_app` inside a
+transaction that ends in a rollback.

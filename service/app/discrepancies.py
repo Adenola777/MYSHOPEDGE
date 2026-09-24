@@ -26,7 +26,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, Path, Query
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, computed_field
 
 from .auth import Account, require_account
 from .db import tenant
@@ -37,6 +37,9 @@ from .settlements import MAX_LIMIT, decode_cursor, encode_cursor
 from .shops import require_shop
 
 router = APIRouter(tags=["Integrity"])
+
+# Kinds about a fact TikTok owns. Derived, and explained above resolve_discrepancy below.
+TIKTOK_OWNED_KINDS = {"amount", "unmapped_fee"}
 
 Kind = Literal[
     "product_code", "order_reference", "transaction_reference", "amount",
@@ -59,6 +62,11 @@ class Discrepancy(BaseModel):
     effect: dict[str, Any] | None = None
     opened_at: datetime
     resolved_at: datetime | None = None
+
+    @computed_field
+    @property
+    def correctable(self) -> bool:
+        return self.status == "open" and self.kind not in TIKTOK_OWNED_KINDS
 
 
 class DiscrepancyPage(BaseModel):
@@ -145,7 +153,6 @@ def list_discrepancies(
 #
 # The log entry goes to `change_log`, which refuses updates and deletes by trigger.
 
-TIKTOK_OWNED_KINDS = {"amount", "unmapped_fee"}
 
 
 class ResolveIn(BaseModel):
