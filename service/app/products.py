@@ -137,8 +137,11 @@ returned as (
     join returns r on r.id = ri.return_id
     join skus s on s.id = ri.sku_id
    where ri.shop_id = %(shop)s
-     and coalesce(r.refund_completed_at, r.requested_at)::date >= %(from)s
-     and coalesce(r.refund_completed_at, r.requested_at)::date <= %(to)s
+     -- The London date, A29.9. A bare ::date gives the database session's date, which is
+     -- UTC, so a return refunded between midnight and one in the morning in summer was
+     -- counted in the previous day. returns.py counts the same way.
+     and (coalesce(r.refund_completed_at, r.requested_at) at time zone 'Europe/London')::date >= %(from)s
+     and (coalesce(r.refund_completed_at, r.requested_at) at time zone 'Europe/London')::date <= %(to)s
    group by s.product_id, s.id
 ),
 -- The cost in force for the SKU, which is the latest not-superseded row.

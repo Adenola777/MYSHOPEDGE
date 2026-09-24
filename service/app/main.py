@@ -18,9 +18,11 @@ from . import (
     costs,
     discrepancies,
     me,
+    notifications,
     money_view,
     products,
     records,
+    returns,
     settlements,
     stock,
     sync_status,
@@ -79,9 +81,11 @@ app.include_router(connections.router, prefix="/v1")
 app.include_router(costs.router, prefix="/v1")
 app.include_router(discrepancies.router, prefix="/v1")
 app.include_router(me.router, prefix="/v1")
+app.include_router(notifications.router, prefix="/v1")
 app.include_router(money_view.router, prefix="/v1")
 app.include_router(products.router, prefix="/v1")
 app.include_router(records.router, prefix="/v1")
+app.include_router(returns.router, prefix="/v1")
 app.include_router(settlements.router, prefix="/v1")
 app.include_router(stock.router, prefix="/v1")
 app.include_router(sync_status.router, prefix="/v1")

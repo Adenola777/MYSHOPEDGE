@@ -995,6 +995,81 @@ def cors_is_configuration():
     _assert("access-control-allow-origin" not in {k.lower() for k in r.headers}, dict(r.headers))
 check("No origin is allowed across sites unless ALLOWED_ORIGINS names it", cors_is_configuration)
 
+# --- returns and notifications
+from app import notifications as notes, returns as rets
+
+RET_COLS = ["id","tiktok_return_id","tiktok_order_id","tiktok_credit_note_number","kind","status",
+            "reason_code","refund_minor","requested_at","refund_completed_at","items_awaiting_check",
+            "return_cost_minor","write_off_minor","cost_entries","sort_at","currency"]
+
+def returns_list():
+    rows = [(UUID(int=i), f"RETA{i}", "5767", None, "return_refund", "COMPLETE", "Damaged",
+             -12000, NOW, NOW, 0, 0, -5100, 1, NOW, "GBP") for i in (16, 15)]
+    rows[1] = rows[1][:11] + (0, 0, 0, NOW, "GBP")
+    rets.tenant = with_conn(rets, [
+        ("from returns r join return_reconciliation", Result(RET_COLS, rows)),
+        ("from return_items where shop_id", Result(["c"], [(3,)])),
+    ])
+    r = client.get(f"/v1/shops/{SHOP}/returns?limit=1")
+    _assert(r.status_code == 200, f"status {r.status_code}: {r.text[:300]}")
+    b = r.json()
+    _assert(b["awaiting_check_count"] == 3 and b["next_cursor"], b)
+    _assert(b["returns"][0]["return_cost"]["amount_minor"] == 5100, "return costs are the amount lost (A4.2)")
+    _assert(b["returns"][0]["refund"]["amount_minor"] == -12000, "the refund keeps its sign")
+    b2 = client.get(f"/v1/shops/{SHOP}/returns").json()
+    _assert(b2["returns"][1]["return_cost"] is None, "nothing posted is not the same as zero")
+check("GET returns carries each return's refund and return costs", returns_list)
+
+def return_metrics():
+    rows = [("product", UUID(int=1), "Desk", 1, 5100, None, None),
+            ("product", UUID(int=2), "Brush", 3, 0, None, None),
+            ("totals", None, None, 7, 5550, 24, 5100)]
+    rets.tenant = with_conn(rets, [
+        ("with returned as", Result(["row_kind","product_id","title","units","lost","sold_units","written_off"], rows)),
+        ("select trim(currency) from shops", Result(["c"], [("GBP",)])),
+    ])
+    b = client.get(f"/v1/shops/{SHOP}/returns/metrics?from=2026-07-01&to=2026-08-31").json()
+    _assert(abs(b["return_rate"] - 7 / 24) < 1e-9 and b["returns_units"] == 7, b)
+    _assert(b["total_return_cost"]["amount_minor"] == 5550 and b["write_off_total"]["amount_minor"] == 5100)
+    _assert(b["most_returned"][0]["title"] == "Brush", "most units first")
+    rows[-1] = ("totals", None, None, 9, 0, 4, 0)
+    rets.tenant = with_conn(rets, [
+        ("with returned as", Result(["row_kind","product_id","title","units","lost","sold_units","written_off"], rows)),
+        ("select trim(currency) from shops", Result(["c"], [("GBP",)])),
+    ])
+    _assert(client.get(f"/v1/shops/{SHOP}/returns/metrics").json()["return_rate"] == 1.0,
+            "more returns than sales is capped at the contract's bound")
+check("GET return metrics divides returned units by units sold", return_metrics)
+
+NOTE_COLS = ["id","shop_id","type","severity","title","body","entity_type","entity_id","status","created_at"]
+
+def notifications_rules():
+    n = (UUID(int=5), SHOP, "out_of_stock", "info", "Seasonal Gift Box is out of stock",
+         None, None, None, "unread", NOW)
+    notes.tenant = with_conn(notes, [
+        ("from notifications where account_id = %s and status = 'unread'", Result(["c"], [(4,)])),
+        ("from notifications where account_id", Result(NOTE_COLS, [n])),
+    ])
+    b = client.get("/v1/notifications?status=unread").json()
+    _assert(b["unread_count"] == 4 and b["notifications"][0]["type"] == "out_of_stock", b)
+    notes.tenant = with_conn(notes, [
+        ("for update", Result(["status"], [("done",)])),
+    ])
+    r = client.patch(f"/v1/notifications/{UUID(int=5)}", json={"status": "read"})
+    _assert(r.status_code == 422, "done cannot go back to read")
+    r = client.patch(f"/v1/notifications/{UUID(int=5)}", json={"status": "unread"})
+    _assert(r.status_code == 422, "nothing goes back to unread")
+    notes.tenant = with_conn(notes, [
+        ("for update", Result(["status"], [("unread",)])),
+        ("update notifications set status", Result(NOTE_COLS, [n[:8] + ("read", NOW)])),
+    ])
+    r = client.patch(f"/v1/notifications/{UUID(int=5)}", json={"status": "read"})
+    _assert(r.status_code == 200 and r.json()["status"] == "read", r.text)
+    notes.tenant = with_conn(notes, [("for update", Result(["status"], []))])
+    _assert(client.patch(f"/v1/notifications/{UUID(int=5)}", json={"status": "read"}).status_code == 404)
+check("Notifications list with an unread count, and move one way only", notifications_rules)
+
+
 print()
 if failures:
     print(f"{len(failures)} failure(s)")
