@@ -143,19 +143,21 @@ this section is the rule for this repository.
 
 ## 29.8 VAT
 
-**Not changed, and recorded as open.** The amendment asked for `sales.vat` on Today. Three
-facts stand against doing it now.
+**Ruled by the owner on 24 September 2026: VAT is out of scope for the current TodayView
+contract.**
 
-- A8.4 renames the wireframe's "VAT line" to "VAT registration threshold". The contract
-  already serves that as `GET /shops/{shopId}/tax/vat`, `getVatMonitor`.
-- That endpoint's contract says it "does not account for VAT on behalf of a registered
-  seller. PRD 6.2 excludes both."
-- The VAT the repository holds, `tiktok_invoices.vat_minor`, is VAT on TikTok's own fee
-  invoices, not VAT inside the seller's sales. Nothing ingests VAT on sales.
+> VAT is out of scope for the current TodayView contract and must not be fabricated,
+> inferred or displayed as a financial liability.
 
-The amendment's own condition was "where the relevant source data supports the
-calculation", and it does not yet. Adding VAT on sales would reverse PRD 6.2 and needs its
-own decision.
+Three facts support it. A8.4 renames the wireframe's "VAT line" to "VAT registration
+threshold", which the contract serves separately as `getVatMonitor`. That endpoint's
+contract says PRD 6.2 excludes accounting for VAT on a registered seller's behalf. The VAT
+the repository holds, `tiktok_invoices.vat_minor`, is VAT on TikTok's fee invoices, not VAT
+in the seller's sales, and nothing ingests VAT on sales.
+
+VAT may come later as a separately scoped capability, once there is an authoritative VAT
+source, a defined method, the seller's business configuration, and a clear line between VAT
+included in sales and VAT payable. This overrides the master skill's §19 and §51.
 
 ## 29.9 One business date, Europe/London
 
@@ -179,3 +181,75 @@ so it is unverified. The other tables in `seed.sql` were not compared with `rows
 
 **The development branch itself is not reloaded.** The ledger refuses updates by trigger,
 and reloading it is a write to append-only tables that needs its own approval.
+
+## 29.11 Which document wins
+
+**Ruled by the owner on 24 September 2026.** The product decisions govern the engineering
+skill, not the other way round.
+
+    Level 1, product authority      the problem statement, the PRD, the A rulings
+                                    including this one, the canonical contracts, and the
+                                    owner's accounting and product decisions
+    Level 2, engineering authority  architecture, domain models, the database schema,
+                                    api/openapi.yaml, and the tests
+    Level 3, provider authority     TikTok, Stripe and Neon's own documentation
+    Level 4, conventions            the master engineering skill, recommendations from
+                                    Claude, and framework defaults
+
+A provider's documentation governs facts about that provider, such as its endpoints, scopes,
+field meanings and settlement mechanics. It never overrides an explicit MyShopEdge product
+ruling, such as what Paid out means, whether VAT is shown, or how Needs you is ordered. This
+reconciles the skill's §7 with CLAUDE.md rule 7, which says a vendor's documentation is not a
+fact about this project.
+
+Working behaviour that already complies with a ruling is not changed to satisfy a generic
+skill. The skill is updated to respect the ruling instead.
+
+## 29.12 Why MyShopEdge exists
+
+**Ruled by the owner on 24 September 2026, as a first principle.**
+
+> MyShopEdge is not a TikTok Shop reporting replica. TikTok Shop is the source of
+> transactional facts. MyShopEdge transforms those facts into financial clarity,
+> reconciliation, explanation and decision support that TikTok does not provide sufficiently
+> for the seller. Where TikTok already provides a reliable fact, MyShopEdge reconciles and
+> explains it rather than inventing an alternative. Where TikTok provides raw data but not
+> useful interpretation, MyShopEdge derives and explains the insight. Where MyShopEdge lacks
+> the data to make a reliable calculation, it says so rather than fabricating certainty.
+
+The financial model has three layers. TikTok's facts are orders, sales, refunds,
+settlements, fees, shipping, return postage, payouts and adjustments. MyShopEdge's
+reconciliation says what was sold, refunded, settled, deducted, paid and still awaited, and
+where a discrepancy lies. MyShopEdge's intelligence says what the seller made, which
+products earn and which lose, what is stuck, and what needs attention.
+
+## 29.13 Money is integer minor units
+
+**Ruled by the owner on 24 September 2026.** A13 rule 3 stands, and it overrides the master
+skill's §29.
+
+> MyShopEdge represents monetary values as integer minor units with an explicit currency.
+> Decimal may be used internally where a calculation genuinely requires decimal precision,
+> but API and database money representation remains integer minor units.
+
+So 453.88 pounds is `{"amount_minor": 45388, "currency": "GBP"}` in the API and a `bigint`
+in the database. Formatting to pounds happens only at the presentation boundary, and no
+financial figure passes through a binary float.
+
+## 29.14 The Needs you contract stays as it is
+
+**Ruled by the owner on 24 September 2026.** The contract's `NeedsYouItem` remains
+authoritative, and it overrides the master skill's §25.
+
+| Field | Role |
+|---|---|
+| `type` | The machine-readable classification. The skill's `code` would duplicate it |
+| `label` | The seller-facing title. The skill's `title` would duplicate it |
+| `severity` | Backend-owned `critical`, `warning` or `info`, as DSH-10 requires. Already required by the contract |
+| `amount_at_stake` | The money affected, where one applies |
+| `href` | Where the seller acts. An explicit action model waits until an action is not navigation |
+| `count` | How many of the item there are. Already required by the contract |
+
+Needs you is a current-state surface, not an event log, so `created_at` is not a public
+field. Timestamps and diagnostics may exist internally for detection, audit and observability.
+

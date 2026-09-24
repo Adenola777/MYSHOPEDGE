@@ -97,7 +97,9 @@ The honest summary is that the thinking is done and the building has started.
 ## The documents
 
 `A2` to `A29` are the rulings, one file per action. A29 holds the dashboard rules and the
-rule that Python owns every financial and business rule. They are decisions rather than notes, so
+rule that Python owns every financial and business rule. **A29.11 sets which document wins:
+the product rulings and the contract govern the master engineering skill, and a provider's
+documentation governs only facts about that provider.** A29.12 states why MyShopEdge exists. They are decisions rather than notes, so
 a ruling is changed by editing its document rather than by remembering a conversation.
 
 `README_v0.2.md` carries the running status, the open items by owner, and the account wiring.
