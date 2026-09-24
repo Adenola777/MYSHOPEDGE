@@ -734,6 +734,35 @@ def discrepancies_page():
 check("GET discrepancies serves the seventh kind and an unfiltered open count", discrepancies_page)
 
 
+def product_detail_stock_state():
+    # getProduct had never been invoked. When it was, on 24 September, its stock state was
+    # its own "in_stock" or "out_of_stock", outside the contract's enum. It now reads the
+    # position from stock.positions, the one place the stock rule lives.
+    rank_cols = ["product_id","tiktok_product_id","title","units_sold","returns_units",
+                 "gross_sales_minor","net_proceeds_minor","currency","return_loss_minor",
+                 "cost_retained_minor","skus_without_cost","kept_minor"]
+    desk = (PRODUCT, "P-DESK", "Computer Desk 120cm", 3, 1, 36000, 21300, "GBP",
+            5100, 10200, 0, 6000)
+    products.tenant = with_conn(products, [
+        ("from products where id=%s", Result(["id","tiktok_product_id","title"],
+                                              [(PRODUCT, "P-DESK", "Computer Desk 120cm")])),
+        ("group by le.category, le.tiktok_fee_type",
+         Result(["category","tiktok_fee_type","amount_minor","currency"],
+                [("gross_sales", None, 36000, "GBP")])),
+        ("from skus s where s.product_id", Result(["id","tiktok_sku_id","seller_sku",
+                                                   "variant_label","cost_minor"],
+                                                  [(SKU, "1729", "DESK-BLK", None, 3400)])),
+        ("with settings as", Result(STOCK_COLS, [_stock_row(SKU, 0, None, "out")])),
+        ("with scoped as", Result(rank_cols, [desk])),
+    ])
+    r = client.get(f"/v1/shops/{SHOP}/products/{PRODUCT}")
+    _assert(r.status_code == 200, f"status {r.status_code}: {r.text[:300]}")
+    st = r.json()["stock"]
+    _assert(st is not None and st["state"] == "out", st)
+    _assert(st["days_left"] is None)
+check("GET product detail takes its stock state from the one stock rule", product_detail_stock_state)
+
+
 print()
 if failures:
     print(f"{len(failures)} failure(s)")

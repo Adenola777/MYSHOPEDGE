@@ -37,12 +37,14 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 
+from . import stock
 from .auth import Account, require_account
 from .dates import business_today
 from .db import tenant
 from .money import Money, money
 from .settlements import MAX_LIMIT, decode_cursor, encode_cursor
 from .shops import require_shop
+from .stock import StockPosition
 
 router = APIRouter(tags=["Products"])
 
@@ -315,22 +317,6 @@ class CalculatorSection(BaseModel):
     subtotal_label: str | None = None
 
 
-class StockPosition(BaseModel):
-    sku_id: UUID
-    tiktok_sku_id: str | None = None
-    seller_sku: str | None = None
-    product_title: str | None = None
-    tiktok_stock: int = 0
-    adjusted_delta: int = 0
-    on_shelf: int
-    sold_not_posted: int = 0
-    coming_back: int = 0
-    written_off: int = 0
-    state: str
-    days_left: float | None = None
-    as_of: str
-
-
 class SkuRow(BaseModel):
     sku_id: UUID
     tiktok_sku_id: str | None = None
@@ -449,14 +435,7 @@ def get_product(
             (str(productId), str(shop_id)),
         ).fetchall()
 
-        stock_rows = conn.execute(
-            """select sp.sku_id, sk.tiktok_sku_id, sk.seller_sku,
-                      sp.tiktok_stock, sp.adjusted_delta, sp.on_shelf,
-                      sp.sold_not_posted, sp.coming_back, sp.written_off, sp.as_of
-                 from stock_positions sp join skus sk on sk.id = sp.sku_id
-                where sk.product_id = %s and sp.shop_id = %s""",
-            (str(productId), str(shop_id)),
-        ).fetchall()
+        stock_rows = stock.positions(conn, shop_id, product_id=productId)
 
     currency = lines[0]["currency"] if lines else "GBP"
 
@@ -545,17 +524,7 @@ def get_product(
         # single position is only honest for a single-variant product. For a multi-variant
         # product it is omitted rather than picking one arbitrarily or summing positions
         # that belong to different shelves. Recorded as a contract gap in A25.
-        stock=(
-            StockPosition(
-                sku_id=stock_rows[0][0], tiktok_sku_id=stock_rows[0][1],
-                seller_sku=stock_rows[0][2], product_title=prod[2],
-                tiktok_stock=stock_rows[0][3], adjusted_delta=stock_rows[0][4],
-                on_shelf=stock_rows[0][5], sold_not_posted=stock_rows[0][6],
-                coming_back=stock_rows[0][7], written_off=stock_rows[0][8],
-                state="in_stock" if stock_rows[0][5] > 0 else "out_of_stock",
-                as_of=stock_rows[0][9].isoformat(),
-            ) if len(stock_rows) == 1 else None
-        ),
+        stock=stock_rows[0] if len(stock_rows) == 1 else None,
         skus=[
             SkuRow(
                 sku_id=s[0], tiktok_sku_id=s[1], seller_sku=s[2], variant_label=s[3],

@@ -158,6 +158,7 @@ pos as (
     left join products p on p.id = k.product_id
     left join pace on pace.sku_id = sp.sku_id
    where sp.shop_id = %(shop)s
+     and (%(product)s::uuid is null or k.product_id = %(product)s::uuid)
 ),
 stated as (
   select pos.*,
@@ -176,6 +177,45 @@ select * from stated
 """
 
 
+def positions(
+    conn: Any,
+    shop_id: UUID,
+    *,
+    state: str | None = None,
+    after: str | None = None,
+    limit: int | None = None,
+    product_id: UUID | None = None,
+) -> list[StockPosition]:
+    """Every stock position with its state and days left, computed once, here.
+
+    `getStock` pages through it and `getProduct` reads one product's positions from it, so
+    the two screens cannot disagree about whether a SKU is low. A29.1 puts each rule in one
+    place. Until 24 September the product detail wrote its own state, `in_stock` or
+    `out_of_stock`, which the contract does not allow.
+    """
+    params = {
+        "shop": str(shop_id),
+        "default_low": DEFAULT_LOW_STOCK_DAYS,
+        "today": business_today(),
+        "pace": PACE_DAYS,
+        "state": state,
+        "after": after,
+        "product": str(product_id) if product_id else None,
+        # LIMIT NULL is no limit in Postgres.
+        "limit": limit,
+    }
+    cur = conn.execute(STOCK_SQL, params)
+    cols = [d.name for d in cur.description]
+    rows = [dict(zip(cols, r, strict=True)) for r in cur.fetchall()]
+    return [
+        StockPosition(
+            **{k: r[k] for k in cols if k != "days_left"},
+            days_left=float(r["days_left"]) if r["days_left"] is not None else None,
+        )
+        for r in rows
+    ]
+
+
 @router.get("/shops/{shopId}/stock", response_model=StockPage)
 def get_stock(
     account: Annotated[Account, Depends(require_account)],
@@ -185,36 +225,17 @@ def get_stock(
     cursor: Annotated[str | None, Query()] = None,
 ) -> StockPage:
     after = _decode_sku_cursor(cursor) if cursor else None
-    params = {
-        "shop": str(shop_id),
-        "default_low": DEFAULT_LOW_STOCK_DAYS,
-        "today": business_today(),
-        "pace": PACE_DAYS,
-        "state": state,
-        "after": after,
-        "limit": limit + 1,
-    }
-
     with tenant(account.id) as conn:
-        cur = conn.execute(STOCK_SQL, params)
-        cols = [d.name for d in cur.description]
-        rows = [dict(zip(cols, r, strict=True)) for r in cur.fetchall()]
+        items = positions(conn, shop_id, state=state, after=after, limit=limit + 1)
         latest = conn.execute(
             "select max(as_of) from stock_positions where shop_id = %s", (str(shop_id),)
         ).fetchone()
 
     next_cursor = None
-    if len(rows) > limit:
-        rows = rows[:limit]
-        next_cursor = _encode_sku_cursor(rows[-1]["sku_id"])
+    if len(items) > limit:
+        items = items[:limit]
+        next_cursor = _encode_sku_cursor(items[-1].sku_id)
 
-    items = [
-        StockPosition(
-            **{k: r[k] for k in cols if k != "days_left"},
-            days_left=float(r["days_left"]) if r["days_left"] is not None else None,
-        )
-        for r in rows
-    ]
     # The page's own as_of is the newest count held for the shop. A shop with no positions
     # yet has no count to date, so the moment of the answer is used instead.
     as_of = latest[0] if latest and latest[0] is not None else now_utc()
