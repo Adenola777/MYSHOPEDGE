@@ -27,7 +27,7 @@ THE 5 WORKFLOWS
 WHAT THIS IS NOT
   These are low-fidelity wireframes. The document says so itself: they "show
   structure, content and behaviour, not final visual design".
-  They cover S1 to S15 only. S16 to S39 were ruled later, in A3, A14 and A18,
+  They cover S1 to S15 only. S16 to S38 were ruled later, in A3, A14 and A18,
   and were never wireframed.
   At least one is out of date against a later ruling: S2 shows "Orders, last 12
   months", and history is now twenty four months on every plan.

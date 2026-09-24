@@ -85,7 +85,7 @@ by side, except the last, which carries S15 alone.
 
 ## Where the artwork lives, and what it is worth
 
-`design/wireframes/` holds the fifteen screens as nine PNG sheets and six workflow diagrams,
+`design/wireframes/` holds the fifteen screens as eight PNG sheets and six workflow diagrams,
 extracted from the Word document and committed here so that the repository no longer depends
 on a file sitting in somebody's chat history or on one desktop.
 
