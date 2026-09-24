@@ -186,7 +186,7 @@ The specification is nearly complete. The application is not.
 | Authentication | Corrected twice on 23 September. ES256 verified against the provider's fetched JWKS, email from `users_sync`, nine tests passing. Issuer and audience are now configured rather than derived, and unset means the service refuses to verify |
 | Billing | Screens built. The three products and prices were created in the live Stripe account on 23 September. See CLAUDE.md for the identifiers |
 | TikTok integration | Not built. Checked 23 September: nothing in the repository calls a TikTok host. The ingest reads local JSON files. `/connections/tiktok/authorize` and `/connections/tiktok/callback` are specified and unimplemented |
-| Front end | 3 screens of 36 live. See `SCREENS.md` |
+| Front end | 10 screens of 36 built. See `SCREENS.md` |
 | Deployment | Vercel chosen. Nothing deployed |
 | Tests | 3 files. Auth 9 cases against ES256 with the algorithm asserted against a recorded JWKS, contract conformance, map coverage. **No test has ever invoked an HTTP handler.** See A25 |
 

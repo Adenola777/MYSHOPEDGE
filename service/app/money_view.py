@@ -57,6 +57,7 @@ from fastapi import APIRouter, Depends, Header, Query, Response
 from pydantic import BaseModel
 
 from .auth import Account, require_account
+from .dates import business_today
 from .db import tenant
 from .money import Money, money
 from .products import NET_PROCEEDS_TYPES, RETURN_LOSS_TYPES, SQL as PRODUCTS_SQL
@@ -218,9 +219,26 @@ def get_money(
     granularity: Annotated[str, Query(pattern="^(day|week|month)$")] = "month",
     if_none_match: Annotated[str | None, Header()] = None,
 ):
-    today = date.today()
+    today = business_today()
     start = period_from or today.replace(day=1)
     end = period_to or today
+    with tenant(account.id) as conn:
+        view = calculate(conn, shop_id, start, end, basis, granularity)
+
+    etag = _etag(view)
+    if if_none_match is not None and if_none_match == etag:
+        return Response(status_code=304, headers={"ETag": etag})
+    response.headers["ETag"] = etag
+    return view
+
+
+def calculate(conn, shop_id: UUID, start: date, end: date, basis: str,
+              granularity: str = "month") -> MoneyView:
+    """The calculator for one period, on a connection the caller has already scoped.
+
+    Shared with the Today screen, so the month figure on Today and the Money screen for
+    the same month are the same arithmetic on the same rows and cannot disagree.
+    """
     # The same columns the product endpoints use, so the two screens cannot disagree.
     date_column = "le.basis_day" if basis == "sales" else "le.settlement_month"
     args = {
@@ -229,14 +247,13 @@ def get_money(
         "np": list(NET_PROCEEDS_TYPES), "rl": list(RETURN_LOSS_TYPES),
     }
 
-    with tenant(account.id) as conn:
-        cur = conn.execute(LINES_SQL.format(date_column=date_column), args)
-        cols = [d.name for d in cur.description]
-        rows = [dict(zip(cols, r)) for r in cur.fetchall()]
+    cur = conn.execute(LINES_SQL.format(date_column=date_column), args)
+    cols = [d.name for d in cur.description]
+    rows = [dict(zip(cols, r, strict=True)) for r in cur.fetchall()]
 
-        cur = conn.execute(PRODUCTS_SQL.format(date_column=date_column), args)
-        cols = [d.name for d in cur.description]
-        products = [dict(zip(cols, r)) for r in cur.fetchall()]
+    cur = conn.execute(PRODUCTS_SQL.format(date_column=date_column), args)
+    cols = [d.name for d in cur.description]
+    products = [dict(zip(cols, r, strict=True)) for r in cur.fetchall()]
 
     currency = rows[0]["currency"] if rows else "GBP"
     by_category: dict[str, int] = {}
@@ -348,9 +365,4 @@ def get_money(
             int(r["entries"]) for r in rows if r["category"] == "unmapped_fee"
         ),
     )
-
-    etag = _etag(view)
-    if if_none_match is not None and if_none_match == etag:
-        return Response(status_code=304, headers={"ETag": etag})
-    response.headers["ETag"] = etag
     return view

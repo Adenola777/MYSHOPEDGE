@@ -335,3 +335,78 @@ tbody tr:last-child td { border-bottom: 0; }
 .plan__price small { font-size: 0.875rem; font-weight: 500; color: var(--ink-500); }
 .plan__features { list-style: none; margin: 0; padding: 0; color: var(--ink-700); font-size: 0.9375rem; }
 .plan__features li { padding: var(--space-1) 0; }
+
+/* --- the shop screens, built 24 September ---------------------------------------- */
+
+.shopnav {
+  display: flex;
+  gap: var(--space-1);
+  overflow-x: auto;
+  margin: calc(-1 * var(--space-4)) 0 var(--space-5);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--ink-100);
+}
+.shopnav a {
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius);
+  color: var(--ink-700);
+  text-decoration: none;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.shopnav a:hover { background: var(--ink-50); }
+.shopnav a[aria-current="page"] { background: var(--orange-50); color: var(--orange-700); }
+
+.page-head { margin-bottom: var(--space-5); }
+.page-head h1 { margin-bottom: var(--space-1); }
+.page-head p { color: var(--ink-500); margin: 0; }
+
+.stack { display: grid; gap: var(--space-4); }
+.pair { display: grid; gap: var(--space-4); grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.card h2 { font-size: 1.0625rem; margin: 0 0 var(--space-3); }
+
+.hero { background: var(--orange-50); border-color: var(--orange-100); }
+.hero__label { font-weight: 650; margin: 0; }
+.hero__value { font-size: 2.25rem; font-weight: 700; letter-spacing: -0.02em; margin: var(--space-1) 0; }
+.hero__value .money:not(.money--neg):not(.money--unknown) { color: var(--orange-700); }
+.stat__value { font-size: 1.5rem; font-weight: 650; margin: 0; }
+.stat__label { color: var(--ink-500); margin: 0; font-size: 0.9375rem; }
+
+/* A list of labelled figures, one per row, with the amount on the right. */
+.rows { list-style: none; margin: 0; padding: 0; }
+.rows li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-4);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--ink-100);
+}
+.rows li:last-child { border-bottom: 0; }
+.rows__total { font-weight: 650; }
+.rows__sub { color: var(--ink-500); font-size: 0.875rem; }
+
+.chip {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 2px var(--space-3);
+  font-size: 0.8125rem;
+  font-weight: 650;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+.chip--bad  { background: var(--bad-50);  color: var(--bad-600);  border-color: #f3c9c5; }
+.chip--warn { background: var(--warn-50); color: var(--warn-700); border-color: #f0dcae; }
+.chip--info { background: var(--orange-50); color: var(--orange-700); border-color: var(--orange-100); }
+.chip--good { background: var(--good-50); color: var(--good-600); border-color: #bfe0d1; }
+.chip--quiet { background: var(--ink-50); color: var(--ink-700); border-color: var(--ink-100); }
+
+/* Choices that change what the page shows. They are links, so every state has an address
+   and the back button works. */
+.switch { display: inline-flex; flex-wrap: wrap; gap: var(--space-1); background: var(--orange-50); border-radius: var(--radius); padding: var(--space-1); margin: 0 var(--space-3) var(--space-4) 0; }
+.switch a { padding: var(--space-2) var(--space-4); border-radius: calc(var(--radius) - 2px); color: var(--orange-700); text-decoration: none; font-weight: 600; }
+.switch a[aria-current="true"] { background: var(--white); color: var(--ink-900); box-shadow: var(--shadow-1); }
+
+.muted { color: var(--ink-500); }
+.pager { margin-top: var(--space-4); text-align: right; }
+.money { white-space: nowrap; }

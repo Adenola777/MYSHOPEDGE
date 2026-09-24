@@ -15,6 +15,7 @@ Rules enforced here, each traceable to a finding:
 import json, os, uuid, hashlib
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
+from decimal import ROUND_HALF_UP, Decimal
 
 HERE = os.path.dirname(__file__)
 P = os.path.join(HERE, "payloads")
@@ -39,7 +40,10 @@ def pence(s, currency="GBP"):
         )
     if s in (None, ""):
         return 0
-    return int(round(float(s) * 10 ** MINOR_UNIT_EXPONENT[currency]))
+    # Decimal, never float: A13 rule 3. Checked 24 September on all 81 distinct amounts in
+    # the payloads, which give the same pence either way, so the ledger does not change.
+    scale = Decimal(10) ** MINOR_UNIT_EXPONENT[currency]
+    return int((Decimal(str(s)) * scale).quantize(Decimal(1), rounding=ROUND_HALF_UP))
 
 def uid(*parts):
     return str(uuid.UUID(hashlib.sha1(":".join(map(str, parts)).encode()).hexdigest()[:32]))
@@ -129,7 +133,7 @@ rows["tiktok_connections"].append(dict(shop_id=SHOP, key_version=1,
 for pid, name in CATALOGUE["products"]:
     rows["products"].append(dict(id=uid("product", pid), shop_id=SHOP,
         tiktok_product_id=pid, title=name, status="ACTIVATE"))
-for sid, pid, label, seller_sku, price, cost in CATALOGUE["skus"]:
+for sid, pid, label, seller_sku, _price, cost in CATALOGUE["skus"]:
     rows["skus"].append(dict(id=uid("sku", sid), shop_id=SHOP, product_id=uid("product", pid),
         tiktok_sku_id=sid, seller_sku=seller_sku or None, variant_label=label))
     rows["product_costs"].append(dict(id=uid("cost", sid), shop_id=SHOP, sku_id=uid("sku", sid),
@@ -192,9 +196,11 @@ for o in orders_raw:
             l["_alloc"] = n > 1
         w = [1] * n
 
-        def spread(cat, total, fee_type=None):
+        # The loop variables are bound as defaults, so each pass's spread reads that pass's
+        # order, lines and weights explicitly. It is called within the same pass either way.
+        def spread(cat, total, fee_type=None, o=o, lines=lines, w=w, when=when, data=data, t=t):
             rid = RETURN_BY_ORDER.get(o["id"]) if cat in RETURN_CATEGORIES else None
-            for l, a in zip(lines, allocate(total, w)):
+            for l, a in zip(lines, allocate(total, w), strict=True):
                 post(o["id"], cat, a, when, line=l, fee_type=fee_type,
                      ref=f'{data["order_id"]}:{t["sku_id"]}:{cat}', return_id=rid)
 

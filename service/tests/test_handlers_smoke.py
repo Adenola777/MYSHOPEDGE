@@ -21,7 +21,7 @@ production, so this sits alongside the checks against the real database rather t
 replacing them.
 """
 
-import os, sys, json, hashlib, base64
+import os, sys, hashlib, base64
 from datetime import datetime, timezone, date
 from uuid import UUID
 
@@ -34,7 +34,7 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 from app.auth import Account, require_account
-from app import products, records, settlements, shops
+from app import discrepancies, products, records, settlements, shops, stock
 
 ACCOUNT = Account(
     id=UUID("56e487ea-e0fa-3691-7857-724855e716fc"),
@@ -155,6 +155,7 @@ def records_page():
     b = r.json()
     _assert(b["total"]["amount_minor"] == 50038, "total is every page")
     _assert(b["shown_total"]["amount_minor"] == 36000, "shown_total is this page")
+    _assert(b["entries"][0]["label"] == "Gross sales (GMV)", "A18.5: every category has words")
 check("GET records distinguishes the total from the page sum", records_page)
 
 
@@ -298,6 +299,134 @@ def money_etag():
     again = client.get(f"/v1/shops/{SHOP}/money", headers={"If-None-Match": tag})
     _assert(again.status_code == 304, f"status {again.status_code}")
 check("GET money answers 304 when nothing has changed", money_etag)
+
+
+# --- today, which reuses the calculator and counts what needs the seller
+from datetime import timedelta
+from app import today_view
+
+SHOP_MONEY_COLS = ["status","amount_minor","postage_minor","orders","currency"]
+# The development ledger's own figures. Settled includes the 4.50 of return postage TikTok
+# deducted, so it is 453.88, which is the payout TikTok made.
+SHOP_MONEY_ROWS = [("delivered_awaiting_settlement", 1850, None, 1, "GBP"),
+                   ("settled", 45388, -450, 18, "GBP"),
+                   ("waiting_delivery", 1850, None, 1, "GBP")]
+NEEDS_COLS = ["returns_to_check","open_discrepancies","out_of_stock","missing_costs",
+              "unmapped_fees","unmapped_fee_minor","last_synced_at","connection_status",
+              "access_expires_at","refresh_expires_at","revoked_at","connections",
+              "refresh_failure_code","refresh_attempted_at","refresh_succeeded_at",
+              "missing_scopes","latest_sync_statuses"]
+
+
+def _needs(**over):
+    base = dict(returns_to_check=0, open_discrepancies=1, out_of_stock=1, missing_costs=0,
+                unmapped_fees=1, unmapped_fee_minor=199, last_synced_at=None,
+                connection_status="connected", access_expires_at=None,
+                refresh_expires_at=None, revoked_at=None, connections=1,
+                refresh_failure_code=None, refresh_attempted_at=None,
+                refresh_succeeded_at=None, missing_scopes=[], latest_sync_statuses=None)
+    base.update(over)
+    return Result(NEEDS_COLS, [tuple(base[c] for c in NEEDS_COLS)])
+
+
+def _today(products_rows, needs):
+    today_view.tenant = with_conn(today_view, [
+        ("count(*) filter (where le.settlement_id is null", Result(MONEY_LINE_COLS, MONEY_LINES)),
+        ("with scoped as", Result(PRODUCT_COLS, products_rows)),
+        ("left join order_settlements os", Result(SHOP_MONEY_COLS, SHOP_MONEY_ROWS)),
+        ("seller_check_status = 'pending'", needs),
+    ])
+    r = client.get(f"/v1/shops/{SHOP}/today")
+    _assert(r.status_code == 200, f"status {r.status_code}: {r.text[:300]}")
+    return r.json()
+
+
+def today_complete():
+    b = _today([DESK], _needs())
+    _assert(b["hero"]["label"] == "gross_profit_after_returns", b["hero"]["label"])
+    _assert(b["hero"]["value"]["amount_minor"] == 35426)
+    _assert(b["hero"]["confidence"] == "estimated")
+    _assert(b["month"]["gross"]["amount_minor"] == 86200)
+    _assert(b["month"]["kept"]["amount_minor"] == 35426)
+    sm = b["shop_money"]
+    # A29.7: generated is net proceeds, paid out is what TikTok paid, and the return postage
+    # TikTok deducted is stated rather than dropped, so the three reconcile.
+    _assert(sm["generated"]["amount_minor"] == 49538)
+    _assert(sm["paid_out"]["amount_minor"] == 45388, "paid out equals the real payout")
+    _assert(sm["awaiting"]["amount_minor"] == 3700)
+    _assert(sm["return_postage"]["amount_minor"] == -450)
+    _assert(sm["paid_out"]["amount_minor"] + sm["awaiting"]["amount_minor"]
+            == sm["generated"]["amount_minor"] + sm["return_postage"]["amount_minor"])
+    _assert(b["freshness"] == {"status": "stale", "last_synced_at": None})
+    _assert([a["status"] for a in sm["awaiting_breakdown"]]
+            == ["delivered_awaiting_settlement", "waiting_delivery"])
+    # Never synced means stale, and the list runs warning before info, money first.
+    _assert(b["stale"] is True)
+    types = [(i["type"], i["severity"]) for i in b["needs_you"]]
+    _assert(types == [("unmapped_fees", "warning"), ("open_discrepancies", "warning"),
+                      ("first_sync_pending", "info"), ("out_of_stock", "info")], types)
+    _assert(b["needs_you"][0]["amount_at_stake"]["amount_minor"] == 199)
+check("GET today leads with gross profit after returns and reconciles Shop Money", today_complete)
+
+
+def today_incomplete():
+    b = _today([DESK, NOCOST], _needs(missing_costs=1))
+    _assert(b["hero"]["label"] == "net_proceeds", "A8 withdrew Left after TikTok")
+    _assert(b["hero"]["value"]["amount_minor"] == 51176)
+    _assert(b["hero"]["confidence"] == "incomplete")
+    _assert(b["month"]["kept"] is None and b["month"]["kept_reason"] == "incomplete_costs")
+    _assert(any(i["type"] == "missing_costs" and i["severity"] == "info" for i in b["needs_you"]))
+check("GET today falls back to net proceeds when a cost is missing", today_incomplete)
+
+
+def today_connection():
+    now = datetime.now(timezone.utc)
+    b = _today([DESK], _needs(last_synced_at=now - timedelta(hours=2),
+                               refresh_expires_at=now + timedelta(days=10),
+                               access_expires_at=now + timedelta(days=3)))
+    _assert(b["stale"] is False, "synced two hours ago is not stale")
+    warn = [i["type"] for i in b["needs_you"] if i["severity"] == "warning"]
+    # Within a severity, the item with money at stake leads, then the others by count.
+    _assert(warn == ["unmapped_fees", "connection_expiring", "open_discrepancies"], warn)
+    b = _today([DESK], _needs(last_synced_at=now - timedelta(hours=30), revoked_at=now))
+    _assert(b["stale"] is True)
+    _assert(b["needs_you"][0]["type"] == "connection_action_required")
+    _assert(b["needs_you"][0]["severity"] == "critical")
+    _assert(any(i["type"] == "stale_data" for i in b["needs_you"]))
+check("GET today puts a broken connection first and flags a stale sync", today_connection)
+
+
+def today_freshness():
+    now = datetime.now(timezone.utc)
+    for hours, expected in ((1, "fresh"), (5.9, "fresh"), (6, "getting_old"),
+                            (23.9, "getting_old"), (24.1, "stale")):
+        b = _today([DESK], _needs(last_synced_at=now - timedelta(hours=hours)))
+        _assert(b["freshness"]["status"] == expected, f"{hours}h gave {b['freshness']['status']}")
+        _assert(b["stale"] == (expected == "stale"), f"{hours}h stale={b['stale']}")
+check("GET today reports fresh, getting old and stale at the ruled boundaries", today_freshness)
+
+
+def today_health():
+    now = datetime.now(timezone.utc)
+    b = _today([DESK], _needs(
+        last_synced_at=now - timedelta(hours=1),
+        refresh_failure_code="36004004", refresh_attempted_at=now,
+        refresh_succeeded_at=now - timedelta(days=2),
+        missing_scopes=["seller.return.info"],
+        latest_sync_statuses=["completed", "failed", "partial"]))
+    by = {i["type"]: i["severity"] for i in b["needs_you"]}
+    _assert(by.get("refresh_failed") == "critical", by)
+    _assert(by.get("missing_scope") == "critical", by)
+    _assert(by.get("sync_failed") == "warning" and by.get("sync_partial") == "warning", by)
+    sev = [i["severity"] for i in b["needs_you"]]
+    _assert(sev == sorted(sev, key=lambda x: {"critical": 0, "warning": 1, "info": 2}[x]),
+            f"critical, then warning, then info: {sev}")
+    # A refresh that has since succeeded is not a failure.
+    b = _today([DESK], _needs(last_synced_at=now, refresh_failure_code="36004004",
+                               refresh_attempted_at=now - timedelta(hours=2),
+                               refresh_succeeded_at=now - timedelta(hours=1)))
+    _assert(all(i["type"] != "refresh_failed" for i in b["needs_you"]))
+check("GET today raises refresh, scope and sync failures at their ruled severities", today_health)
 
 
 # --- the two connection handlers
@@ -518,6 +647,148 @@ def callback_lists_but_refuses_an_unsupported_shop():
         _assert(b["rejection_reason"] == reason, b)
         _assert(b["shop"] is not None, "the shop must still be listed")
 check("GET callback stores an unsupported shop but marks it not accepted", callback_lists_but_refuses_an_unsupported_shop)
+
+
+# --- stock, movements and discrepancies
+STOCK_COLS = ["sku_id","tiktok_sku_id","seller_sku","product_title","tiktok_stock",
+              "adjusted_delta","on_shelf","sold_not_posted","coming_back","written_off",
+              "as_of","days_left","state"]
+
+def _stock_row(sku, on_shelf, days_left, state):
+    from decimal import Decimal
+    return (sku, "1729", "SKU", "Title", on_shelf, 0, on_shelf, 0, 0, 0, NOW,
+            Decimal(days_left) if days_left is not None else None, state)
+
+def stock_page():
+    rows = [_stock_row(UUID(int=i), 5, "3.5", "low") for i in range(1, 4)]
+    stock.tenant = with_conn(stock, [
+        ("with settings as", Result(STOCK_COLS, rows)),
+        ("select max(as_of) from stock_positions", Result(["m"], [(NOW,)])),
+    ])
+    r = client.get(f"/v1/shops/{SHOP}/stock?limit=2&state=low")
+    _assert(r.status_code == 200, f"status {r.status_code}: {r.text[:300]}")
+    b = r.json()
+    _assert(len(b["items"]) == 2, "the extra row only signals another page")
+    _assert(b["items"][0]["days_left"] == 3.5, b["items"][0])
+    _assert(b["items"][0]["state"] == "low")
+    _assert(b["next_cursor"] is not None)
+    r2 = client.get(f"/v1/shops/{SHOP}/stock?cursor={b['next_cursor']}")
+    _assert(r2.status_code == 200, f"status {r2.status_code}: {r2.text[:300]}")
+check("GET stock pages by SKU and serves days left as a number", stock_page)
+
+def stock_out_is_null():
+    stock.tenant = with_conn(stock, [
+        ("with settings as", Result(STOCK_COLS, [_stock_row(SKU, 0, None, "out")])),
+        ("select max(as_of) from stock_positions", Result(["m"], [(NOW,)])),
+    ])
+    b = client.get(f"/v1/shops/{SHOP}/stock").json()
+    _assert(b["items"][0]["days_left"] is None, "A12 row 29: sold out is null, not a division")
+    _assert(b["next_cursor"] is None)
+check("GET stock returns null days left for a sold out SKU", stock_out_is_null)
+
+def stock_refuses_bad_input():
+    _assert(client.get(f"/v1/shops/{SHOP}/stock?cursor=nonsense").status_code == 400)
+    _assert(client.get(f"/v1/shops/{SHOP}/stock?state=gone").status_code == 422)
+check("GET stock refuses a malformed cursor and an unknown state", stock_refuses_bad_input)
+
+MOVE_COLS = ["id","movement_type","quantity","occurred_at","order_id","return_id",
+             "reason","created_by"]
+
+def movements_page():
+    rows = [(UUID(int=i), "manual_adjustment", -2, NOW, None, None, "Damaged", None)
+            for i in range(1, 3)]
+    stock.tenant = with_conn(stock, [
+        ("select 1 from skus", Result(["x"], [(1,)])),
+        ("from stock_movements where", Result(MOVE_COLS, rows)),
+    ])
+    r = client.get(f"/v1/shops/{SHOP}/stock/{SKU}/movements?limit=1")
+    _assert(r.status_code == 200, f"status {r.status_code}: {r.text[:300]}")
+    b = r.json()
+    _assert(b["movements"][0]["quantity"] == -2)
+    _assert(b["movements"][0]["reason"] == "Damaged")
+    _assert(b["next_cursor"] is not None)
+check("GET movements lists a SKU's ledger newest first", movements_page)
+
+def movements_unknown_sku():
+    stock.tenant = with_conn(stock, [("select 1 from skus", Result(["x"], []))])
+    r = client.get(f"/v1/shops/{SHOP}/stock/{SKU}/movements")
+    _assert(r.status_code == 404, f"status {r.status_code}")
+    _assert(r.json()["code"] == "sku_not_found")
+check("GET movements answers 404 for a SKU outside the shop", movements_unknown_sku)
+
+DISC_COLS = ["id","kind","entity_type","entity_id","field","tiktok_value","seller_value",
+             "applied_value","status","resolution","note","effect","opened_at","resolved_at"]
+
+def discrepancies_page():
+    row = (UUID(int=7), "unmapped_fee", "settlement", None, "adjustment_amount", "-5.00",
+           None, "-5.00", "open", None, "PLATFORM_PENALTY", None, NOW, None)
+    discrepancies.tenant = with_conn(discrepancies, [
+        ("from discrepancies where shop_id = %s and status = 'open'", Result(["c"], [(2,)])),
+        ("from discrepancies where", Result(DISC_COLS, [row])),
+    ])
+    r = client.get(f"/v1/shops/{SHOP}/discrepancies?kind=unmapped_fee")
+    _assert(r.status_code == 200, f"status {r.status_code}: {r.text[:300]}")
+    b = r.json()
+    _assert(b["open_count"] == 2, "TC-DSC-05: the open count ignores the page filters")
+    _assert(b["discrepancies"][0]["kind"] == "unmapped_fee")
+    _assert(b["discrepancies"][0]["applied_value"] == "-5.00")
+check("GET discrepancies serves the seventh kind and an unfiltered open count", discrepancies_page)
+
+
+def product_detail_stock_state():
+    # getProduct had never been invoked. When it was, on 24 September, its stock state was
+    # its own "in_stock" or "out_of_stock", outside the contract's enum. It now reads the
+    # position from stock.positions, the one place the stock rule lives.
+    rank_cols = ["product_id","tiktok_product_id","title","units_sold","returns_units",
+                 "gross_sales_minor","net_proceeds_minor","currency","return_loss_minor",
+                 "cost_retained_minor","skus_without_cost","kept_minor"]
+    desk = (PRODUCT, "P-DESK", "Computer Desk 120cm", 3, 1, 36000, 21300, "GBP",
+            5100, 10200, 0, 6000)
+    products.tenant = with_conn(products, [
+        ("from products where id=%s", Result(["id","tiktok_product_id","title"],
+                                              [(PRODUCT, "P-DESK", "Computer Desk 120cm")])),
+        ("group by le.category, le.tiktok_fee_type",
+         Result(["category","tiktok_fee_type","amount_minor","currency"],
+                [("gross_sales", None, 36000, "GBP")])),
+        ("from skus s where s.product_id", Result(["id","tiktok_sku_id","seller_sku",
+                                                   "variant_label","cost_minor"],
+                                                  [(SKU, "1729", "DESK-BLK", None, 3400)])),
+        ("with settings as", Result(STOCK_COLS, [_stock_row(SKU, 0, None, "out")])),
+        ("with scoped as", Result(rank_cols, [desk])),
+    ])
+    r = client.get(f"/v1/shops/{SHOP}/products/{PRODUCT}")
+    _assert(r.status_code == 200, f"status {r.status_code}: {r.text[:300]}")
+    st = r.json()["stock"]
+    _assert(st is not None and st["state"] == "out", st)
+    _assert(st["days_left"] is None)
+check("GET product detail takes its stock state from the one stock rule", product_detail_stock_state)
+
+
+def needs_you_links_only_to_built_screens():
+    from app.today_view import needs_href
+    d = date(2026, 9, 24)
+    _assert(needs_href("open_discrepancies", SHOP, d) == f"/shops/{SHOP}/discrepancies?status=open")
+    _assert(needs_href("unmapped_fees", SHOP, d).endswith(
+        "records?category=unmapped_fee&from=2026-09-01&to=2026-09-24"))
+    _assert(needs_href("out_of_stock", SHOP, d) == f"/shops/{SHOP}/stock?state=out")
+    # No screen yet, so no link rather than a link to nothing.
+    _assert(needs_href("returns_to_check", SHOP, d) is None)
+    _assert(needs_href("connection_action_required", SHOP, d) is None)
+check("Needs you links only to screens that exist", needs_you_links_only_to_built_screens)
+
+
+def product_and_money_use_the_same_words():
+    # A8 and TC-CLR-06. The product calculator and the Money calculator name the same money,
+    # so they must use the same words, and none of the withdrawn labels may appear.
+    from app import money_view
+    for key, label in products.LABELS.items():
+        _assert(money_view.LABELS.get(key) == label,
+                f"{key}: product says {label!r}, money says {money_view.LABELS.get(key)!r}")
+    withdrawn = ("Their cut", "You keep", "Left after TikTok", "Contribution", "Return Loss")
+    words = [w for s in products.SECTIONS for w in s[1:3]] + list(products.LABELS.values())
+    for w in words:
+        _assert(not any(x.lower() in w.lower() for x in withdrawn), f"withdrawn label: {w}")
+check("Product and Money calculators use A8's words and no withdrawn label", product_and_money_use_the_same_words)
 
 
 print()

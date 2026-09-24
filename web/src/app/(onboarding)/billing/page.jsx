@@ -22,8 +22,8 @@ export default async function BillingPage() {
       <main className="billing">
         <h1>We cannot show the plans right now.</h1>
         <p>
-          Your shop is connected and your data is safe. Try again in a few minutes, and
-          nothing has been charged.
+          The plans could not be loaded from MyShopEdge, so no plan can be chosen yet and
+          nothing has been charged. Try again in a few minutes.
         </p>
       </main>
     );

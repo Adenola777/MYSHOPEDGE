@@ -37,11 +37,14 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 
+from . import stock
 from .auth import Account, require_account
+from .dates import business_today
 from .db import tenant
 from .money import Money, money
 from .settlements import MAX_LIMIT, decode_cursor, encode_cursor
 from .shops import require_shop
+from .stock import StockPosition
 
 router = APIRouter(tags=["Products"])
 
@@ -192,7 +195,7 @@ def list_products(
     limit: Annotated[int, Query(ge=1, le=MAX_LIMIT)] = 20,
     cursor: Annotated[str | None, Query()] = None,
 ) -> ProductRanking:
-    today = date.today()
+    today = business_today()
     start = period_from or today.replace(day=1)
     end = period_to or today
 
@@ -209,7 +212,7 @@ def list_products(
     with tenant(account.id) as conn:
         cur = conn.execute(sql, args)
         cols = [d.name for d in cur.description]
-        rows = [dict(zip(cols, r)) for r in cur.fetchall()]
+        rows = [dict(zip(cols, r, strict=True)) for r in cur.fetchall()]
 
     currency = rows[0]["currency"] if rows else "GBP"
 
@@ -314,22 +317,6 @@ class CalculatorSection(BaseModel):
     subtotal_label: str | None = None
 
 
-class StockPosition(BaseModel):
-    sku_id: UUID
-    tiktok_sku_id: str | None = None
-    seller_sku: str | None = None
-    product_title: str | None = None
-    tiktok_stock: int = 0
-    adjusted_delta: int = 0
-    on_shelf: int
-    sold_not_posted: int = 0
-    coming_back: int = 0
-    written_off: int = 0
-    state: str
-    days_left: float | None = None
-    as_of: str
-
-
 class SkuRow(BaseModel):
     sku_id: UUID
     tiktok_sku_id: str | None = None
@@ -357,41 +344,47 @@ class ProductDetail(BaseModel):
 # precisely the defect A4.1 records.
 #
 #   Sales less refunds and deductions  = Net Proceeds
-#   less cost of goods retained        = Contribution
-#   less Return Loss                   = You keep
+#   less cost of goods retained        = Gross profit
+#   less return costs                  = Gross profit after returns
+#
+# The labels are A8's. Until 24 September this table said "Contribution", "Return Loss" and
+# "You keep", all three withdrawn by A8 and forbidden on screen by TC-CLR-06, and the line
+# labels differed from the Money calculator's for the same money. Found by rendering the
+# product screen, not by reading this file.
 #
 # cost_of_goods_sold is deliberately absent from these lists. The ledger posts it for every
 # unit sold including the ones that came back, so it is replaced by a computed line.
 SECTIONS: list[tuple[str, str, str, tuple[str, ...]]] = [
     ("sales", "Sales", "Sales after refunds",
      ("gross_sales", "seller_discount", "refund")),
-    ("deductions", "What TikTok took", "Net proceeds", (
+    ("deductions", "Total TikTok fees", "Net proceeds", (
         "platform_commission", "affiliate_commission", "transaction_fee",
         "smart_promotions_fee", "shipping_fee", "return_handling_fee",
         "fbt_operations_fee", "fbt_shipping_fee", "fbt_storage_fee", "unmapped_fee",
     )),
-    ("your_costs", "Your costs", "Contribution", ("seller_shipping",)),
-    ("return_loss", "Return Loss", "You keep", ("return_shipping", "stock_written_off")),
+    ("your_costs", "Your costs", "Gross profit", ("seller_shipping",)),
+    ("return_loss", "Return costs", "Gross profit after returns",
+     ("return_shipping", "stock_written_off")),
 ]
 
 LABELS = {
-    "gross_sales": "Sales before discounts",
-    "seller_discount": "Your discounts",
+    "gross_sales": "Gross sales (GMV)",
+    "seller_discount": "Seller discounts",
     "platform_commission": "Platform commission",
     "affiliate_commission": "Affiliate commission",
     "transaction_fee": "Transaction fee",
-    "smart_promotions_fee": "Smart promotions fee",
+    "smart_promotions_fee": "Smart Promotions fee",
     "shipping_fee": "Shipping fee",
     "return_handling_fee": "Return handling fee",
-    "fbt_operations_fee": "Fulfilled by TikTok operations fee",
-    "fbt_shipping_fee": "Fulfilled by TikTok shipping fee",
-    "fbt_storage_fee": "Fulfilled by TikTok storage fee",
+    "fbt_operations_fee": "FBT operations fee",
+    "fbt_shipping_fee": "FBT shipping fee",
+    "fbt_storage_fee": "FBT storage fee",
     "unmapped_fee": "Fee TikTok did not name in a way we recognise",
-    "refund": "Refunds",
-    "return_shipping": "Return postage",
+    "refund": "Refunds to customers",
+    "return_shipping": "Return shipping you paid",
     "stock_written_off": "Stock written off",
-    "cost_of_goods_sold": "What the goods cost you, for the units that stayed sold",
-    "seller_shipping": "Postage you paid",
+    "cost_of_goods_sold": "Cost of goods sold",
+    "seller_shipping": "Shipping and packaging you pay",
 }
 
 
@@ -406,7 +399,7 @@ def get_product(
 ) -> ProductDetail:
     from .problems import Problem
 
-    today = date.today()
+    today = business_today()
     start = period_from or today.replace(day=1)
     end = period_to or today
     date_column = "le.basis_day" if basis == "sales" else "le.settlement_month"
@@ -436,7 +429,7 @@ def get_product(
             (str(shop_id), str(productId), start, end),
         )
         cols = [d.name for d in cur.description]
-        lines = [dict(zip(cols, r)) for r in cur.fetchall()]
+        lines = [dict(zip(cols, r, strict=True)) for r in cur.fetchall()]
 
         skus = conn.execute(
             """select s.id, s.tiktok_sku_id, s.seller_sku, s.variant_label,
@@ -448,14 +441,7 @@ def get_product(
             (str(productId), str(shop_id)),
         ).fetchall()
 
-        stock_rows = conn.execute(
-            """select sp.sku_id, sk.tiktok_sku_id, sk.seller_sku,
-                      sp.tiktok_stock, sp.adjusted_delta, sp.on_shelf,
-                      sp.sold_not_posted, sp.coming_back, sp.written_off, sp.as_of
-                 from stock_positions sp join skus sk on sk.id = sp.sku_id
-                where sk.product_id = %s and sp.shop_id = %s""",
-            (str(productId), str(shop_id)),
-        ).fetchall()
+        stock_rows = stock.positions(conn, shop_id, product_id=productId)
 
     currency = lines[0]["currency"] if lines else "GBP"
 
@@ -544,17 +530,7 @@ def get_product(
         # single position is only honest for a single-variant product. For a multi-variant
         # product it is omitted rather than picking one arbitrarily or summing positions
         # that belong to different shelves. Recorded as a contract gap in A25.
-        stock=(
-            StockPosition(
-                sku_id=stock_rows[0][0], tiktok_sku_id=stock_rows[0][1],
-                seller_sku=stock_rows[0][2], product_title=prod[2],
-                tiktok_stock=stock_rows[0][3], adjusted_delta=stock_rows[0][4],
-                on_shelf=stock_rows[0][5], sold_not_posted=stock_rows[0][6],
-                coming_back=stock_rows[0][7], written_off=stock_rows[0][8],
-                state="in_stock" if stock_rows[0][5] > 0 else "out_of_stock",
-                as_of=stock_rows[0][9].isoformat(),
-            ) if len(stock_rows) == 1 else None
-        ),
+        stock=stock_rows[0] if len(stock_rows) == 1 else None,
         skus=[
             SkuRow(
                 sku_id=s[0], tiktok_sku_id=s[1], seller_sku=s[2], variant_label=s[3],

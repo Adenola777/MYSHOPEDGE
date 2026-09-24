@@ -21,8 +21,19 @@
 import Link from "next/link";
 import { fetchProducts } from "@/lib/api";
 import { Figure } from "@/components/Figure";
+import { apiProblem } from "@/components/ApiProblem";
+import { BEFORE_OVERHEADS } from "@/lib/terms";
 
 export const metadata = { title: "Products" };
+
+/** @type {Record<string, string>} */
+const MEASURE = {
+  kept: "gross profit after returns",
+  net_proceeds: "net proceeds",
+  gross_sales: "gross sales",
+  units: "units sold",
+  returns: "units returned",
+};
 
 /** @param {{ params: Promise<{ shopId: string }>, searchParams: Promise<Record<string,string>> }} props */
 export default async function ProductsPage({ params, searchParams }) {
@@ -35,47 +46,8 @@ export default async function ProductsPage({ params, searchParams }) {
     to: query.to,
   });
 
-  if (result.unreachable) {
-    return (
-      <Problem
-        title="We cannot reach your figures right now."
-        note={
-          result.reason === "timeout"
-            ? "The request took too long. Nothing is wrong with your data."
-            : "This is a problem at our end, not with your shop. Your data is untouched."
-        }
-        retry
-      />
-    );
-  }
-
-  if (result.status === 401) {
-    return (
-      <Problem
-        title="Please sign in again."
-        note="Your session has expired. Signing in again brings you straight back here."
-      />
-    );
-  }
-
-  if (result.status === 403 || result.status === 404) {
-    return (
-      <Problem
-        title="That shop is not on your account."
-        note="Check the address, or pick a shop from your connections."
-      />
-    );
-  }
-
-  if (!result.ok || !result.data) {
-    return (
-      <Problem
-        title="Something went wrong loading your products."
-        note="Your data is safe. Try again in a moment."
-        retry
-      />
-    );
-  }
+  const problem = apiProblem(result, { what: "your products" });
+  if (problem) return problem;
 
   /** @typedef {import("@/lib/api-types").components["schemas"]["ProductRow"]} ProductRow */
   /** @type {{ products: ProductRow[], total?: any, measure?: string, others?: { count: number, amount: any } }} */
@@ -87,7 +59,7 @@ export default async function ProductsPage({ params, searchParams }) {
         <h1>No products in this period yet.</h1>
         <p>
           Once orders come through, every product you sell appears here ranked by what you
-          kept after TikTok&rsquo;s deductions, your costs and any returns.
+          made in gross profit after TikTok&rsquo;s deductions, your costs and any returns.
         </p>
       </section>
     );
@@ -100,8 +72,9 @@ export default async function ProductsPage({ params, searchParams }) {
       <header className="billing__head">
         <h1>Products</h1>
         <p className="billing__lede">
-          Ranked by what you kept, not by what sold. The figure at the top of a column is
-          what reached you after TikTok&rsquo;s deductions, your own costs and any returns.
+          Ranked by gross profit after returns, not by what sold. That is what each
+          product made after TikTok&rsquo;s deductions, your own costs and any returns.{" "}
+          {BEFORE_OVERHEADS}
         </p>
       </header>
 
@@ -111,80 +84,40 @@ export default async function ProductsPage({ params, searchParams }) {
             {missingCosts === 1
               ? "One product has no cost price yet, so its profit is unknown rather than zero."
               : `${missingCosts} products have no cost price yet, so their profit is unknown rather than zero.`}{" "}
-            <Link href={`/shops/${shopId}/costs`}>Add your cost prices</Link> and these fill
-            in on their own.
+            Once a cost price is added, the figure fills in on its own.
           </p>
         </div>
       )}
 
       <div className="card">
-        <div className="table-scroll">
-          <table>
-            <caption>
-              Every product sold in this period. Measured by {measure ?? "what you kept"}.
-            </caption>
-            <thead>
-              <tr>
-                <th scope="col">Product</th>
-                <th scope="col" className="num">Units</th>
-                <th scope="col" className="num">Returned</th>
-                <th scope="col" className="num">Sales</th>
-                <th scope="col" className="num">After TikTok</th>
-                <th scope="col" className="num">You kept</th>
-              </tr>
-            </thead>
-            <tbody>
-              {products.map((p) => (
-                <tr key={p.product_id}>
-                  <th scope="row">
-                    <Link href={`/shops/${shopId}/products/${p.product_id}`}>
-                      {p.title || p.tiktok_product_id || "Untitled product"}
-                    </Link>
-                  </th>
-                  <td className="num">{p.units}</td>
-                  <td className="num">{p.returns_units || 0}</td>
-                  <td className="num"><Figure amount={p.gross_sales} /></td>
-                  <td className="num"><Figure amount={p.net_proceeds} /></td>
-                  <td className="num">
-                    <Figure amount={p.kept} reason={p.kept_reason} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-            {total && (
-              <tfoot>
-                <tr>
-                  <th scope="row">Total</th>
-                  <td className="num" colSpan={4} />
-                  <td className="num"><Figure amount={total} /></td>
-                </tr>
-              </tfoot>
-            )}
-          </table>
-        </div>
+        <p className="rows__sub" style={{ marginTop: 0 }}>
+          Every product sold in this period, measured by {MEASURE[measure ?? "kept"] ?? measure}.
+        </p>
+        <ul className="rows">
+          {products.map((p) => (
+            <li key={p.product_id}>
+              <span>
+                <Link href={`/shops/${shopId}/products/${p.product_id}`}>
+                  {p.title || p.tiktok_product_id || "Untitled product"}
+                </Link>
+                <div className="rows__sub">
+                  {p.units} sold, {p.returns_units || 0} returned. Gross sales{" "}
+                  <Figure amount={p.gross_sales} />, net proceeds <Figure amount={p.net_proceeds} />.
+                </div>
+              </span>
+              <Figure amount={p.kept} reason={p.kept_reason} />
+            </li>
+          ))}
+          {total && (
+            <li className="rows__total"><span>Total</span><Figure amount={total} /></li>
+          )}
+        </ul>
       </div>
 
       {others && others.count > 0 && (
         <p style={{ marginTop: "var(--space-4)", color: "var(--ink-500)" }}>
           {others.count} further {others.count === 1 ? "product" : "products"} outside this
           ranking, together worth <Figure amount={others.amount} />.
-        </p>
-      )}
-    </section>
-  );
-}
-
-/** @param {{ title: string, note: string, retry?: boolean }} props */
-function Problem({ title, note, retry }) {
-  return (
-    <section className="state">
-      <h1>{title}</h1>
-      <p>{note}</p>
-      {retry && (
-        <p>
-          <a className="btn btn--quiet" href="">
-            Try again
-          </a>
         </p>
       )}
     </section>

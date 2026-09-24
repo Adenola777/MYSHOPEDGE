@@ -994,6 +994,7 @@ paths:
           - amount
           - return_unmatched
           - duplicate
+          - unmapped_fee
       responses:
         '200':
           description: Discrepancies
@@ -1740,6 +1741,8 @@ paths:
           $ref: '#/components/responses/Unauthenticated'
         '403':
           $ref: '#/components/responses/ForbiddenShop'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /shops/{shopId}/stock/{skuId}/adjustments:
     post:
       tags:
@@ -3814,6 +3817,37 @@ components:
           format: date-time
         stale:
           type: boolean
+          description: 'True exactly when `freshness.status` is `stale`. Kept for clients that
+
+            read it before `freshness` existed. A29.3.
+
+            '
+        freshness:
+          type: object
+          description: 'How old the figures are, computed by the service. A29.3. Under six hours
+
+            since the last successful sync is `fresh`, six to twenty four hours inclusive is
+
+            `getting_old`, and over twenty four hours or never synced is `stale`. The client
+
+            renders this and never computes it.
+
+            '
+          required:
+          - status
+          - last_synced_at
+          properties:
+            status:
+              type: string
+              enum:
+              - fresh
+              - getting_old
+              - stale
+            last_synced_at:
+              type:
+              - string
+              - 'null'
+              format: date-time
         hero:
           type: object
           required:
@@ -3858,6 +3892,15 @@ components:
               - 'null'
         shop_money:
           type: object
+          description: 'All time, A29.7. `generated` is net proceeds as A8 defines it. Return
+
+            postage TikTok deducts is stated as `return_postage`, so paid out plus awaiting
+
+            equals generated plus return postage, and paid out equals what TikTok actually
+
+            paid.
+
+            '
           properties:
             generated:
               $ref: '#/components/schemas/Money'
@@ -3865,6 +3908,11 @@ components:
               $ref: '#/components/schemas/Money'
             awaiting:
               $ref: '#/components/schemas/Money'
+            return_postage:
+              allOf:
+              - $ref: '#/components/schemas/Money'
+              description: Return postage TikTok deducted in its statements, negative, reconciled
+                rather than dropped. A29.7.
             awaiting_breakdown:
               type: array
               items:
@@ -4239,6 +4287,13 @@ components:
           - adjustment
         category:
           $ref: '#/components/schemas/LedgerCategory'
+        label:
+          type:
+          - string
+          - 'null'
+          description: The category in plain English, the same words the Money calculator uses.
+            A18.5 requires every category to render with a human label, so the label is
+            served rather than held in each client.
         tiktok_fee_type:
           type:
           - string
@@ -4738,6 +4793,7 @@ components:
           - amount
           - return_unmatched
           - duplicate
+          - unmapped_fee
         entity_type:
           type: string
         entity_id:
