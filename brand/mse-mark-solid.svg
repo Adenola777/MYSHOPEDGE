@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="45 -20 473 538" role="img" aria-label="MyShopEdge mark">
+  <title>MyShopEdge mark</title>
+  <defs>
+    
+    <mask id="mseCutB" maskUnits="userSpaceOnUse"
+          x="45" y="-20" width="473" height="538">
+      <rect x="45" y="-20" width="473" height="538" fill="#fff"/>
+      <path d="M76 109 L302 218 L246 281 L76 194 Z" fill="#000"/>
+      <rect x="105" y="390" width="48" height="128" rx="12" fill="#000"/><rect x="176" y="342" width="48" height="176" rx="12" fill="#000"/><rect x="247" y="291" width="48" height="227" rx="12" fill="#000"/><rect x="318" y="235" width="48" height="283" rx="12" fill="#000"/>
+      <path d="M185 68 V25 C185 -35 378 -35 378 25 V68" fill="none" stroke="#000" stroke-width="34" stroke-linecap="round"/>
+      <!-- The arrow is knocked out so it reads at every size, not only where it
+           happens to cross a bar. A fill-coloured separation is drawn back over it
+           below, so the bars stay four bars rather than merging into the arrow. -->
+      <path d="M251 401 C304 365 341 322 384 277 C418 242 443 208 462 171" fill="none" stroke="#000" stroke-width="26" stroke-linecap="round"/>
+      <path d="M439 184 L468 151 L470 197 Z" fill="#000" stroke="#000" stroke-width="10" stroke-linejoin="round"/>
+    </mask>
+  </defs>
+  <g fill="#C4400C">
+    <path d="M45 95 Q45 62 78 62 L485 62 Q518 62 518 95 L518 486 Q518 518 486 518 L78 518 Q45 518 45 486 Z" mask="url(#mseCutB)"/>
+    <path d="M178 69 V28 C178 -18 371 -18 371 28 V69" fill="none" stroke="#C4400C" stroke-width="26" stroke-linecap="round"/>
+  </g>
+</svg>
