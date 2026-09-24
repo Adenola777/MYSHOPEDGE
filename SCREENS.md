@@ -56,7 +56,7 @@ by side, except the last, which carries S15 alone.
 | S10 | Product detail | Core | Wireframes, revised A18 | 06 | `shops/[shopId]/products/[productId]` |
 | S11 | Money | Core | Wireframes, revised A18 | 07 | `shops/[shopId]/money` |
 | S12 | Tax | Core | Wireframes | 07 | |
-| S13 | Notifications | Core | Wireframes | 08 | |
+| S13 | Notifications | Core | Wireframes | 08 | `shops/[shopId]/notifications`, reached from the bell. Rows are not links yet, because a notification carries no address |
 | S14 | Discrepancy detail | Core | Wireframes, revised A18 | 08 | `shops/[shopId]/discrepancies`, as a list |
 | S15 | Settings and data | Settings | Wireframes | 09 | |
 | S16 | Product transactions | Products | A3 | | |
@@ -76,8 +76,8 @@ by side, except the last, which carries S15 alone.
 | S30 | Delete my account | Settings | A3 | | |
 | S31 | Download my data | Settings | A3 | | |
 | S32 | Glossary | Reference | A3 | | |
-| S33 | Plan and card | Onboarding | A14 | | `(onboarding)/billing` |
-| S34 | Payment confirmed | Onboarding | A14 | | `(onboarding)/billing/confirmed` |
+| S33 | Plan and card | Onboarding | A14 | | `(site)/billing` |
+| S34 | Payment confirmed | Onboarding | A14 | | `(site)/billing/confirmed` |
 | S35 | Continue setting up | Account | A14 | | |
 | S36 | That email is already in use | Account | A14 | | |
 | S37 | Signed out | Account | A14 | | |

@@ -16,18 +16,25 @@ export const HERO_LABEL = {
   net_proceeds: "Net proceeds",
 };
 
+/*
+ * Chip tones. A7.10 keeps red, amber and green for the three payment statuses and nothing
+ * else, "so that red on this product always means money that has not arrived". Every other
+ * state here is navy (`critical`, `strong`) or neutral (`quiet`), and the word carries the
+ * meaning. Until 24 September these used the payment colours.
+ */
+
 /** @type {Record<string, [string, string]>} label and chip tone */
 export const CONFIDENCE = {
-  confirmed: ["Confirmed", "good"],
-  estimated: ["Estimated", "warn"],
-  incomplete: ["Incomplete", "warn"],
+  confirmed: ["Confirmed", "quiet"],
+  estimated: ["Estimated", "strong"],
+  incomplete: ["Incomplete", "strong"],
 };
 
 /** @type {Record<string, [string, string]>} */
 export const FRESHNESS = {
-  fresh: ["Up to date", "good"],
-  getting_old: ["Getting old", "warn"],
-  stale: ["Out of date", "bad"],
+  fresh: ["Up to date", "quiet"],
+  getting_old: ["Getting old", "strong"],
+  stale: ["Out of date", "critical"],
 };
 
 /** @type {Record<string, string>} */
@@ -39,9 +46,9 @@ export const AWAITING = {
 
 /** @type {Record<string, [string, string]>} */
 export const STOCK_STATE = {
-  out: ["Out of stock", "bad"],
-  low: ["Low", "warn"],
-  coming_back: ["Returns in transit", "info"],
+  out: ["Out of stock", "critical"],
+  low: ["Low", "strong"],
+  coming_back: ["Returns in transit", "quiet"],
   healthy: ["Healthy", "quiet"],
 };
 
@@ -76,7 +83,7 @@ export const RESOLUTION = {
 };
 
 /** @type {Record<string, string>} */
-export const SEVERITY_TONE = { critical: "bad", warning: "warn", info: "info" };
+export const SEVERITY_TONE = { critical: "critical", warning: "strong", info: "quiet" };
 
 /** @param {string} tone */
 export function chipClass(tone) {
