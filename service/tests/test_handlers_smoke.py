@@ -34,7 +34,7 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 from app.auth import Account, require_account
-from app import products, records, settlements, shops
+from app import discrepancies, products, records, settlements, shops, stock
 
 ACCOUNT = Account(
     id=UUID("56e487ea-e0fa-3691-7857-724855e716fc"),
@@ -646,6 +646,92 @@ def callback_lists_but_refuses_an_unsupported_shop():
         _assert(b["rejection_reason"] == reason, b)
         _assert(b["shop"] is not None, "the shop must still be listed")
 check("GET callback stores an unsupported shop but marks it not accepted", callback_lists_but_refuses_an_unsupported_shop)
+
+
+# --- stock, movements and discrepancies
+STOCK_COLS = ["sku_id","tiktok_sku_id","seller_sku","product_title","tiktok_stock",
+              "adjusted_delta","on_shelf","sold_not_posted","coming_back","written_off",
+              "as_of","days_left","state"]
+
+def _stock_row(sku, on_shelf, days_left, state):
+    from decimal import Decimal
+    return (sku, "1729", "SKU", "Title", on_shelf, 0, on_shelf, 0, 0, 0, NOW,
+            Decimal(days_left) if days_left is not None else None, state)
+
+def stock_page():
+    rows = [_stock_row(UUID(int=i), 5, "3.5", "low") for i in range(1, 4)]
+    stock.tenant = with_conn(stock, [
+        ("with settings as", Result(STOCK_COLS, rows)),
+        ("select max(as_of) from stock_positions", Result(["m"], [(NOW,)])),
+    ])
+    r = client.get(f"/v1/shops/{SHOP}/stock?limit=2&state=low")
+    _assert(r.status_code == 200, f"status {r.status_code}: {r.text[:300]}")
+    b = r.json()
+    _assert(len(b["items"]) == 2, "the extra row only signals another page")
+    _assert(b["items"][0]["days_left"] == 3.5, b["items"][0])
+    _assert(b["items"][0]["state"] == "low")
+    _assert(b["next_cursor"] is not None)
+    r2 = client.get(f"/v1/shops/{SHOP}/stock?cursor={b['next_cursor']}")
+    _assert(r2.status_code == 200, f"status {r2.status_code}: {r2.text[:300]}")
+check("GET stock pages by SKU and serves days left as a number", stock_page)
+
+def stock_out_is_null():
+    stock.tenant = with_conn(stock, [
+        ("with settings as", Result(STOCK_COLS, [_stock_row(SKU, 0, None, "out")])),
+        ("select max(as_of) from stock_positions", Result(["m"], [(NOW,)])),
+    ])
+    b = client.get(f"/v1/shops/{SHOP}/stock").json()
+    _assert(b["items"][0]["days_left"] is None, "A12 row 29: sold out is null, not a division")
+    _assert(b["next_cursor"] is None)
+check("GET stock returns null days left for a sold out SKU", stock_out_is_null)
+
+def stock_refuses_bad_input():
+    _assert(client.get(f"/v1/shops/{SHOP}/stock?cursor=nonsense").status_code == 400)
+    _assert(client.get(f"/v1/shops/{SHOP}/stock?state=gone").status_code == 422)
+check("GET stock refuses a malformed cursor and an unknown state", stock_refuses_bad_input)
+
+MOVE_COLS = ["id","movement_type","quantity","occurred_at","order_id","return_id",
+             "reason","created_by"]
+
+def movements_page():
+    rows = [(UUID(int=i), "manual_adjustment", -2, NOW, None, None, "Damaged", None)
+            for i in range(1, 3)]
+    stock.tenant = with_conn(stock, [
+        ("select 1 from skus", Result(["x"], [(1,)])),
+        ("from stock_movements where", Result(MOVE_COLS, rows)),
+    ])
+    r = client.get(f"/v1/shops/{SHOP}/stock/{SKU}/movements?limit=1")
+    _assert(r.status_code == 200, f"status {r.status_code}: {r.text[:300]}")
+    b = r.json()
+    _assert(b["movements"][0]["quantity"] == -2)
+    _assert(b["movements"][0]["reason"] == "Damaged")
+    _assert(b["next_cursor"] is not None)
+check("GET movements lists a SKU's ledger newest first", movements_page)
+
+def movements_unknown_sku():
+    stock.tenant = with_conn(stock, [("select 1 from skus", Result(["x"], []))])
+    r = client.get(f"/v1/shops/{SHOP}/stock/{SKU}/movements")
+    _assert(r.status_code == 404, f"status {r.status_code}")
+    _assert(r.json()["code"] == "sku_not_found")
+check("GET movements answers 404 for a SKU outside the shop", movements_unknown_sku)
+
+DISC_COLS = ["id","kind","entity_type","entity_id","field","tiktok_value","seller_value",
+             "applied_value","status","resolution","note","effect","opened_at","resolved_at"]
+
+def discrepancies_page():
+    row = (UUID(int=7), "unmapped_fee", "settlement", None, "adjustment_amount", "-5.00",
+           None, "-5.00", "open", None, "PLATFORM_PENALTY", None, NOW, None)
+    discrepancies.tenant = with_conn(discrepancies, [
+        ("from discrepancies where shop_id = %s and status = 'open'", Result(["c"], [(2,)])),
+        ("from discrepancies where", Result(DISC_COLS, [row])),
+    ])
+    r = client.get(f"/v1/shops/{SHOP}/discrepancies?kind=unmapped_fee")
+    _assert(r.status_code == 200, f"status {r.status_code}: {r.text[:300]}")
+    b = r.json()
+    _assert(b["open_count"] == 2, "TC-DSC-05: the open count ignores the page filters")
+    _assert(b["discrepancies"][0]["kind"] == "unmapped_fee")
+    _assert(b["discrepancies"][0]["applied_value"] == "-5.00")
+check("GET discrepancies serves the seventh kind and an unfiltered open count", discrepancies_page)
 
 
 print()

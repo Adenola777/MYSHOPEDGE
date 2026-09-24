@@ -994,6 +994,7 @@ paths:
           - amount
           - return_unmatched
           - duplicate
+          - unmapped_fee
       responses:
         '200':
           description: Discrepancies
@@ -1740,6 +1741,8 @@ paths:
           $ref: '#/components/responses/Unauthenticated'
         '403':
           $ref: '#/components/responses/ForbiddenShop'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /shops/{shopId}/stock/{skuId}/adjustments:
     post:
       tags:
@@ -4783,6 +4786,7 @@ components:
           - amount
           - return_unmatched
           - duplicate
+          - unmapped_fee
         entity_type:
           type: string
         entity_id:

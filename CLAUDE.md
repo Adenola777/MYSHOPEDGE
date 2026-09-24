@@ -84,7 +84,7 @@ The specification is close to complete. The application is not. As of 23 Septemb
 |---|---|
 | Rulings, terminology, screens, data model, API contract | Done |
 | Schema | Through 0021 on all three branches, 22 migrations recorded on each. Production was brought up on 23 September and its schema fingerprint matches staging exactly. See A28.1 |
-| Backend | 12 of 53 contract paths. Health, billing, settlements, records, products, money, today, and the two TikTok connection endpoints |
+| Backend | 15 of 53 contract paths. Health, billing, settlements, records, products, money, today, stock, stock movements, discrepancies, and the two TikTok connection endpoints |
 | Authentication | ES256 verified against the provider's fetched JWKS, email read from `users_sync`, 9 tests passing. No handler has ever been invoked by a test |
 | Billing | Screens built. The three products and prices exist in the live Stripe account as of 23 September. Nothing is wired to them yet |
 | TikTok integration | Authorisation is built end to end. `app/connections.py` holds both endpoints, the signing algorithm, AES-256-GCM token storage and the state store in migration 0021. Fourteen smoke cases cover it. `_sign` has never made a live call, so the first real request is its test. See A23, A27 and A28 |
@@ -258,8 +258,11 @@ file inside this repository. `.gitignore` already excludes `.env` and its varian
 
 ## What is next in the code
 
-The reading endpoints, in this order: stock, movements and discrepancies. `listProducts`,
-`getProduct`, `getMoney` and `getToday` are served. Both money screens apply owner
+The stock, movements and discrepancies endpoints were built on 24 September. Days left in
+`service/app/stock.py` uses the PRD's fourteen day pace, which disagrees with the QA
+document's thirty day example, and it cannot yet exclude days with no stock because no
+daily stock history is stored. The file says both. `listProducts`, `getProduct`, `getMoney`
+and `getToday` are also served. Both money screens apply owner
 decisions of 24 September, recorded at the top of `service/app/money_view.py` and
 `service/app/today_view.py`. `settlements.py` and `records.py` are the pattern to
 follow. Both use keyset pagination rather than offset, both return RFC 9457 problem details,

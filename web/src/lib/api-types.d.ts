@@ -1748,7 +1748,23 @@ export interface components {
         TodayView: {
             /** Format: date-time */
             as_of: string;
+            /**
+             * @description True exactly when `freshness.status` is `stale`. Kept for clients that
+             *     read it before `freshness` existed. A29.3.
+             */
             stale?: boolean;
+            /**
+             * @description How old the figures are, computed by the service. A29.3. Under six hours
+             *     since the last successful sync is `fresh`, six to twenty four hours inclusive is
+             *     `getting_old`, and over twenty four hours or never synced is `stale`. The client
+             *     renders this and never computes it.
+             */
+            freshness?: {
+                /** @enum {string} */
+                status: "fresh" | "getting_old" | "stale";
+                /** Format: date-time */
+                last_synced_at: string | null;
+            };
             hero: {
                 /** @example left_after_tiktok */
                 label: string;
@@ -1763,10 +1779,18 @@ export interface components {
                 kept?: (components["schemas"]["Money"] | null) & components["schemas"]["Money"];
                 kept_reason?: string | null;
             };
+            /**
+             * @description All time, A29.7. `generated` is net proceeds as A8 defines it. Return
+             *     postage TikTok deducts is stated as `return_postage`, so paid out plus awaiting
+             *     equals generated plus return postage, and paid out equals what TikTok actually
+             *     paid.
+             */
             shop_money: {
                 generated?: components["schemas"]["Money"];
                 paid_out?: components["schemas"]["Money"];
                 awaiting?: components["schemas"]["Money"];
+                /** @description Return postage TikTok deducted in its statements, negative, reconciled rather than dropped. A29.7. */
+                return_postage?: components["schemas"]["Money"];
                 awaiting_breakdown?: {
                     /**
                      * @description TikTok's own sub-statuses, not MyShopEdge inventions.
@@ -2093,7 +2117,7 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** @enum {string} */
-            kind: "product_code" | "order_reference" | "transaction_reference" | "amount" | "return_unmatched" | "duplicate";
+            kind: "product_code" | "order_reference" | "transaction_reference" | "amount" | "return_unmatched" | "duplicate" | "unmapped_fee";
             entity_type: string;
             /** Format: uuid */
             entity_id?: string | null;
@@ -3024,7 +3048,7 @@ export interface operations {
                 /** @description The `next_cursor` from a previous response. Opaque, do not parse. */
                 cursor?: components["parameters"]["Cursor"];
                 status?: "open" | "resolved";
-                kind?: "product_code" | "order_reference" | "transaction_reference" | "amount" | "return_unmatched" | "duplicate";
+                kind?: "product_code" | "order_reference" | "transaction_reference" | "amount" | "return_unmatched" | "duplicate" | "unmapped_fee";
             };
             header?: never;
             path: {
@@ -3663,6 +3687,7 @@ export interface operations {
             };
             401: components["responses"]["Unauthenticated"];
             403: components["responses"]["ForbiddenShop"];
+            404: components["responses"]["NotFound"];
         };
     };
     createStockAdjustment: {
