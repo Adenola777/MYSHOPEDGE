@@ -46,11 +46,11 @@ export function ConnectTikTok() {
     <div className="stack">
       {error && <p className="form-error" role="alert">{error}</p>}
       <p>
-        <button className="btn btn--primary" type="button" onClick={connect} disabled={busy}>
+        <button className="btn btn--primary btn--block" type="button" onClick={connect} disabled={busy}>
           {busy ? "Opening TikTok Shop" : "Connect with TikTok Shop"}
         </button>
       </p>
-      <p className="rows__sub">You approve access on TikTok&rsquo;s own page, then come back here.</p>
+      <p className="footnote">You approve access on TikTok&rsquo;s own page, then come back here.</p>
     </div>
   );
 }

@@ -520,3 +520,18 @@ tbody tr:last-child td { border-bottom: 0; }
 .start { text-align: center; padding: var(--space-6) 0; }
 .start__logo { width: 240px; max-width: 80%; height: auto; margin: 0 auto var(--space-5); display: block; }
 .start p { margin-left: auto; margin-right: auto; }
+
+/* --- progressive disclosure and card footers -------------------------------------- */
+.card__foot { margin: var(--space-3) 0 0; font-size: 0.9375rem; font-weight: 600; }
+.disclose { margin-top: var(--space-2); }
+.disclose summary { cursor: pointer; color: var(--orange-600); font-weight: 600; font-size: 0.875rem; min-height: 44px; display: flex; align-items: center; }
+.disclose[open] summary { margin-bottom: var(--space-1); }
+.chip .money { font-weight: 700; }
+
+/* A row whose name opens its detail. The name reads as a name, navy and bold, as on the
+   wireframes, and the underline appears on hover and focus. */
+.rowlink { color: var(--navy-900); font-weight: 700; text-decoration: none; }
+.rowlink:hover, .rowlink:focus-visible { color: var(--orange-600); text-decoration: underline; }
+a.chip { text-decoration: none; }
+.rowlink--quiet { font-weight: 500; }
+.card__sub { font-size: 0.9375rem; margin: var(--space-3) 0 var(--space-1); }

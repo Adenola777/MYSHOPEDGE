@@ -23,6 +23,18 @@ import { ResolveActions } from "@/components/ResolveActions";
 
 export const metadata = { title: "Discrepancies" };
 
+/** The record a discrepancy was found on, in words. The raw field name is not shown. */
+/** @type {Record<string, string>} */
+const ENTITY = {
+  settlement: "a settlement",
+  order: "an order",
+  order_line: "an order line",
+  return: "a return",
+  sku: "a product variant",
+  product: "a product",
+  ledger_entry: "a ledger line",
+};
+
 /**
  * @param {{
  *   params: Promise<{ shopId: string }>,
@@ -73,33 +85,46 @@ export default async function DiscrepanciesPage({ params, searchParams }) {
           {discrepancies.map((d) => (
             <article className="card" key={d.id}>
               <h2>
-                {DISCREPANCY_KIND[d.kind] ?? d.kind}{" "}
-                <span className={chipClass(d.status === "open" ? "warn" : "good")}>
+                {DISCREPANCY_KIND[d.kind] ?? "A figure differs"}{" "}
+                <span className={chipClass(d.status === "open" ? "strong" : "quiet")}>
                   {d.status === "open" ? "Open" : (RESOLUTION[d.resolution ?? ""] ?? "Resolved")}
                 </span>
               </h2>
-              <p className="rows__sub">
-                On a {d.entity_type}{d.field ? `, field ${d.field}` : ""}. Opened{" "}
-                {formatDate(d.opened_at)}
+              <p className="card__why">
+                On {ENTITY[d.entity_type] ?? "a record"}, found {formatDate(d.opened_at)}
                 {d.resolved_at ? `, resolved ${formatDate(d.resolved_at)}` : ""}.
               </p>
 
               {d.kind === "unmapped_fee" ? (
-                <p>
-                  TikTok charged a fee under a name MyShopEdge does not recognise:{" "}
-                  <strong>{d.tiktok_value}</strong>. You have done nothing wrong. The money is
-                  counted in full and reduces your net proceeds, under the name TikTok gave it.
-                </p>
+                <>
+                  <p>
+                    TikTok charged a fee under a name MyShopEdge does not recognise. You have done
+                    nothing wrong, and the money is counted in full.
+                  </p>
+                  <ul className="rows">
+                    <li><span>TikTok recorded</span><strong>{d.tiktok_value ?? "Nothing recorded"}</strong></li>
+                  </ul>
+                </>
               ) : (
-                <ul className="rows">
-                  <li><span>TikTok</span><strong>{d.tiktok_value ?? "Nothing recorded"}</strong></li>
-                  <li><span>Your record</span><strong>{d.seller_value ?? "Nothing recorded"}</strong></li>
-                  <li className="rows__total"><span>We are using</span><strong>{d.applied_value ?? "Nothing yet"}</strong></li>
-                </ul>
+                <>
+                  <h3 className="card__sub">What we found</h3>
+                  <ul className="rows">
+                    <li><span>TikTok</span><strong>{d.tiktok_value ?? "Nothing recorded"}</strong></li>
+                    <li><span>Your record</span><strong>{d.seller_value ?? "Nothing recorded"}</strong></li>
+                    <li className="rows__total"><span>We are using</span><strong>{d.applied_value ?? "Nothing yet"}</strong></li>
+                  </ul>
+                </>
               )}
-              {d.note && <p className="rows__sub" style={{ marginTop: "var(--space-3)" }}>{d.note}</p>}
+              {d.note && <p className="rows__sub" style={{ marginTop: "var(--space-2)" }}>{d.note}</p>}
+
               {d.status === "open" && (
-                <ResolveActions shopId={shopId} id={d.id} correctable={Boolean(d.correctable)} />
+                <>
+                  <h3 className="card__sub">Effect</h3>
+                  <p className="rows__sub" style={{ marginTop: 0 }}>
+                    Totals use TikTok&rsquo;s value while this is open . Your value is kept beside it.
+                  </p>
+                  <ResolveActions shopId={shopId} id={d.id} correctable={Boolean(d.correctable)} />
+                </>
               )}
             </article>
           ))}

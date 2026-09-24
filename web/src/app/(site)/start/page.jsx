@@ -38,20 +38,20 @@ export default async function StartPage() {
   if (await currentUser()) redirect("/shops");
 
   return (
-    <section className="state">
+    <section className="start">
+      {/* A7.7: the sign-in and sign-up screens carry the horizontal lockup with the tagline.
+          A7.6 allows it from 180 px wide; it is drawn at 240. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img className="start__logo" src="/brand/mse-logo-horizontal.svg" alt="MyShopEdge, Know Your Numbers" width={240} height={89} />
       <h1>See what your TikTok Shop actually earned.</h1>
-      <p>
+      <p className="muted">
         You create an account or sign in with Google, GitHub or Microsoft. After that you
         connect your TikTok Shop, and MyShopEdge reads your orders, returns and statements.
       </p>
-      <p className="actions" style={{ justifyContent: "center" }}>
-        <a className="btn btn--primary" href="/handler/sign-up">
-          Create an account
-        </a>
-        <a className="btn btn--quiet" href="/handler/sign-in">
-          Sign in
-        </a>
-      </p>
+      <div className="stack" style={{ maxWidth: 360, margin: "0 auto" }}>
+        <a className="btn btn--primary btn--block" href="/handler/sign-up">Create an account</a>
+        <a className="btn btn--quiet btn--block" href="/handler/sign-in">Sign in</a>
+      </div>
     </section>
   );
 }

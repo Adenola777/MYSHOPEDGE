@@ -39,6 +39,7 @@ export default async function ShopsPage() {
         <div className="stack">
           <div className="card">
             <h2>What we read</h2>
+            <p className="card__why">Only what is needed to work out what you earned.</p>
             <ul className="rows">
               <li><span>Orders and sales</span><strong>Read</strong></li>
               <li><span>Products and stock</span><strong>Read</strong></li>
@@ -48,6 +49,7 @@ export default async function ShopsPage() {
           </div>
           <div className="card">
             <h2>What we do not keep</h2>
+            <p className="card__why">Your buyers&rsquo; details stay with TikTok.</p>
             <ul className="rows">
               <li><span>Buyer names and addresses</span><strong>Not kept</strong></li>
             </ul>

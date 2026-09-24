@@ -1,21 +1,18 @@
 /**
- * Products, ranked by what the seller actually kept.
+ * S9 Products, drawn to wireframe sheet 06 (redrawn 24 September after the design audit).
  *
- * This is the screen the product exists for. TikTok tells a seller what it paid out.
- * This tells them which products earned it.
+ * The sheet: the title and what the ranking is by; a measure switch; one row per product
+ * with its figure on the right; uncosted products below the ranked ones with "Add cost".
  *
- * Two things on this page are load bearing and neither is cosmetic.
+ * The measure switch is served, because `listProducts` takes `measure`. The ranking comes
+ * from the service in its order (A29.1). Uncosted products are listed after the ranked
+ * ones, as the sheet shows, by the `cost_known` flag the service returns.
  *
- * **A product with no cost shows no profit.** The API returns `kept` as null with a
- * `kept_reason` when a SKU has no cost price, and `Figure` renders that as a rule rather
- * than as zero. A seller who sees £0.00 concludes the product breaks even. A seller who
- * sees a dash and "no cost price yet" goes and uploads their costs. The first is a wrong
- * number presented as a fact, and this product is worth nothing if it does that.
+ * **Not yet as the sheet shows.** Each row on the sheet carries a pence-in-the-pound bar
+ * split into stock, postage, TikTok and what is left. That split is a financial rule, so it
+ * belongs in the service and waits for phase 3 of the audit, which adds it to the contract.
  *
- * **Unreachable is not empty.** A network failure, an expired session and a shop that is
- * not yours all produce no rows, and a screen that renders "no products yet" for all
- * three tells a seller their shop is empty when it is not. Section 49 requires each state
- * separately and they are separate here.
+ * A product with no cost shows no profit, never £0.00: `Figure` renders the reason.
  */
 
 import Link from "next/link";
@@ -26,13 +23,20 @@ import { BEFORE_OVERHEADS } from "@/lib/terms";
 
 export const metadata = { title: "Products" };
 
+/** The switch on the sheet, in A8's words. */
+const SWITCH = [
+  ["kept", "Gross profit"],
+  ["units", "Units"],
+  ["returns", "Returns"],
+];
+
 /** @type {Record<string, string>} */
-const MEASURE = {
-  kept: "gross profit after returns",
-  net_proceeds: "net proceeds",
-  gross_sales: "gross sales",
-  units: "units sold",
-  returns: "units returned",
+const RANKED_BY = {
+  kept: "Ranked by gross profit after returns",
+  net_proceeds: "Ranked by net proceeds",
+  gross_sales: "Ranked by gross sales",
+  units: "Ranked by units sold",
+  returns: "Ranked by units returned",
 };
 
 /** @param {{ params: Promise<{ shopId: string }>, searchParams: Promise<Record<string,string>> }} props */
@@ -40,86 +44,83 @@ export default async function ProductsPage({ params, searchParams }) {
   const { shopId } = await params;
   const query = await searchParams;
 
-  const result = await fetchProducts(shopId, {
-    measure: query.measure,
-    from: query.from,
-    to: query.to,
-  });
-
+  const result = await fetchProducts(shopId, { measure: query.measure, from: query.from, to: query.to });
   const problem = apiProblem(result, { what: "your products" });
   if (problem) return problem;
 
   /** @typedef {import("@/lib/api-types").components["schemas"]["ProductRow"]} ProductRow */
   /** @type {{ products: ProductRow[], total?: any, measure?: string, others?: { count: number, amount: any } }} */
-  const { products = [], total, measure, others } = result.data;
+  const { products = [], total, measure = "kept", others } = result.data;
+  const base = `/shops/${shopId}/products`;
 
-  if (products.length === 0) {
-    return (
-      <section className="state">
-        <h1>No products in this period yet.</h1>
-        <p>
-          Once orders come through, every product you sell appears here ranked by what you
-          made in gross profit after TikTok&rsquo;s deductions, your costs and any returns.
-        </p>
-      </section>
-    );
-  }
-
-  const missingCosts = products.filter((p) => !p.cost_known).length;
+  const ranked = products.filter((p) => p.cost_known || measure !== "kept");
+  const uncosted = measure === "kept" ? products.filter((p) => !p.cost_known) : [];
 
   return (
     <section>
-      <header className="billing__head">
+      <header className="page-head">
         <h1>Products</h1>
-        <p className="billing__lede">
-          Ranked by gross profit after returns, not by what sold. That is what each
-          product made after TikTok&rsquo;s deductions, your own costs and any returns.{" "}
-          {BEFORE_OVERHEADS}
-        </p>
+        <p>{RANKED_BY[measure] ?? "Ranked"}</p>
       </header>
 
-      {missingCosts > 0 && (
-        <div className="note note--warn" role="status">
-          <p>
-            {missingCosts === 1
-              ? "One product has no cost price yet, so its profit is unknown rather than zero."
-              : `${missingCosts} products have no cost price yet, so their profit is unknown rather than zero.`}{" "}
-            Once a cost price is added, the figure fills in on its own.
-          </p>
+      <nav className="switch" aria-label="Rank by">
+        {SWITCH.map(([value, label]) => (
+          <Link key={value} href={value === "kept" ? base : `${base}?measure=${value}`}
+                aria-current={measure === value ? "true" : undefined}>
+            {label}
+          </Link>
+        ))}
+      </nav>
+
+      {products.length === 0 ? (
+        <section className="state">
+          <h2>No products sold in this period yet.</h2>
+          <p>Once orders come through, every product you sell appears here, ranked.</p>
+        </section>
+      ) : (
+        <div className="card">
+          <ul className="rows rows--products">
+            {ranked.map((p) => (
+              <li key={p.product_id}>
+                <span>
+                  <Link className="rowlink" href={`${base}/${p.product_id}`}>
+                    {p.title || p.tiktok_product_id || "Untitled product"}
+                  </Link>
+                  <div className="rows__sub">
+                    {p.units} sold{p.returns_units ? `, ${p.returns_units} returned` : ""}. Net proceeds{" "}
+                    <Figure amount={p.net_proceeds} />
+                  </div>
+                </span>
+                {measure === "units" ? <strong className="money">{p.units}</strong>
+                  : measure === "returns" ? <strong className="money">{p.returns_units || 0}</strong>
+                  : <Figure amount={p.kept} reason={p.kept_reason} />}
+              </li>
+            ))}
+            {uncosted.map((p) => (
+              <li key={p.product_id}>
+                <span>
+                  <Link className="rowlink" href={`${base}/${p.product_id}`}>
+                    {p.title || p.tiktok_product_id || "Untitled product"}
+                  </Link>
+                  <div className="rows__sub">Product cost: not provided. Net proceeds <Figure amount={p.net_proceeds} /></div>
+                </span>
+                <Link className="chip chip--strong" href={`${base}/${p.product_id}`}>Add cost</Link>
+              </li>
+            ))}
+            {total && measure === "kept" && (
+              <li className="rows__total"><span>Total</span><Figure amount={total} /></li>
+            )}
+          </ul>
+          {others && others.count > 0 && (
+            <p className="rows__sub" style={{ marginTop: "var(--space-2)" }}>
+              {others.count} further {others.count === 1 ? "product" : "products"}, together{" "}
+              <Figure amount={others.amount} />.
+            </p>
+          )}
         </div>
       )}
 
-      <div className="card">
-        <p className="rows__sub" style={{ marginTop: 0 }}>
-          Every product sold in this period, measured by {MEASURE[measure ?? "kept"] ?? measure}.
-        </p>
-        <ul className="rows">
-          {products.map((p) => (
-            <li key={p.product_id}>
-              <span>
-                <Link href={`/shops/${shopId}/products/${p.product_id}`}>
-                  {p.title || p.tiktok_product_id || "Untitled product"}
-                </Link>
-                <div className="rows__sub">
-                  {p.units} sold, {p.returns_units || 0} returned. Gross sales{" "}
-                  <Figure amount={p.gross_sales} />, net proceeds <Figure amount={p.net_proceeds} />.
-                </div>
-              </span>
-              <Figure amount={p.kept} reason={p.kept_reason} />
-            </li>
-          ))}
-          {total && (
-            <li className="rows__total"><span>Total</span><Figure amount={total} /></li>
-          )}
-        </ul>
-      </div>
-
-      {others && others.count > 0 && (
-        <p style={{ marginTop: "var(--space-4)", color: "var(--ink-500)" }}>
-          {others.count} further {others.count === 1 ? "product" : "products"} outside this
-          ranking, together worth <Figure amount={others.amount} />.
-        </p>
-      )}
+      {measure === "kept" && <p className="footnote">{BEFORE_OVERHEADS}</p>}
     </section>
   );
 }

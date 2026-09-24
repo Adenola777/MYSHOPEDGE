@@ -47,16 +47,16 @@ export function ResolveActions({ shopId, id, correctable }) {
   return (
     <div className="stack" style={{ marginTop: "var(--space-4)" }}>
       {mode === "" ? (
-        <div className="actions">
-          <button className="btn btn--primary" disabled={busy} onClick={() => send("accepted_tiktok")}>
+        <div className="stack">
+          <button className="btn btn--primary btn--block" disabled={busy} onClick={() => send("accepted_tiktok")}>
             Accept TikTok&rsquo;s value
           </button>
           {correctable && (
-            <button className="btn btn--quiet" disabled={busy} onClick={() => setMode("corrected_seller")}>
+            <button className="btn btn--quiet btn--block" disabled={busy} onClick={() => setMode("corrected_seller")}>
               Correct my record
             </button>
           )}
-          <button className="btn btn--quiet" disabled={busy} onClick={() => setMode("explained")}>
+          <button className="btn btn--quiet btn--block" disabled={busy} onClick={() => setMode("explained")}>
             Mark as explained
           </button>
         </div>
@@ -77,7 +77,7 @@ export function ResolveActions({ shopId, id, correctable }) {
         </div>
       )}
       {error && <p className="form-error" role="alert">{error}</p>}
-      <p className="rows__sub">Every action is logged.</p>
+      <p className="footnote">Every action is logged.</p>
     </div>
   );
 }
