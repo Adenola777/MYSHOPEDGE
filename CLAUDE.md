@@ -96,7 +96,8 @@ The honest summary is that the thinking is done and the building has started.
 
 ## The documents
 
-`A2` to `A18` are the rulings, one file per action. They are decisions rather than notes, so
+`A2` to `A29` are the rulings, one file per action. A29 holds the dashboard rules and the
+rule that Python owns every financial and business rule. They are decisions rather than notes, so
 a ruling is changed by editing its document rather than by remembering a conversation.
 
 `README_v0.2.md` carries the running status, the open items by owner, and the account wiring.
@@ -159,15 +160,14 @@ Each of these was found by running something, and each survived reading.
    which is not in the GROUP BY. Fixed to `order by min(o.order_created_at)`.
 5. **The development ledger has no cash basis.** Found 24 September by querying it.
    `settlement_month` is empty on all 119 ledger entries, including the 88 that carry a
-   `settlement_id`, because `testdata/seed.sql` leaves the column out of its insert while
-   `testdata/rows.json` sets it on those 88. Every endpoint filters the cash basis on that
-   column, so on development the cash basis returns nothing. The ledger is append-only, so
-   correcting it is a decision rather than an edit.
-6. **The test payouts include return postage.** Found 24 September by querying it. The
-   three payout entries total 453.88, while the settled net proceeds are 458.38. The 4.50
-   is the return shipping entry, which `testdata/ingest.py` attaches to its settlement and
-   counts into the payout, although A4 says return postage never passes through a TikTok
-   statement. Today's Paid out follows A4 and reads 458.38.
+   `settlement_id`, because `testdata/seed.sql` left the column out. The seed is now rebuilt
+   from `rows.json` (A29.10), but the development branch has not been reloaded. The ledger
+   is append-only, so reloading it needs the owner's approval.
+6. **A4.119 was wrong about return postage.** It said return postage never passes through
+   a TikTok statement. The real payload carries `return_shipping_fee_amount` on every
+   transaction, and the test payout of 453.88 is settled net proceeds of 458.38 less 4.50 of
+   postage. The owner ruled that postage is reconciled, not dropped (A29.7), and Shop Money
+   on Today now reads a Paid out of 453.88 with the postage stated on its own line.
 7. **The test data covers two months, not twelve.** July and August 2026. Nothing yet tests
    behaviour across many months or across the British Summer Time boundary.
 

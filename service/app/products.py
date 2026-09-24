@@ -38,6 +38,7 @@ from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 
 from .auth import Account, require_account
+from .dates import business_today
 from .db import tenant
 from .money import Money, money
 from .settlements import MAX_LIMIT, decode_cursor, encode_cursor
@@ -192,7 +193,7 @@ def list_products(
     limit: Annotated[int, Query(ge=1, le=MAX_LIMIT)] = 20,
     cursor: Annotated[str | None, Query()] = None,
 ) -> ProductRanking:
-    today = date.today()
+    today = business_today()
     start = period_from or today.replace(day=1)
     end = period_to or today
 
@@ -406,7 +407,7 @@ def get_product(
 ) -> ProductDetail:
     from .problems import Problem
 
-    today = date.today()
+    today = business_today()
     start = period_from or today.replace(day=1)
     end = period_to or today
     date_column = "le.basis_day" if basis == "sales" else "le.settlement_month"

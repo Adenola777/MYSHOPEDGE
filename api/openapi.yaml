@@ -3814,6 +3814,37 @@ components:
           format: date-time
         stale:
           type: boolean
+          description: 'True exactly when `freshness.status` is `stale`. Kept for clients that
+
+            read it before `freshness` existed. A29.3.
+
+            '
+        freshness:
+          type: object
+          description: 'How old the figures are, computed by the service. A29.3. Under six hours
+
+            since the last successful sync is `fresh`, six to twenty four hours inclusive is
+
+            `getting_old`, and over twenty four hours or never synced is `stale`. The client
+
+            renders this and never computes it.
+
+            '
+          required:
+          - status
+          - last_synced_at
+          properties:
+            status:
+              type: string
+              enum:
+              - fresh
+              - getting_old
+              - stale
+            last_synced_at:
+              type:
+              - string
+              - 'null'
+              format: date-time
         hero:
           type: object
           required:
@@ -3858,6 +3889,15 @@ components:
               - 'null'
         shop_money:
           type: object
+          description: 'All time, A29.7. `generated` is net proceeds as A8 defines it. Return
+
+            postage TikTok deducts is stated as `return_postage`, so paid out plus awaiting
+
+            equals generated plus return postage, and paid out equals what TikTok actually
+
+            paid.
+
+            '
           properties:
             generated:
               $ref: '#/components/schemas/Money'
@@ -3865,6 +3905,11 @@ components:
               $ref: '#/components/schemas/Money'
             awaiting:
               $ref: '#/components/schemas/Money'
+            return_postage:
+              allOf:
+              - $ref: '#/components/schemas/Money'
+              description: Return postage TikTok deducted in its statements, negative, reconciled
+                rather than dropped. A29.7.
             awaiting_breakdown:
               type: array
               items:

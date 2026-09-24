@@ -26,6 +26,7 @@ jobs:
       - run: python tests/test_auth_verification.py
       - run: python tests/test_contract_conformance.py
       - run: python tests/test_handlers_smoke.py
+      - run: python tests/test_business_date.py
 
   web:
     runs-on: ubuntu-latest

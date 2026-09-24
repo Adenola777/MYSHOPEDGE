@@ -304,20 +304,26 @@ check("GET money answers 304 when nothing has changed", money_etag)
 from datetime import timedelta
 from app import today_view
 
-SHOP_MONEY_COLS = ["status","amount_minor","orders","currency"]
-SHOP_MONEY_ROWS = [("delivered_awaiting_settlement", 1850, 1, "GBP"),
-                   ("settled", 45838, 18, "GBP"),
-                   ("waiting_delivery", 1850, 1, "GBP")]
+SHOP_MONEY_COLS = ["status","amount_minor","postage_minor","orders","currency"]
+# The development ledger's own figures. Settled includes the 4.50 of return postage TikTok
+# deducted, so it is 453.88, which is the payout TikTok made.
+SHOP_MONEY_ROWS = [("delivered_awaiting_settlement", 1850, None, 1, "GBP"),
+                   ("settled", 45388, -450, 18, "GBP"),
+                   ("waiting_delivery", 1850, None, 1, "GBP")]
 NEEDS_COLS = ["returns_to_check","open_discrepancies","out_of_stock","missing_costs",
               "unmapped_fees","unmapped_fee_minor","last_synced_at","connection_status",
-              "access_expires_at","refresh_expires_at","revoked_at","connections"]
+              "access_expires_at","refresh_expires_at","revoked_at","connections",
+              "refresh_failure_code","refresh_attempted_at","refresh_succeeded_at",
+              "missing_scopes","latest_sync_statuses"]
 
 
 def _needs(**over):
     base = dict(returns_to_check=0, open_discrepancies=1, out_of_stock=1, missing_costs=0,
                 unmapped_fees=1, unmapped_fee_minor=199, last_synced_at=None,
                 connection_status="connected", access_expires_at=None,
-                refresh_expires_at=None, revoked_at=None, connections=1)
+                refresh_expires_at=None, revoked_at=None, connections=1,
+                refresh_failure_code=None, refresh_attempted_at=None,
+                refresh_succeeded_at=None, missing_scopes=[], latest_sync_statuses=None)
     base.update(over)
     return Result(NEEDS_COLS, [tuple(base[c] for c in NEEDS_COLS)])
 
@@ -342,12 +348,15 @@ def today_complete():
     _assert(b["month"]["gross"]["amount_minor"] == 86200)
     _assert(b["month"]["kept"]["amount_minor"] == 35426)
     sm = b["shop_money"]
-    # LED-4: paid out plus awaiting equals generated.
+    # A29.7: generated is net proceeds, paid out is what TikTok paid, and the return postage
+    # TikTok deducted is stated rather than dropped, so the three reconcile.
     _assert(sm["generated"]["amount_minor"] == 49538)
-    _assert(sm["paid_out"]["amount_minor"] == 45838)
+    _assert(sm["paid_out"]["amount_minor"] == 45388, "paid out equals the real payout")
     _assert(sm["awaiting"]["amount_minor"] == 3700)
+    _assert(sm["return_postage"]["amount_minor"] == -450)
     _assert(sm["paid_out"]["amount_minor"] + sm["awaiting"]["amount_minor"]
-            == sm["generated"]["amount_minor"])
+            == sm["generated"]["amount_minor"] + sm["return_postage"]["amount_minor"])
+    _assert(b["freshness"] == {"status": "stale", "last_synced_at": None})
     _assert([a["status"] for a in sm["awaiting_breakdown"]]
             == ["delivered_awaiting_settlement", "waiting_delivery"])
     # Never synced means stale, and the list runs warning before info, money first.
@@ -384,6 +393,39 @@ def today_connection():
     _assert(b["needs_you"][0]["severity"] == "critical")
     _assert(any(i["type"] == "stale_data" for i in b["needs_you"]))
 check("GET today puts a broken connection first and flags a stale sync", today_connection)
+
+
+def today_freshness():
+    now = datetime.now(timezone.utc)
+    for hours, expected in ((1, "fresh"), (5.9, "fresh"), (6, "getting_old"),
+                            (23.9, "getting_old"), (24.1, "stale")):
+        b = _today([DESK], _needs(last_synced_at=now - timedelta(hours=hours)))
+        _assert(b["freshness"]["status"] == expected, f"{hours}h gave {b['freshness']['status']}")
+        _assert(b["stale"] == (expected == "stale"), f"{hours}h stale={b['stale']}")
+check("GET today reports fresh, getting old and stale at the ruled boundaries", today_freshness)
+
+
+def today_health():
+    now = datetime.now(timezone.utc)
+    b = _today([DESK], _needs(
+        last_synced_at=now - timedelta(hours=1),
+        refresh_failure_code="36004004", refresh_attempted_at=now,
+        refresh_succeeded_at=now - timedelta(days=2),
+        missing_scopes=["seller.return.info"],
+        latest_sync_statuses=["completed", "failed", "partial"]))
+    by = {i["type"]: i["severity"] for i in b["needs_you"]}
+    _assert(by.get("refresh_failed") == "critical", by)
+    _assert(by.get("missing_scope") == "critical", by)
+    _assert(by.get("sync_failed") == "warning" and by.get("sync_partial") == "warning", by)
+    sev = [i["severity"] for i in b["needs_you"]]
+    _assert(sev == sorted(sev, key=lambda x: {"critical": 0, "warning": 1, "info": 2}[x]),
+            f"critical, then warning, then info: {sev}")
+    # A refresh that has since succeeded is not a failure.
+    b = _today([DESK], _needs(last_synced_at=now, refresh_failure_code="36004004",
+                               refresh_attempted_at=now - timedelta(hours=2),
+                               refresh_succeeded_at=now - timedelta(hours=1)))
+    _assert(all(i["type"] != "refresh_failed" for i in b["needs_you"]))
+check("GET today raises refresh, scope and sync failures at their ruled severities", today_health)
 
 
 # --- the two connection handlers

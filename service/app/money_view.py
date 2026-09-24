@@ -57,6 +57,7 @@ from fastapi import APIRouter, Depends, Header, Query, Response
 from pydantic import BaseModel
 
 from .auth import Account, require_account
+from .dates import business_today
 from .db import tenant
 from .money import Money, money
 from .products import NET_PROCEEDS_TYPES, RETURN_LOSS_TYPES, SQL as PRODUCTS_SQL
@@ -218,7 +219,7 @@ def get_money(
     granularity: Annotated[str, Query(pattern="^(day|week|month)$")] = "month",
     if_none_match: Annotated[str | None, Header()] = None,
 ):
-    today = date.today()
+    today = business_today()
     start = period_from or today.replace(day=1)
     end = period_to or today
     with tenant(account.id) as conn:
