@@ -42,7 +42,7 @@ recorded in the pull request. The handler itself has not run against a real data
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import Annotated, Any
 from uuid import UUID
 
@@ -189,6 +189,22 @@ def _plural(n: int, one: str, many: str) -> str:
     return f"{n} {one if n == 1 else many}"
 
 
+def needs_href(kind: str, shop_id: UUID, today: date) -> str | None:
+    """Where the seller acts on an item, as a path in the web application. A29.14.
+
+    Only items whose screen exists carry a link. A link to a screen that is not built would
+    be a promise the product cannot keep, so the others stay null until their screen is.
+    """
+    base = f"/shops/{shop_id}"
+    month = today.replace(day=1).isoformat()
+    return {
+        "open_discrepancies": f"{base}/discrepancies?status=open",
+        "unmapped_fees": f"{base}/records?category=unmapped_fee&from={month}&to={today.isoformat()}",
+        "missing_costs": f"{base}/products",
+        "out_of_stock": f"{base}/stock?state=out",
+    }.get(kind)
+
+
 def _needs_you(r: dict[str, Any], now: datetime, currency: str) -> tuple[bool, list[NeedsYouItem]]:
     items: list[NeedsYouItem] = []
 
@@ -332,6 +348,8 @@ def get_today(
     )
 
     stale, items = _needs_you(needs, now, currency)
+    for item in items:
+        item.href = needs_href(item.type, shop_id, business_today(now))
 
     return TodayView(
         as_of=now,

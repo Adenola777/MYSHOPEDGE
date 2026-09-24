@@ -155,6 +155,7 @@ def records_page():
     b = r.json()
     _assert(b["total"]["amount_minor"] == 50038, "total is every page")
     _assert(b["shown_total"]["amount_minor"] == 36000, "shown_total is this page")
+    _assert(b["entries"][0]["label"] == "Gross sales (GMV)", "A18.5: every category has words")
 check("GET records distinguishes the total from the page sum", records_page)
 
 
@@ -761,6 +762,33 @@ def product_detail_stock_state():
     _assert(st is not None and st["state"] == "out", st)
     _assert(st["days_left"] is None)
 check("GET product detail takes its stock state from the one stock rule", product_detail_stock_state)
+
+
+def needs_you_links_only_to_built_screens():
+    from app.today_view import needs_href
+    d = date(2026, 9, 24)
+    _assert(needs_href("open_discrepancies", SHOP, d) == f"/shops/{SHOP}/discrepancies?status=open")
+    _assert(needs_href("unmapped_fees", SHOP, d).endswith(
+        "records?category=unmapped_fee&from=2026-09-01&to=2026-09-24"))
+    _assert(needs_href("out_of_stock", SHOP, d) == f"/shops/{SHOP}/stock?state=out")
+    # No screen yet, so no link rather than a link to nothing.
+    _assert(needs_href("returns_to_check", SHOP, d) is None)
+    _assert(needs_href("connection_action_required", SHOP, d) is None)
+check("Needs you links only to screens that exist", needs_you_links_only_to_built_screens)
+
+
+def product_and_money_use_the_same_words():
+    # A8 and TC-CLR-06. The product calculator and the Money calculator name the same money,
+    # so they must use the same words, and none of the withdrawn labels may appear.
+    from app import money_view
+    for key, label in products.LABELS.items():
+        _assert(money_view.LABELS.get(key) == label,
+                f"{key}: product says {label!r}, money says {money_view.LABELS.get(key)!r}")
+    withdrawn = ("Their cut", "You keep", "Left after TikTok", "Contribution", "Return Loss")
+    words = [w for s in products.SECTIONS for w in s[1:3]] + list(products.LABELS.values())
+    for w in words:
+        _assert(not any(x.lower() in w.lower() for x in withdrawn), f"withdrawn label: {w}")
+check("Product and Money calculators use A8's words and no withdrawn label", product_and_money_use_the_same_words)
 
 
 print()

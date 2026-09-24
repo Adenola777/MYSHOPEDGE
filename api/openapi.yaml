@@ -4287,6 +4287,13 @@ components:
           - adjustment
         category:
           $ref: '#/components/schemas/LedgerCategory'
+        label:
+          type:
+          - string
+          - 'null'
+          description: The category in plain English, the same words the Money calculator uses.
+            A18.5 requires every category to render with a human label, so the label is
+            served rather than held in each client.
         tiktok_fee_type:
           type:
           - string

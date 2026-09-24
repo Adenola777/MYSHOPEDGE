@@ -22,7 +22,7 @@ Five things were checked, and each is named against the line it produced:
 | Cut by a later ruling | **2** | S18 and S19, both cut by A15 |
 | **Live screens** | **36** | This is the number that matters |
 | Wireframed | 15 | S1 to S15 only |
-| Built in code | 3 | S9, S33, S34 |
+| Built in code | 10 | S6, S7, S9, S10, S11, S14, S22, S26, S33, S34. None has run against a real API yet |
 
 **`CLAUDE.md` and `README_v0.2.md` both said "39 screens". That number is wrong twice.**
 No ruling defines an S39. The only place S39 appears in the whole repository is
@@ -49,15 +49,15 @@ by side, except the last, which carries S15 alone.
 | S3 | Product costs choice | Onboarding | Wireframes, amended A15.4 | 03 | |
 | S4 | Upload mapping | Onboarding | Wireframes | 03 | |
 | S5 | Tax profile | Onboarding | Wireframes | 04 | |
-| S6 | Today | Core | Wireframes, amended A15.5 | 04 | |
-| S7 | Stock | Core | Wireframes | 05 | |
+| S6 | Today | Core | Wireframes, amended A15.5 | 04 | `shops/[shopId]/today` |
+| S7 | Stock | Core | Wireframes | 05 | `shops/[shopId]/stock` |
 | S8 | Return check | Core | Wireframes | 05 | |
 | S9 | Products | Core | Wireframes, revised A18 | 06 | `shops/[shopId]/products` |
-| S10 | Product detail | Core | Wireframes, revised A18 | 06 | |
-| S11 | Money | Core | Wireframes, revised A18 | 07 | |
+| S10 | Product detail | Core | Wireframes, revised A18 | 06 | `shops/[shopId]/products/[productId]` |
+| S11 | Money | Core | Wireframes, revised A18 | 07 | `shops/[shopId]/money` |
 | S12 | Tax | Core | Wireframes | 07 | |
 | S13 | Notifications | Core | Wireframes | 08 | |
-| S14 | Discrepancy detail | Core | Wireframes, revised A18 | 08 | |
+| S14 | Discrepancy detail | Core | Wireframes, revised A18 | 08 | `shops/[shopId]/discrepancies`, as a list |
 | S15 | Settings and data | Settings | Wireframes | 09 | |
 | S16 | Product transactions | Products | A3 | | |
 | S17 | Start | Account | A3 as Sign up, renamed A14 | | |
@@ -65,11 +65,11 @@ by side, except the last, which carries S15 alone.
 | ~~S19~~ | ~~Sign in~~ | | **Cut by A15.2** | | |
 | S20 | Manual cost entry | Onboarding | A3 | | |
 | S21 | Add or edit a product cost | Products | A3 | | |
-| S22 | Records behind a figure | Money | A3, revised A18 | | |
+| S22 | Records behind a figure | Money | A3, revised A18 | | `shops/[shopId]/records` |
 | S23 | Export | Money | A3, revised A18 | | |
 | S24 | Other-channel sales | Money | A3 | | |
 | S25 | Stock adjustment | Stock | A3, revised A18 | | |
-| S26 | Stock movement history | Stock | A3, revised A18 | | |
+| S26 | Stock movement history | Stock | A3, revised A18 | | `shops/[shopId]/stock/[skuId]` |
 | S27 | Alert settings | Settings | A3 | | |
 | S28 | Connection problem | Onboarding | A3 | | |
 | S29 | Disconnect | Settings | A3 | | |
@@ -122,3 +122,21 @@ rulings would be the weaker reference even if it could be read.
 
 So a screen is built from its ruling, checked against its sheet where one exists, and
 checked against the sheet's known staleness above where it applies.
+
+## The seven screens built on 24 September, and what each still lacks
+
+Each was built on a served endpoint, rendered at phone width against the real handlers'
+responses to canned rows, and checked in a browser. None has yet run against a real API
+with a signed in seller, because the service has no host. What each file leaves out is
+written at the top of the file, and summarised here.
+
+| Screen | What is missing | Waiting on |
+|---|---|---|
+| S6 Today | The VAT line, and the congratulation A15.5 keeps | A29.8 puts VAT out of scope. Nothing tells the screen that onboarding has just finished |
+| S7 Stock | The units in hand totals, and the order by what runs out first | `getStock` serves no totals and pages by variant |
+| S10 Product detail | Editing a cost, the insight, the return rate | No cost endpoint, no insight source, no return rate in the contract |
+| S11 Money | The period switch, expected payouts by week, the export | The contract cannot name a period. No payout or export endpoint is built |
+| S14 Discrepancy detail | A page for one discrepancy, and the three actions | No endpoint for one discrepancy. `resolveDiscrepancy` is not built |
+| S22 Records | The discrepancy marker on affected rows | A ledger entry does not say which discrepancy touches it |
+| S26 Movements | The resulting count on each row, the opening balance, links to orders and returns | `getStockMovements` serves no balance. No order or return screen exists |
+

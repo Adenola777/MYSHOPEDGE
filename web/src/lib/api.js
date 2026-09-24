@@ -117,3 +117,43 @@ export function formatMoney(amount) {
     minimumFractionDigits: 2,
   }).format(amount.amount_minor / 100);
 }
+
+/**
+ * Any reading endpoint under one shop, returning the whole result for the reason given on
+ * `fetchProducts`. Empty query values are dropped rather than sent as blanks.
+ *
+ * @param {string} shopId
+ * @param {string} path  The part after `/shops/{shopId}`, starting with a slash.
+ * @param {Record<string, string | undefined>} [query]
+ */
+export async function fetchShop(shopId, path, query = {}) {
+  const qs = new URLSearchParams(
+    /** @type {[string, string][]} */ (
+      Object.entries(query).filter(([, v]) => v !== undefined && v !== "")
+    ),
+  ).toString();
+  return api(`/shops/${encodeURIComponent(shopId)}${path}${qs ? `?${qs}` : ""}`, {
+    cache: "no-store",
+  });
+}
+
+/**
+ * Dates are shown in Europe/London, the business date A29.9 fixes, whatever the server's
+ * own zone. This is formatting only. The date itself comes from the API.
+ *
+ * @param {string | null | undefined} iso
+ * @param {{ time?: boolean }} [opts]
+ */
+export function formatDate(iso, opts = {}) {
+  if (!iso) return "";
+  // A bare date such as 2026-08-01 is a calendar day, not an instant, so it is read at
+  // noon UTC to keep it on the same day in London.
+  const value = /^\d{4}-\d{2}-\d{2}$/.test(iso) ? `${iso}T12:00:00Z` : iso;
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/London",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    ...(opts.time ? { hour: "2-digit", minute: "2-digit" } : {}),
+  }).format(new Date(value));
+}

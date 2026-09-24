@@ -1934,6 +1934,8 @@ export interface components {
             /** @enum {string} */
             entry_type: "sale" | "platform_deduction" | "refund" | "payout" | "return_cost" | "write_off" | "adjustment";
             category?: components["schemas"]["LedgerCategory"];
+            /** @description The category in plain English, the same words the Money calculator uses. A18.5 requires every category to render with a human label, so the label is served rather than held in each client. */
+            label?: string | null;
             tiktok_fee_type?: string | null;
             amount: components["schemas"]["Money"];
             /** Format: date-time */

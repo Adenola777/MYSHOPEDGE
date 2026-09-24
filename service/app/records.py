@@ -36,6 +36,7 @@ from pydantic import BaseModel
 from .auth import Account, require_account
 from .db import tenant
 from .money import Money, money
+from .money_view import LABELS
 from .settlements import MAX_LIMIT, decode_cursor, encode_cursor
 from .shops import require_shop
 
@@ -46,6 +47,7 @@ class LedgerEntry(BaseModel):
     id: UUID
     entry_type: str
     category: str | None = None
+    label: str | None = None
     tiktok_fee_type: str | None = None
     amount: Money
     occurred_at: datetime
@@ -165,6 +167,7 @@ def get_records(
             id=r["id"],
             entry_type=r["entry_type"],
             category=r["category"],
+            label=LABELS.get(r["category"]) if r["category"] else None,
             tiktok_fee_type=r["tiktok_fee_type"],
             amount=money(r["amount_minor"], r["currency"]),
             occurred_at=r["occurred_at"],

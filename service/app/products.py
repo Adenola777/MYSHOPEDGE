@@ -344,41 +344,47 @@ class ProductDetail(BaseModel):
 # precisely the defect A4.1 records.
 #
 #   Sales less refunds and deductions  = Net Proceeds
-#   less cost of goods retained        = Contribution
-#   less Return Loss                   = You keep
+#   less cost of goods retained        = Gross profit
+#   less return costs                  = Gross profit after returns
+#
+# The labels are A8's. Until 24 September this table said "Contribution", "Return Loss" and
+# "You keep", all three withdrawn by A8 and forbidden on screen by TC-CLR-06, and the line
+# labels differed from the Money calculator's for the same money. Found by rendering the
+# product screen, not by reading this file.
 #
 # cost_of_goods_sold is deliberately absent from these lists. The ledger posts it for every
 # unit sold including the ones that came back, so it is replaced by a computed line.
 SECTIONS: list[tuple[str, str, str, tuple[str, ...]]] = [
     ("sales", "Sales", "Sales after refunds",
      ("gross_sales", "seller_discount", "refund")),
-    ("deductions", "What TikTok took", "Net proceeds", (
+    ("deductions", "Total TikTok fees", "Net proceeds", (
         "platform_commission", "affiliate_commission", "transaction_fee",
         "smart_promotions_fee", "shipping_fee", "return_handling_fee",
         "fbt_operations_fee", "fbt_shipping_fee", "fbt_storage_fee", "unmapped_fee",
     )),
-    ("your_costs", "Your costs", "Contribution", ("seller_shipping",)),
-    ("return_loss", "Return Loss", "You keep", ("return_shipping", "stock_written_off")),
+    ("your_costs", "Your costs", "Gross profit", ("seller_shipping",)),
+    ("return_loss", "Return costs", "Gross profit after returns",
+     ("return_shipping", "stock_written_off")),
 ]
 
 LABELS = {
-    "gross_sales": "Sales before discounts",
-    "seller_discount": "Your discounts",
+    "gross_sales": "Gross sales (GMV)",
+    "seller_discount": "Seller discounts",
     "platform_commission": "Platform commission",
     "affiliate_commission": "Affiliate commission",
     "transaction_fee": "Transaction fee",
-    "smart_promotions_fee": "Smart promotions fee",
+    "smart_promotions_fee": "Smart Promotions fee",
     "shipping_fee": "Shipping fee",
     "return_handling_fee": "Return handling fee",
-    "fbt_operations_fee": "Fulfilled by TikTok operations fee",
-    "fbt_shipping_fee": "Fulfilled by TikTok shipping fee",
-    "fbt_storage_fee": "Fulfilled by TikTok storage fee",
+    "fbt_operations_fee": "FBT operations fee",
+    "fbt_shipping_fee": "FBT shipping fee",
+    "fbt_storage_fee": "FBT storage fee",
     "unmapped_fee": "Fee TikTok did not name in a way we recognise",
-    "refund": "Refunds",
-    "return_shipping": "Return postage",
+    "refund": "Refunds to customers",
+    "return_shipping": "Return shipping you paid",
     "stock_written_off": "Stock written off",
-    "cost_of_goods_sold": "What the goods cost you, for the units that stayed sold",
-    "seller_shipping": "Postage you paid",
+    "cost_of_goods_sold": "Cost of goods sold",
+    "seller_shipping": "Shipping and packaging you pay",
 }
 
 
