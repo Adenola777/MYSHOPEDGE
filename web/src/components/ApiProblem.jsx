@@ -69,8 +69,8 @@ export function apiProblem(result, { what, notFound }) {
   return null;
 }
 
-/** @param {{ title: string, note: string, retry?: boolean, signIn?: boolean }} props */
-export function Problem({ title, note, retry, signIn }) {
+/** @param {{ title: string, note: string, retry?: boolean, signIn?: boolean, startAgain?: boolean }} props */
+export function Problem({ title, note, retry, signIn, startAgain }) {
   return (
     <section className="state">
       <h1>{title}</h1>
@@ -79,6 +79,13 @@ export function Problem({ title, note, retry, signIn }) {
         <p>
           <a className="btn btn--quiet" href="">
             Try again
+          </a>
+        </p>
+      )}
+      {startAgain && (
+        <p>
+          <a className="btn btn--primary" href="/shops">
+            Start again
           </a>
         </p>
       )}

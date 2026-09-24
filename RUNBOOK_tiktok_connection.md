@@ -1,163 +1,137 @@
 # Runbook. Connecting the TikTok Shop, step by step
 
-Written 23 September 2026, the day the app developer approval came through. Follow it once.
-It takes about ten minutes, and nine of them are waiting for pages to load.
+Rewritten 24 September 2026. The first version was written on 23 September, before any
+connection code existed, and asked for the authorisation code to be copied out of an address
+bar by hand. That is no longer how it works. The service now runs on Render, sign-in works,
+and the site has a Connect button, so the code never passes through a person.
 
 **The rule that shapes this runbook: no secret is ever typed into a chat.** The app secret
-signs every request the integration makes. Anything pasted into a conversation stays in its
-transcript. Every secret below travels through the cloud environment's variables box, which
-Claude reads at session start and never displays.
+and the token key go straight into Render's environment page and nowhere else.
 
-## Before you start
+## What is built and what is not
 
-You need three browser tabs open and signed in.
-
-| Tab | Where |
+| Piece | State |
 |---|---|
-| TikTok Shop Partner Center | partner.tiktokshop.com |
-| Your seller account | seller-uk.tiktok.com |
-| The cloud environment settings | the environment selector, the cloud icon, in the Claude app |
+| The Connect button, S1, on `/shops` while no shop is connected | Built 24 September |
+| `POST /v1/connections/tiktok/authorize`, which issues a ten minute, single use link | Built, never called with real values |
+| The return page, `/connections/tiktok/callback` on the site | Built 24 September |
+| `GET /v1/connections/tiktok/callback`, which exchanges the code, checks the shop and stores the encrypted tokens | Built, never called against TikTok |
+| Reading orders, returns and statements after the connection | **Not built.** No file in the service calls those TikTok endpoints |
+| Refreshing the access token before its seven days run out | **Not built** |
+| Disconnecting, S29 | **Not built** |
 
-## Step 1. Get the service ID, the app key and the app secret
+The first real connection is therefore the first test of the signing, the code exchange and
+the shop lookup in `service/app/connections.py`.
 
-In Partner Center, open **Manage apps** and select your app. Under **App & Service** the page
-shows three values you need, not two:
+## Step 1. Get the three values from Partner Center
+
+In Partner Center, open **Manage apps** and select the app. Under **App & Service** the page
+shows three values:
 
 | Value | What it is for |
 |---|---|
-| **Service ID** | Building the authorisation link. This is the OAuth client identifier |
+| **Service ID** | Building the authorisation link. It is not a secret |
 | **App key** | The token exchange |
-| **App secret** | The token exchange |
+| **App secret** | The token exchange. It is a secret |
 
-Copy all three. Do not paste the secret into the conversation, an email, or a file in the
-repository. **Corrected 23 September: this step previously asked for two values and omitted
-the Service ID, which made step 4 impossible to follow.** See A23.2.
+A23.2 records that the service ID and the app key are routinely confused, so copy each from
+its own label.
 
 ## Step 2. Set the callback URL on the app
 
-Still on the app page, find **Callback URL** or **Redirect URL** and set it to the address
-the seller returns to after approving. Until the application is deployed, use:
+On the same app page, set **Callback URL** or **Redirect URL** to exactly:
 
 ```
-http://localhost:3000/connections/tiktok/callback
+https://my-shop-edge.vercel.app/connections/tiktok/callback
 ```
 
-That path matches `tiktokCallback` in `api/openapi.yaml`, so the contract and the app agree.
-When the application has a real address the value changes to that host and the same path.
+**This replaces the address set earlier on 24 September**, which pointed at the service on
+Render. The service answers the callback with JSON, so a seller sent there would see raw
+data. The site's page at this path hands the code to the service and shows the result in
+words.
 
-## Step 3. Put the three values into the environment
+## Step 3. Put four values into Render
 
-Open the cloud environment you are using, the same dialog where the allowed domains were
-set, and add to **Environment variables**:
+Open Render, the service **My-ShopEdge-1**, then **Environment**, and add:
 
-```
-TIKTOK_SERVICE_ID=<the service id>
-TIKTOK_APP_KEY=<the app key>
-TIKTOK_APP_SECRET=<the app secret>
-```
+| Variable | Value |
+|---|---|
+| `TIKTOK_SERVICE_ID` | The service ID from step 1 |
+| `TIKTOK_APP_KEY` | The app key from step 1 |
+| `TIKTOK_APP_SECRET` | The app secret from step 1 |
+| `TIKTOK_TOKEN_KEY` | A new random key, made as below |
 
-The service ID is not a secret and the app secret is. All three live here so that nothing
-has to be typed into a conversation.
-
-The dialog warns that these are visible to anyone using the environment. That is acceptable
-while it is only you, and it is far better than a transcript.
-
-## Step 4. Authorise your shop
-
-**Corrected 23 September. The domain matters and the wrong one was used all day.** There are
-two authorisation links and they do different things:
+`TIKTOK_TOKEN_KEY` encrypts the TikTok tokens before they are stored. `_encrypt` in
+`connections.py` requires exactly 32 bytes, base64 encoded, and refuses anything else. Make
+one in your own terminal:
 
 ```
-seller, your own shop    https://services.tiktokshop.com/open/authorize?service_id=<service id>
-partner, TAP             https://partner.tiktokshop.com/open/authorize?service_id=<service id>
+python3 -c "import os, base64; print(base64.b64encode(os.urandom(32)).decode())"
 ```
 
-MyShopEdge is a seller-facing product, so **use the `services.tiktokshop.com` link**. Every
-attempt on 23 September went through the partner link and every one of them returned a
-sandbox test shop in Indonesia rather than the real British shop. See A23.1.
+Paste the printed line into Render and nowhere else. **If this key is lost or changed, every
+stored token becomes unreadable and the shop has to be connected again.** Nothing yet
+supports two keys at once, which is why `key_version` is always 1.
 
-Open that link. It asks you to sign in as the seller and shows the permissions the app is
-requesting.
+Save. Render redeploys the service, which takes about a minute.
 
-Approve it. TikTok then redirects you to the callback URL from step 2, and the address bar
-carries a parameter:
+## Step 4. Connect
 
-```
-http://localhost:3000/connections/tiktok/callback?code=ROW_xxxxxxxxxxxx
-```
+1. Sign in at `https://my-shop-edge.vercel.app/start`.
+2. `/shops` shows **Connect your TikTok Shop** while no shop is connected. Press
+   **Connect with TikTok Shop**.
+3. TikTok's own page opens on `services.tiktokshop.com`, the seller link from A23.1. Sign in
+   as the seller that owns the UK shop and approve.
+4. TikTok sends you back to the site, which shows the result.
 
-The page will fail to load, because nothing is running on localhost yet. **That does not
-matter.** The value in the address bar is what you need.
+The link from step 2 lasts ten minutes and works once. If you wait longer, start again.
 
-Copy that `code` value. It is single use and expires in **thirty minutes**, which is the
-figure on TikTok's own page. This runbook previously said "within minutes", which was
-imprecise in the direction that makes people rush.
+## What the service does with the approval
 
-## Step 5. Put the code into the environment, then start a new session
+This is read from `tiktok_callback` in `service/app/connections.py`.
 
-Add a third variable to the same box:
+1. It spends the state, which binds the approval to the account that pressed Connect.
+2. It exchanges the code at `auth.tiktok-shops.com` with `grant_type=authorized_code`, the
+   spelling TikTok's own page warns against correcting (A23.3).
+3. It refuses any account whose `user_type` is not 0, the seller type. Anything else means
+   the partner link was used, which returned an Indonesian sandbox shop on 23 September.
+4. It reads the authorised shops, takes the first, and marks it supported only when its
+   region is `GB` and its seller type is `LOCAL`.
+5. It encrypts the access token, the refresh token and the shop cipher, and writes the shop
+   and its connection in one transaction.
 
-```
-TIKTOK_AUTH_CODE=<the code from the address bar>
-```
+## What each result on the return page means
 
-Then start a **new session**. Environment variables are injected when a session begins, not
-during one, which is why an existing session cannot see them however long it waits.
+| The page says | Meaning |
+|---|---|
+| "is connected." | The shop and its encrypted tokens are stored |
+| "is connected, but MyShopEdge cannot read it." | The shop is not a UK local seller shop |
+| "That connection link has expired." | Ten minutes passed, or the link was already used. Start again |
+| "That TikTok account is not a Shop seller account." | The wrong TikTok account approved, or the partner link was used |
+| "No shop was shared with MyShopEdge." | TikTok returned no shop for that account |
+| "That shop is already connected to another MyShopEdge account." | The shop belongs to a different sign-in |
+| "Connecting a TikTok Shop is not switched on yet." | A value from step 3 is missing on Render |
+| "The connection was not completed." | TikTok sent you back without a code, usually because approval was declined |
 
-Say to the new session: *connect the shop*.
+Anything else shows TikTok's or the service's own words. Send a screenshot of it.
 
-## What happens next, without you
+## Questions the connection alone does not answer
 
-**None of this is built.** Checked 23 September: no file in this repository calls a TikTok
-host. The exchange described below is what the code will do once it exists, and A23 holds
-the facts needed to write it.
+These need the statement reading that is not built yet, so they stay open after a
+successful connection.
 
-The exchange is `GET https://auth.tiktok-shops.com/api/v2/token/get`, which is a different
-host from every other call, with `app_key`, `app_secret`, `auth_code` and
-`grant_type=authorized_code`. That spelling is deliberate and TikTok's page warns against
-correcting it. The access token lasts seven days, so a refresh has to be scheduled or the
-connection stops working a week later. Then
-`GET /authorization/202309/shops` with the `x-tts-access-token` header. That returns
-the shop's `id`, `name`, `region`, `seller_type` and, most importantly, its **cipher**.
+1. **How far back the statements go.** A16.2 promises twenty-four months. A19.3 records that
+   an empty result from a new or test shop settles nothing.
+2. **What a settlement export calls its columns.** A8 section 3.5.
+3. **Whether the invoice number is reachable.**
 
-The cipher is the value every later finance call needs. It is written to the `shops` row
-with the tokens, and nothing about it appears in the conversation.
+## Two things to know
 
-Then three questions that have been open for two days get answered by measurement rather
-than assumption:
+**The access token lasts seven days**, and nothing refreshes it yet. A shop connected today
+stops being readable a week later until the refresh in A23.4 is built. Connecting again
+issues a fresh token.
 
-1. **How far back do the statements go.** A16.2 promises twenty-four months on every plan
-   and A17.3 established that TikTok's specification states no limit either way. One call
-   to `/finance/202309/statements` with `statement_time_ge` set two years back was made on
-   23 September and returned nothing.
-
-   **That call settles nothing, and this step is corrected because of it.** The shop it ran
-   against had no trading history, so an empty result says nothing about what TikTok
-   retains. Only a shop that has been trading for more than two years can answer this. See
-   A19.3. Do not read an empty statement list from a new or test shop as an answer.
-2. **What a settlement export actually calls its columns.** A8 section 3.5 has carried this
-   as open since the terminology standard was written, because the labels are unpublished.
-3. **Whether the invoice number is reachable**, which decides whether the reconciliation
-   identifier works.
-
-## If something goes wrong
-
-**The authorisation page rejects the callback URL.** It must match what is registered on
-the app exactly, including the scheme and any trailing slash.
-
-**The code has expired.** Repeat step 4. They are short lived by design.
-
-**The new session still cannot see the variables.** Check you edited the environment the
-session is actually using. This account has had one environment, named Default, and a
-session started before the edit will not have them.
-
-**Any call returns 36004 or an authorisation error.** The token is bound to one shop and
-one app. Re-authorising from step 4 issues a fresh one.
-
-## What this runbook does not cover
-
-Refreshing the token when it expires. **This runbook previously said the service does it on
-its own. It does not, and no code anywhere does.** The access token lasts seven days, so a
-connection made today stops working a week later until the refresh call in A23.4 is built.
-
-Disconnecting, which is S29 and is not built either.
+**The single use code can reach request logs.** TikTok puts it in the address. Render's log
+records the service call with its query string, and Vercel's log may record the return
+page's address too. The code is spent within the same second and TikTok allows it thirty
+minutes at most, so a copy in a log cannot be used again.

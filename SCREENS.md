@@ -22,7 +22,7 @@ Five things were checked, and each is named against the line it produced:
 | Cut by a later ruling | **2** | S18 and S19, both cut by A15 |
 | **Live screens** | **36** | This is the number that matters |
 | Wireframed | 15 | S1 to S15 only |
-| Built in code | 13 | S6, S7, S9, S10, S11, S14, S17, S21, S22, S25, S26, S33, S34. Requests carry the signed in seller's token since 24 September. None has run against a real API yet, because nobody has signed in on the live site |
+| Built in code | 14 | S1, S6, S7, S9, S10, S11, S14, S17, S21, S22, S25, S26, S33, S34. Sign-in works on the live site since 24 September. No screen has shown a real shop's figures, because no shop is connected and nothing reads TikTok's data yet |
 
 **`CLAUDE.md` and `README_v0.2.md` both said "39 screens". That number is wrong twice.**
 No ruling defines an S39. The only place S39 appears in the whole repository is
@@ -44,7 +44,7 @@ by side, except the last, which carries S15 alone.
 
 | ID | Screen | Area | Ruled by | Sheet | Built |
 |---|---|---|---|---|---|
-| S1 | Connect TikTok Shop | Onboarding | Wireframes | 02 | |
+| S1 | Connect TikTok Shop | Onboarding | Wireframes | 02 | `shops`, while no shop is connected, with the return page at `connections/tiktok/callback`. The step dots and the Settings sentence are left out |
 | S2 | First sync | Onboarding | Wireframes | 02 | |
 | S3 | Product costs choice | Onboarding | Wireframes, amended A15.4 | 03 | |
 | S4 | Upload mapping | Onboarding | Wireframes | 03 | |

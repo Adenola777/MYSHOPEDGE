@@ -23,8 +23,8 @@
  * every page that needs a seller says that sign-in is not configured. Constructing the app
  * without a project id would throw at import and break the whole build.
  *
- * **Unverified until a real sign-in.** No token from this project has passed through this
- * code yet. The first seller to sign in on the live site is its test.
+ * **Verified on 24 September 2026.** The owner signed in on the live site, the token passed
+ * through this code, and the service accepted it and created the account.
  */
 
 import { StackClientApp } from "@stackframe/stack";
