@@ -183,6 +183,123 @@ def products_ranking():
 check("GET products returns null kept with a reason, and ranks unknowns last", products_ranking)
 
 
+# --- money, the calculator for the whole shop
+from app import money_view
+
+MONEY_LINE_COLS = ["category","tiktok_fee_type","amount_minor","entries","unsettled","currency"]
+MONEY_LINES = [
+    ("gross_sales", None, 86200, 24, 2, "GBP"),
+    ("seller_discount", None, -500, 2, 0, "GBP"),
+    ("platform_commission", None, -5142, 24, 0, "GBP"),
+    ("transaction_fee", None, -1283, 24, 0, "GBP"),
+    ("unmapped_fee", "SOME_NEW_FEE", -199, 1, 0, "GBP"),
+    ("platform_adjustment", "LOGISTICS_REIMBURSEMENT", -500, 1, 0, "GBP"),
+    ("refund", None, -27400, 7, 0, "GBP"),
+    ("return_shipping", None, -450, 1, 0, "GBP"),
+    ("stock_written_off", None, -5100, 1, 0, "GBP"),
+    ("reserve_withheld", "reserve_amount", -1000, 1, 0, "GBP"),
+    ("settlement", None, -45388, 3, 0, "GBP"),
+]
+PRODUCT_COLS = ["product_id","tiktok_product_id","title","units_sold","returns_units",
+                "gross_sales_minor","net_proceeds_minor","currency","return_loss_minor",
+                "cost_retained_minor","skus_without_cost","kept_minor"]
+DESK = (PRODUCT, "P-DESK", "Computer Desk 120cm", 3, 1, 36000, 21300, "GBP",
+        5100, 10200, 0, 6000)
+NOCOST = (UUID("55555555-5555-4555-8555-555555555555"), "P-X", "No cost yet",
+          2, 0, 4000, 3000, "GBP", 0, None, 1, None)
+
+
+def _money(products_rows):
+    money_view.tenant = with_conn(money_view, [
+        ("count(*) filter (where le.settlement_id is null", Result(MONEY_LINE_COLS, MONEY_LINES)),
+        ("with scoped as", Result(PRODUCT_COLS, products_rows)),
+    ])
+
+
+def money_chain():
+    _money([DESK])
+    r = client.get(f"/v1/shops/{SHOP}/money")
+    _assert(r.status_code == 200, f"status {r.status_code}: {r.text[:300]}")
+    b = r.json()
+    keys = [s["key"] for s in b["sections"]]
+    _assert(keys == ["revenue","tiktok_fees","refunds","your_costs","return_costs","payout"],
+            f"A8.5 order, then the payout section last: {keys}")
+    sec = {s["key"]: s for s in b["sections"]}
+    _assert(sec["revenue"]["subtotal"]["amount_minor"] == 85700)
+    _assert(sec["revenue"]["subtotal_label"] == "Net sales")
+    fees = sec["tiktok_fees"]
+    labels = [l["label"] for l in fees["lines"]]
+    # The adjustment sits inside TikTok fees under TikTok's own name, as ruled.
+    _assert("LOGISTICS_REIMBURSEMENT" in labels, f"adjustment inside fees: {labels}")
+    _assert("SOME_NEW_FEE" in labels, "an unrecognised fee keeps TikTok's name")
+    _assert(fees["subtotal"]["amount_minor"] == 78576)
+    _assert(sec["refunds"]["subtotal"]["amount_minor"] == 51176)
+    _assert(sec["refunds"]["subtotal_label"] == "Net proceeds")
+    # Cost of goods is computed from retained cost, never read from the ledger (A4.1).
+    cogs = sec["your_costs"]["lines"][0]
+    _assert(cogs["category"] == "cost_of_goods_sold" and cogs["amount"]["amount_minor"] == -10200)
+    _assert(sec["your_costs"]["subtotal"]["amount_minor"] == 40976)
+    _assert(sec["return_costs"]["subtotal"]["amount_minor"] == 35426)
+    _assert(sec["return_costs"]["subtotal_label"] == "Gross profit after returns")
+    t = b["totals"]
+    _assert(t["gross_sales"]["amount_minor"] == 86200)
+    _assert(t["net_sales"]["amount_minor"] == 85700)
+    _assert(t["net_proceeds"]["amount_minor"] == 51176)
+    _assert(t["cost_of_goods_sold"]["amount_minor"] == -10200)
+    _assert(t["gross_profit"]["amount_minor"] == 40976)
+    _assert(t["gross_profit_after_returns"]["amount_minor"] == 35426)
+    _assert(b["kept"]["amount_minor"] == 35426 and b["kept_reason"] is None)
+    # Reserve and payout keep the ledger's signs and are not part of the chain.
+    payout = sec["payout"]
+    _assert([l["label"] for l in payout["lines"]] == ["Reserve withheld", "Payout"])
+    _assert(payout["subtotal"]["amount_minor"] == -46388)
+    _assert(b["cost_coverage"] == 1.0)
+    _assert(b["unmapped_fee_count"] == 1)
+    _assert(b["period"]["basis"] == "sales" and b["granularity"] == "month")
+    # Two sales have no settlement yet, so the sales basis is an estimate.
+    _assert(b["confidence"] == "estimated", b["confidence"])
+check("GET money follows A8.5 and puts the adjustment inside TikTok fees", money_chain)
+
+
+def money_cash_is_confirmed():
+    _money([DESK])
+    r = client.get(f"/v1/shops/{SHOP}/money?basis=cash")
+    _assert(r.status_code == 200, f"status {r.status_code}: {r.text[:300]}")
+    _assert(r.json()["confidence"] == "confirmed", r.json()["confidence"])
+check("GET money on the cash basis is confirmed", money_cash_is_confirmed)
+
+
+def money_incomplete_costs():
+    _money([DESK, NOCOST])
+    r = client.get(f"/v1/shops/{SHOP}/money")
+    _assert(r.status_code == 200, f"status {r.status_code}: {r.text[:300]}")
+    b = r.json()
+    _assert(b["cost_coverage"] == 0.5, b["cost_coverage"])
+    _assert(b["confidence"] == "incomplete")
+    _assert(b["kept"] is None and b["kept_reason"] == "incomplete_costs")
+    t = b["totals"]
+    _assert(t["gross_profit"] is None and t["gross_profit_after_returns"] is None,
+            "gross profit is null, never a figure that leaves the goods out")
+    _assert("cost_of_goods_sold" not in t, "an unknown cost is omitted, not sent as zero")
+    _assert(t["net_proceeds"]["amount_minor"] == 51176, "net proceeds needs no cost")
+    sec = {s["key"]: s for s in b["sections"]}
+    _assert("your_costs" not in sec, "no cost line and no postage means no section")
+    _assert(sec["return_costs"]["subtotal"]["amount_minor"] == -5550)
+    _assert(sec["return_costs"]["subtotal_label"] == "Total return costs")
+check("GET money with a missing cost returns null gross profit and says why", money_incomplete_costs)
+
+
+def money_etag():
+    _money([DESK])
+    first = client.get(f"/v1/shops/{SHOP}/money")
+    tag = first.headers.get("etag")
+    _assert(tag, "an ETag is sent")
+    _money([DESK])
+    again = client.get(f"/v1/shops/{SHOP}/money", headers={"If-None-Match": tag})
+    _assert(again.status_code == 304, f"status {again.status_code}")
+check("GET money answers 304 when nothing has changed", money_etag)
+
+
 # --- the two connection handlers
 #
 # These matter more than the readers. The callback is the only unauthenticated endpoint in

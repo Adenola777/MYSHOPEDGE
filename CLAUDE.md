@@ -84,7 +84,7 @@ The specification is close to complete. The application is not. As of 23 Septemb
 |---|---|
 | Rulings, terminology, screens, data model, API contract | Done |
 | Schema | Through 0021 on all three branches, 22 migrations recorded on each. Production was brought up on 23 September and its schema fingerprint matches staging exactly. See A28.1 |
-| Backend | 10 of 53 contract paths. Health, billing, settlements, records, products, and the two TikTok connection endpoints |
+| Backend | 11 of 53 contract paths. Health, billing, settlements, records, products, money, and the two TikTok connection endpoints |
 | Authentication | ES256 verified against the provider's fetched JWKS, email read from `users_sync`, 9 tests passing. No handler has ever been invoked by a test |
 | Billing | Screens built. The three products and prices exist in the live Stripe account as of 23 September. Nothing is wired to them yet |
 | TikTok integration | Authorisation is built end to end. `app/connections.py` holds both endpoints, the signing algorithm, AES-256-GCM token storage and the state store in migration 0021. Fourteen smoke cases cover it. `_sign` has never made a live call, so the first real request is its test. See A23, A27 and A28 |
@@ -157,7 +157,13 @@ Each of these was found by running something, and each survived reading.
    Using 202309 would have dropped every reserve. A17 corrects it.
 4. **A GROUP BY fault in the settled orders query.** It ordered by `o.order_created_at`,
    which is not in the GROUP BY. Fixed to `order by min(o.order_created_at)`.
-5. **The test data covers two months, not twelve.** July and August 2026. Nothing yet tests
+5. **The development ledger has no cash basis.** Found 24 September by querying it.
+   `settlement_month` is empty on all 119 ledger entries, including the 88 that carry a
+   `settlement_id`, because `testdata/seed.sql` leaves the column out of its insert while
+   `testdata/rows.json` sets it on those 88. Every endpoint filters the cash basis on that
+   column, so on development the cash basis returns nothing. The ledger is append-only, so
+   correcting it is a decision rather than an edit.
+6. **The test data covers two months, not twelve.** July and August 2026. Nothing yet tests
    behaviour across many months or across the British Summer Time boundary.
 
 ## Commercial rulings worth knowing before touching billing
@@ -239,8 +245,9 @@ file inside this repository. `.gitignore` already excludes `.env` and its varian
 
 ## What is next in the code
 
-The reading endpoints, in this order: `listProducts`, `getProduct`, `getMoney`, `getToday`,
-then stock, movements and discrepancies. `settlements.py` and `records.py` are the pattern to
+The reading endpoints, in this order: `getToday`, then stock, movements and discrepancies.
+`listProducts`, `getProduct` and `getMoney` are served. `getMoney` applies four owner
+decisions of 24 September, recorded at the top of `service/app/money_view.py`. `settlements.py` and `records.py` are the pattern to
 follow. Both use keyset pagination rather than offset, both return RFC 9457 problem details,
 and both answer a request for another tenant's row with the same 404 as a row that does not
 exist.
