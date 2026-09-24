@@ -8,6 +8,8 @@
  * @typedef {import("./api-types").components["schemas"]} Schemas
  */
 
+import { authorizationHeader } from "./stack";
+
 const BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/v1";
 
 /**
@@ -28,6 +30,11 @@ export async function api(path, init = {}) {
   const { idempotencyKey, headers: given, timeoutMs = 15000, ...rest } = init;
   /** @type {Record<string, string>} */
   const headers = { "content-type": "application/json" };
+  // Every shop route requires a bearer token, and until 24 September no request carried
+  // one. The token is read here, on whichever side the request is made, so no screen can
+  // forget it. A caller that passes its own Authorization header keeps it.
+  const authorization = await authorizationHeader();
+  if (authorization) headers.Authorization = authorization;
   if (given) Object.assign(headers, given);
   if (idempotencyKey) headers["Idempotency-Key"] = idempotencyKey;
 

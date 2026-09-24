@@ -64,6 +64,7 @@ set, read off a real token once, and the service refuses to verify until they ar
 
 from __future__ import annotations
 
+import logging
 import os
 from dataclasses import dataclass
 from functools import lru_cache
@@ -75,6 +76,8 @@ from fastapi import Request
 
 from .db import create_account_id, lookup_identity, resolve_account_id
 from .problems import Problem
+
+_log = logging.getLogger("myshopedge.auth")
 
 # ES256 and nothing else. Listing more algorithms than the provider uses is not tolerance,
 # it is an invitation: every additional algorithm is another verification path an attacker
@@ -148,6 +151,31 @@ def _jwks_client() -> jwt.PyJWKClient:
     return jwt.PyJWKClient(url, cache_keys=True, lifespan=600)
 
 
+def _log_claims_to_configure(token: str, key) -> None:
+    """Logs `iss` and `aud` from a correctly signed token, so they can be configured.
+
+    Added 24 September 2026. Issuer and audience must come from a real token, and the only
+    way to see one was for someone to copy it out of a browser, which would put a live
+    credential in a conversation. Only the two claims are logged, never the token, the
+    subject or an address, and only after the signature has checked out against the
+    provider's JWKS, so a forged token cannot write a value into the log that someone might
+    then configure. It runs only while issuer and audience are unset.
+    """
+    try:
+        claims = jwt.decode(
+            token, key, algorithms=ALGORITHMS,
+            options={"verify_signature": True, "verify_aud": False, "verify_iss": False,
+                     "verify_exp": False},
+        )
+    except jwt.InvalidTokenError:
+        return
+    _log.warning(
+        "auth_unconfigured: a token signed by the provider carried iss=%r aud=%r. "
+        "Set NEON_AUTH_ISSUER and NEON_AUTH_AUDIENCE to these values.",
+        claims.get("iss"), claims.get("aud"),
+    )
+
+
 def verify(token: str) -> dict:
     """Verifies the token and returns its claims. Raises rather than returning None."""
     try:
@@ -168,6 +196,7 @@ def verify(token: str) -> dict:
     audience = os.environ.get("NEON_AUTH_AUDIENCE")
     issuer = os.environ.get("NEON_AUTH_ISSUER")
     if not audience or not issuer:
+        _log_claims_to_configure(token, signing_key.key)
         raise Problem(
             503, "auth_unconfigured",
             "Authentication is not configured. Set NEON_AUTH_AUDIENCE and "

@@ -22,7 +22,7 @@ Five things were checked, and each is named against the line it produced:
 | Cut by a later ruling | **2** | S18 and S19, both cut by A15 |
 | **Live screens** | **36** | This is the number that matters |
 | Wireframed | 15 | S1 to S15 only |
-| Built in code | 12 | S6, S7, S9, S10, S11, S14, S21, S22, S25, S26, S33, S34. None has run against a real API yet, because the front end sends no sign-in token |
+| Built in code | 13 | S6, S7, S9, S10, S11, S14, S17, S21, S22, S25, S26, S33, S34. Requests carry the signed in seller's token since 24 September. None has run against a real API yet, because nobody has signed in on the live site |
 
 **`CLAUDE.md` and `README_v0.2.md` both said "39 screens". That number is wrong twice.**
 No ruling defines an S39. The only place S39 appears in the whole repository is
@@ -60,7 +60,7 @@ by side, except the last, which carries S15 alone.
 | S14 | Discrepancy detail | Core | Wireframes, revised A18 | 08 | `shops/[shopId]/discrepancies`, as a list |
 | S15 | Settings and data | Settings | Wireframes | 09 | |
 | S16 | Product transactions | Products | A3 | | |
-| S17 | Start | Account | A3 as Sign up, renamed A14 | | |
+| S17 | Start | Account | A3 as Sign up, renamed A14 | | `start`, handing off to Stack's pages at `handler/[...stack]`. No privacy or terms link yet, because neither page exists |
 | ~~S18~~ | ~~Return~~ | | **Cut by A15.3** | | |
 | ~~S19~~ | ~~Sign in~~ | | **Cut by A15.2** | | |
 | S20 | Manual cost entry | Onboarding | A3 | | |

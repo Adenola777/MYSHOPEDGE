@@ -36,7 +36,8 @@ export function apiProblem(result, { what, notFound }) {
     return (
       <Problem
         title="Please sign in again."
-        note="Your session has ended. Signing in again brings you back here."
+        note="Your session has ended, or you have not signed in on this device yet."
+        signIn
       />
     );
   }
@@ -68,8 +69,8 @@ export function apiProblem(result, { what, notFound }) {
   return null;
 }
 
-/** @param {{ title: string, note: string, retry?: boolean }} props */
-export function Problem({ title, note, retry }) {
+/** @param {{ title: string, note: string, retry?: boolean, signIn?: boolean }} props */
+export function Problem({ title, note, retry, signIn }) {
   return (
     <section className="state">
       <h1>{title}</h1>
@@ -78,6 +79,13 @@ export function Problem({ title, note, retry }) {
         <p>
           <a className="btn btn--quiet" href="">
             Try again
+          </a>
+        </p>
+      )}
+      {signIn && (
+        <p>
+          <a className="btn btn--primary" href="/start">
+            Sign in
           </a>
         </p>
       )}

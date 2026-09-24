@@ -141,6 +141,31 @@ case("an unverified email address is refused",
      lambda: require_account(Req(token(email="x@y.test", emailVerified=False))),
      "email_unverified")
 
+# While issuer and audience are unset, every token is refused, and a correctly signed one
+# leaves its iss and aud in the log so they can be configured. The token itself must never
+# reach the log, and a forged token must leave nothing there.
+import logging
+class Capture(logging.Handler):
+    def __init__(self): super().__init__(); self.lines = []
+    def emit(self, record): self.lines.append(record.getMessage())
+cap = Capture(); logging.getLogger("myshopedge.auth").addHandler(cap)
+saved = os.environ.pop("NEON_AUTH_AUDIENCE"), os.environ.pop("NEON_AUTH_ISSUER")
+real = token()
+case("with issuer and audience unset, a valid token is refused", lambda: verify(real),
+     "auth_unconfigured")
+case("with issuer and audience unset, a forged token is refused", lambda: verify(forged),
+     "auth_unconfigured")
+os.environ["NEON_AUTH_AUDIENCE"], os.environ["NEON_AUTH_ISSUER"] = saved
+logged = "\n".join(cap.lines)
+for name, ok in [
+    ("the signed token's iss and aud are logged", ISS in logged and AUD in logged),
+    ("only one line is logged, for the signed token and not the forged one", len(cap.lines) == 1),
+    ("the token itself is not logged", real not in logged and real.split(".")[1] not in logged),
+    ("the subject is not logged", "user_synthetic_uk_shop" not in logged),
+]:
+    print(f"  {'PASS' if ok else 'FAIL'}  {name}")
+    if not ok: failures.append(name)
+
 srv.shutdown()
 print(f"\n{'all cases passed' if not failures else 'FAILURES: ' + ', '.join(failures)}")
 sys.exit(1 if failures else 0)
