@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import os
 from contextlib import contextmanager
+from datetime import datetime
 from typing import Iterator
 from uuid import UUID
 
@@ -121,3 +122,74 @@ def create_account_id(subject: str, email: str, display_name: str | None) -> UUI
     if row is None or row[0] is None:
         raise RuntimeError("create_account returned no id.")
     return row[0]
+
+
+# Billing writes go through the two SECURITY DEFINER functions from migration 0018 and
+# through nothing else. mse_app holds EXECUTE on both and holds no INSERT, UPDATE or DELETE
+# on the subscriptions table, so a compromised request cannot move itself onto a larger
+# plan or clear its own past_due. Both run unscoped, because a Stripe customer id is not an
+# account id and the webhook carries no account context.
+
+def create_subscription_row(account_id: UUID | str, plan_slug: str, stripe_customer_id: str) -> UUID:
+    """Records the subscription at checkout, once Stripe has issued a customer id.
+
+    Idempotent on account_id: a seller who abandons the card step and comes back changes
+    plan without stranding a row. The status is 'incomplete' until a Stripe event confirms
+    the trial has started.
+    """
+    with unscoped() as conn:
+        row = conn.execute(
+            "select create_subscription(%s, %s, %s)",
+            (str(account_id), plan_slug, stripe_customer_id),
+        ).fetchone()
+    if row is None or row[0] is None:
+        raise RuntimeError("create_subscription returned no id.")
+    return row[0]
+
+
+def apply_subscription_event(
+    stripe_customer_id: str,
+    stripe_subscription_id: str | None,
+    plan_slug: str | None,
+    status: str,
+    trial_end: datetime | None,
+    period_start: datetime | None,
+    period_end: datetime | None,
+    cancel_at_period_end: bool | None,
+) -> UUID | None:
+    """Mirrors a Stripe subscription event onto the row for its customer.
+
+    Raises when no row carries the customer id. The caller decides whether that is an
+    event from another environment's Stripe account, which is ignored, or a real fault.
+    Null arguments are coalesced by the function so a partial event keeps what it does not
+    carry.
+    """
+    with unscoped() as conn:
+        row = conn.execute(
+            "select apply_subscription_event(%s, %s, %s, %s, %s, %s, %s, %s)",
+            (
+                stripe_customer_id,
+                stripe_subscription_id,
+                plan_slug,
+                status,
+                trial_end,
+                period_start,
+                period_end,
+                cancel_at_period_end,
+            ),
+        ).fetchone()
+    return row[0] if row and row[0] else None
+
+
+def get_subscription_row(account_id: UUID | str) -> dict | None:
+    """The caller's own subscription row, read under row level security, or None."""
+    with tenant(account_id) as conn:
+        cur = conn.execute(
+            "select plan_slug, status, stripe_customer_id, trial_end, "
+            "current_period_end, cancel_at_period_end "
+            "from subscriptions where account_id = %s",
+            (str(account_id),),
+        )
+        cols = [d.name for d in cur.description]
+        row = cur.fetchone()
+    return dict(zip(cols, row, strict=True)) if row else None
