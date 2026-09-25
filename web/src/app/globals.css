@@ -327,6 +327,9 @@ a:hover { color: var(--orange-700); }
 .btn--quiet { background: var(--white); color: var(--orange-600); border-color: var(--orange-600); }
 .btn--quiet:hover:not(:disabled) { background: var(--orange-50); color: var(--orange-700); }
 .btn--block { display: flex; width: 100%; }
+/* A row action, such as marking a notice read. It keeps a 44px target for a thumb. */
+.btn--small { padding: var(--space-2) var(--space-3); min-height: 44px; font-size: 0.875rem; }
+.notice__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-2); }
 .btn:disabled { opacity: 0.55; cursor: not-allowed; }
 
 label { display: block; font-weight: 600; font-size: 0.875rem; color: var(--ink-500); margin-bottom: var(--space-1); }
@@ -461,6 +464,13 @@ tbody tr:last-child td { border-bottom: 0; }
 .rows li:last-child { border-bottom: 0; }
 .rows__total { font-weight: 700; }
 .rows__sub { color: var(--ink-500); font-size: 0.8125rem; }
+/* A small heading inside a list, such as Products' money that belongs to no one product. */
+.rows li.rows__group {
+  padding-top: var(--space-4);
+  color: var(--ink-500);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
 
 /* Chips. Payment statuses keep A7.10's three colours. Everything else is navy or neutral,
    and the word on the chip carries the meaning. */

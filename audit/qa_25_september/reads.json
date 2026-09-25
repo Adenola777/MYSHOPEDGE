@@ -1,0 +1,902 @@
+[
+ {
+  "ok": true,
+  "name": "money sales: affiliate_commission equals ledger",
+  "got": -638,
+  "want": -638
+ },
+ {
+  "ok": true,
+  "name": "money sales: fbt_shipping_fee equals ledger",
+  "got": -250,
+  "want": -250
+ },
+ {
+  "ok": true,
+  "name": "money sales: gross_sales equals ledger",
+  "got": 86200,
+  "want": 86200
+ },
+ {
+  "ok": true,
+  "name": "money sales: platform_adjustment equals ledger",
+  "got": -500,
+  "want": -500
+ },
+ {
+  "ok": true,
+  "name": "money sales: platform_commission equals ledger",
+  "got": -5142,
+  "want": -5142
+ },
+ {
+  "ok": true,
+  "name": "money sales: refund equals ledger",
+  "got": -27400,
+  "want": -27400
+ },
+ {
+  "ok": true,
+  "name": "money sales: reserve_withheld equals ledger",
+  "got": -1000,
+  "want": -1000
+ },
+ {
+  "ok": true,
+  "name": "money sales: return_handling_fee equals ledger",
+  "got": -325,
+  "want": -325
+ },
+ {
+  "ok": true,
+  "name": "money sales: return_shipping equals ledger",
+  "got": -450,
+  "want": -450
+ },
+ {
+  "ok": true,
+  "name": "money sales: seller_discount equals ledger",
+  "got": -500,
+  "want": -500
+ },
+ {
+  "ok": true,
+  "name": "money sales: settlement equals ledger",
+  "got": -45388,
+  "want": -45388
+ },
+ {
+  "ok": true,
+  "name": "money sales: shipping_fee equals ledger",
+  "got": -300,
+  "want": -300
+ },
+ {
+  "ok": true,
+  "name": "money sales: smart_promotions_fee equals ledger",
+  "got": -125,
+  "want": -125
+ },
+ {
+  "ok": true,
+  "name": "money sales: stock_written_off equals ledger",
+  "got": -5100,
+  "want": -5100
+ },
+ {
+  "ok": true,
+  "name": "money sales: transaction_fee equals ledger",
+  "got": -1283,
+  "want": -1283
+ },
+ {
+  "ok": true,
+  "name": "money sales: unmapped_fee equals ledger",
+  "got": -199,
+  "want": -199
+ },
+ {
+  "ok": true,
+  "name": "money sales: cost of goods is units less returns at cost",
+  "got": -19672,
+  "want": -19672
+ },
+ {
+  "ok": true,
+  "name": "money: net sales = gross + discounts",
+  "got": 85700,
+  "want": 85700
+ },
+ {
+  "ok": true,
+  "name": "money: net proceeds from ledger",
+  "got": 49538,
+  "want": 49538
+ },
+ {
+  "ok": true,
+  "name": "money: gross profit = net proceeds + cogs",
+  "got": 29866,
+  "want": 29866
+ },
+ {
+  "ok": true,
+  "name": "money: after returns = gross profit - return postage - write off",
+  "got": 24316,
+  "want": 24316
+ },
+ {
+  "ok": true,
+  "name": "money: kept equals after returns",
+  "got": 24316,
+  "want": 24316
+ },
+ {
+  "ok": true,
+  "name": "money: payout 453.88",
+  "got": -45388,
+  "want": -45388
+ },
+ {
+  "ok": true,
+  "name": "money cash: affiliate_commission equals settled ledger",
+  "got": -638,
+  "want": -638
+ },
+ {
+  "ok": true,
+  "name": "money cash: fbt_shipping_fee equals settled ledger",
+  "got": -250,
+  "want": -250
+ },
+ {
+  "ok": true,
+  "name": "money cash: gross_sales equals settled ledger",
+  "got": 82200,
+  "want": 82200
+ },
+ {
+  "ok": true,
+  "name": "money cash: platform_adjustment equals settled ledger",
+  "got": -500,
+  "want": -500
+ },
+ {
+  "ok": true,
+  "name": "money cash: platform_commission equals settled ledger",
+  "got": -4902,
+  "want": -4902
+ },
+ {
+  "ok": true,
+  "name": "money cash: refund equals settled ledger",
+  "got": -27400,
+  "want": -27400
+ },
+ {
+  "ok": true,
+  "name": "money cash: reserve_withheld equals settled ledger",
+  "got": -1000,
+  "want": -1000
+ },
+ {
+  "ok": true,
+  "name": "money cash: return_handling_fee equals settled ledger",
+  "got": -325,
+  "want": -325
+ },
+ {
+  "ok": true,
+  "name": "money cash: return_shipping equals settled ledger",
+  "got": -450,
+  "want": -450
+ },
+ {
+  "ok": true,
+  "name": "money cash: seller_discount equals settled ledger",
+  "got": -500,
+  "want": -500
+ },
+ {
+  "ok": true,
+  "name": "money cash: settlement equals settled ledger",
+  "got": -45388,
+  "want": -45388
+ },
+ {
+  "ok": true,
+  "name": "money cash: shipping_fee equals settled ledger",
+  "got": -300,
+  "want": -300
+ },
+ {
+  "ok": true,
+  "name": "money cash: smart_promotions_fee equals settled ledger",
+  "got": -125,
+  "want": -125
+ },
+ {
+  "ok": true,
+  "name": "money cash: transaction_fee equals settled ledger",
+  "got": -1223,
+  "want": -1223
+ },
+ {
+  "ok": true,
+  "name": "money cash: unmapped_fee equals settled ledger",
+  "got": -199,
+  "want": -199
+ },
+ {
+  "ok": true,
+  "name": "money cash: confidence confirmed",
+  "got": "confirmed",
+  "want": "confirmed"
+ },
+ {
+  "ok": true,
+  "name": "today: net proceeds all time",
+  "got": 49538,
+  "want": 49538
+ },
+ {
+  "ok": true,
+  "name": "today: paid out 453.88",
+  "got": 45388,
+  "want": 45388
+ },
+ {
+  "ok": true,
+  "name": "today: awaiting = proceeds - paid - postage",
+  "got": 3700,
+  "want": 3700
+ },
+ {
+  "ok": true,
+  "name": "today: awaiting breakdown sums to awaiting",
+  "got": 3700,
+  "want": 3700
+ },
+ {
+  "ok": true,
+  "name": "products: Double Use Curly Hair Brush units",
+  "got": 11,
+  "want": 11
+ },
+ {
+  "ok": true,
+  "name": "products: Double Use Curly Hair Brush gross sales",
+  "got": 22000,
+  "want": 22000
+ },
+ {
+  "ok": true,
+  "name": "products: Double Use Curly Hair Brush returned units",
+  "got": 3,
+  "want": 3
+ },
+ {
+  "ok": true,
+  "name": "product detail: Double Use Curly Hair Brush matches the list row",
+  "got": {
+   "product_id": "1e872806-de90-a026-171b-f962d1460b0c",
+   "tiktok_product_id": "1729000000000000001",
+   "title": "Double Use Curly Hair Brush",
+   "units": 11,
+   "gross_sales": {
+    "amount_minor": 22000,
+    "currency": "GBP"
+   },
+   "net_proceeds": {
+    "amount_minor": 14350,
+    "currency": "GBP"
+   },
+   "kept": {
+    "amount_minor": 11758,
+    "currency": "GBP"
+   },
+   "kept_reason": null,
+   "returns_units": 3,
+   "cost_known": true
+  },
+  "want": {
+   "product_id": "1e872806-de90-a026-171b-f962d1460b0c",
+   "tiktok_product_id": "1729000000000000001",
+   "title": "Double Use Curly Hair Brush",
+   "units": 11,
+   "gross_sales": {
+    "amount_minor": 22000,
+    "currency": "GBP"
+   },
+   "net_proceeds": {
+    "amount_minor": 14350,
+    "currency": "GBP"
+   },
+   "kept": {
+    "amount_minor": 11758,
+    "currency": "GBP"
+   },
+   "kept_reason": null,
+   "returns_units": 3,
+   "cost_known": true
+  }
+ },
+ {
+  "ok": true,
+  "name": "product detail: Double Use Curly Hair Brush per-unit gross times units",
+  "got": 22000,
+  "want": 22000
+ },
+ {
+  "ok": true,
+  "name": "products: Computer Desk 120cm units",
+  "got": 3,
+  "want": 3
+ },
+ {
+  "ok": true,
+  "name": "products: Computer Desk 120cm gross sales",
+  "got": 36000,
+  "want": 36000
+ },
+ {
+  "ok": true,
+  "name": "products: Computer Desk 120cm returned units",
+  "got": 1,
+  "want": 1
+ },
+ {
+  "ok": true,
+  "name": "product detail: Computer Desk 120cm matches the list row",
+  "got": {
+   "product_id": "e45de012-d1fc-fcd4-70b9-ebaab6d1724f",
+   "tiktok_product_id": "1729000000000000002",
+   "title": "Computer Desk 120cm",
+   "units": 3,
+   "gross_sales": {
+    "amount_minor": 36000,
+    "currency": "GBP"
+   },
+   "net_proceeds": {
+    "amount_minor": 21300,
+    "currency": "GBP"
+   },
+   "kept": {
+    "amount_minor": 6000,
+    "currency": "GBP"
+   },
+   "kept_reason": null,
+   "returns_units": 1,
+   "cost_known": true
+  },
+  "want": {
+   "product_id": "e45de012-d1fc-fcd4-70b9-ebaab6d1724f",
+   "tiktok_product_id": "1729000000000000002",
+   "title": "Computer Desk 120cm",
+   "units": 3,
+   "gross_sales": {
+    "amount_minor": 36000,
+    "currency": "GBP"
+   },
+   "net_proceeds": {
+    "amount_minor": 21300,
+    "currency": "GBP"
+   },
+   "kept": {
+    "amount_minor": 6000,
+    "currency": "GBP"
+   },
+   "kept_reason": null,
+   "returns_units": 1,
+   "cost_known": true
+  }
+ },
+ {
+  "ok": true,
+  "name": "product detail: Computer Desk 120cm per-unit gross times units",
+  "got": 36000,
+  "want": 36000
+ },
+ {
+  "ok": true,
+  "name": "products: Vacuum Food Flask 500ml units",
+  "got": 3,
+  "want": 3
+ },
+ {
+  "ok": true,
+  "name": "products: Vacuum Food Flask 500ml gross sales",
+  "got": 5400,
+  "want": 5400
+ },
+ {
+  "ok": true,
+  "name": "products: Vacuum Food Flask 500ml returned units",
+  "got": 0,
+  "want": 0
+ },
+ {
+  "ok": true,
+  "name": "product detail: Vacuum Food Flask 500ml matches the list row",
+  "got": {
+   "product_id": "1288378c-c886-bfa1-9988-8e597cac5fde",
+   "tiktok_product_id": "1729000000000000003",
+   "title": "Vacuum Food Flask 500ml",
+   "units": 3,
+   "gross_sales": {
+    "amount_minor": 5400,
+    "currency": "GBP"
+   },
+   "net_proceeds": {
+    "amount_minor": 4334,
+    "currency": "GBP"
+   },
+   "kept": {
+    "amount_minor": 2834,
+    "currency": "GBP"
+   },
+   "kept_reason": null,
+   "returns_units": 0,
+   "cost_known": true
+  },
+  "want": {
+   "product_id": "1288378c-c886-bfa1-9988-8e597cac5fde",
+   "tiktok_product_id": "1729000000000000003",
+   "title": "Vacuum Food Flask 500ml",
+   "units": 3,
+   "gross_sales": {
+    "amount_minor": 5400,
+    "currency": "GBP"
+   },
+   "net_proceeds": {
+    "amount_minor": 4334,
+    "currency": "GBP"
+   },
+   "kept": {
+    "amount_minor": 2834,
+    "currency": "GBP"
+   },
+   "kept_reason": null,
+   "returns_units": 0,
+   "cost_known": true
+  }
+ },
+ {
+  "ok": true,
+  "name": "product detail: Vacuum Food Flask 500ml per-unit gross times units",
+  "got": 5400,
+  "want": 5400
+ },
+ {
+  "ok": true,
+  "name": "products: Travel Duffel Bag units",
+  "got": 4,
+  "want": 4
+ },
+ {
+  "ok": true,
+  "name": "products: Travel Duffel Bag gross sales",
+  "got": 14000,
+  "want": 14000
+ },
+ {
+  "ok": true,
+  "name": "products: Travel Duffel Bag returned units",
+  "got": 2,
+  "want": 2
+ },
+ {
+  "ok": true,
+  "name": "product detail: Travel Duffel Bag matches the list row",
+  "got": {
+   "product_id": "8c60ff46-f3fe-1477-8ab6-ea3cf1d79347",
+   "tiktok_product_id": "1729000000000000004",
+   "title": "Travel Duffel Bag",
+   "units": 4,
+   "gross_sales": {
+    "amount_minor": 14000,
+    "currency": "GBP"
+   },
+   "net_proceeds": {
+    "amount_minor": 5152,
+    "currency": "GBP"
+   },
+   "kept": {
+    "amount_minor": 1802,
+    "currency": "GBP"
+   },
+   "kept_reason": null,
+   "returns_units": 2,
+   "cost_known": true
+  },
+  "want": {
+   "product_id": "8c60ff46-f3fe-1477-8ab6-ea3cf1d79347",
+   "tiktok_product_id": "1729000000000000004",
+   "title": "Travel Duffel Bag",
+   "units": 4,
+   "gross_sales": {
+    "amount_minor": 14000,
+    "currency": "GBP"
+   },
+   "net_proceeds": {
+    "amount_minor": 5152,
+    "currency": "GBP"
+   },
+   "kept": {
+    "amount_minor": 1802,
+    "currency": "GBP"
+   },
+   "kept_reason": null,
+   "returns_units": 2,
+   "cost_known": true
+  }
+ },
+ {
+  "ok": true,
+  "name": "product detail: Travel Duffel Bag per-unit gross times units",
+  "got": 14000,
+  "want": 14000
+ },
+ {
+  "ok": true,
+  "name": "products: Seasonal Gift Box units",
+  "got": 1,
+  "want": 1
+ },
+ {
+  "ok": true,
+  "name": "products: Seasonal Gift Box gross sales",
+  "got": 4000,
+  "want": 4000
+ },
+ {
+  "ok": true,
+  "name": "products: Seasonal Gift Box returned units",
+  "got": 0,
+  "want": 0
+ },
+ {
+  "ok": true,
+  "name": "product detail: Seasonal Gift Box matches the list row",
+  "got": {
+   "product_id": "0c6e769b-f944-9402-13ab-07f869005425",
+   "tiktok_product_id": "1729000000000000006",
+   "title": "Seasonal Gift Box",
+   "units": 1,
+   "gross_sales": {
+    "amount_minor": 4000,
+    "currency": "GBP"
+   },
+   "net_proceeds": {
+    "amount_minor": 3150,
+    "currency": "GBP"
+   },
+   "kept": {
+    "amount_minor": 1450,
+    "currency": "GBP"
+   },
+   "kept_reason": null,
+   "returns_units": 0,
+   "cost_known": true
+  },
+  "want": {
+   "product_id": "0c6e769b-f944-9402-13ab-07f869005425",
+   "tiktok_product_id": "1729000000000000006",
+   "title": "Seasonal Gift Box",
+   "units": 1,
+   "gross_sales": {
+    "amount_minor": 4000,
+    "currency": "GBP"
+   },
+   "net_proceeds": {
+    "amount_minor": 3150,
+    "currency": "GBP"
+   },
+   "kept": {
+    "amount_minor": 1450,
+    "currency": "GBP"
+   },
+   "kept_reason": null,
+   "returns_units": 0,
+   "cost_known": true
+  }
+ },
+ {
+  "ok": true,
+  "name": "product detail: Seasonal Gift Box per-unit gross times units",
+  "got": 4000,
+  "want": 4000
+ },
+ {
+  "ok": true,
+  "name": "products: LED Desk Lamp units",
+  "got": 2,
+  "want": 2
+ },
+ {
+  "ok": true,
+  "name": "products: LED Desk Lamp gross sales",
+  "got": 4800,
+  "want": 4800
+ },
+ {
+  "ok": true,
+  "name": "products: LED Desk Lamp returned units",
+  "got": 1,
+  "want": 1
+ },
+ {
+  "ok": true,
+  "name": "product detail: LED Desk Lamp matches the list row",
+  "got": {
+   "product_id": "5d751106-5b39-8ffb-b9d2-bbc4d39d189e",
+   "tiktok_product_id": "1729000000000000005",
+   "title": "LED Desk Lamp",
+   "units": 2,
+   "gross_sales": {
+    "amount_minor": 4800,
+    "currency": "GBP"
+   },
+   "net_proceeds": {
+    "amount_minor": 1752,
+    "currency": "GBP"
+   },
+   "kept": {
+    "amount_minor": 972,
+    "currency": "GBP"
+   },
+   "kept_reason": null,
+   "returns_units": 1,
+   "cost_known": true
+  },
+  "want": {
+   "product_id": "5d751106-5b39-8ffb-b9d2-bbc4d39d189e",
+   "tiktok_product_id": "1729000000000000005",
+   "title": "LED Desk Lamp",
+   "units": 2,
+   "gross_sales": {
+    "amount_minor": 4800,
+    "currency": "GBP"
+   },
+   "net_proceeds": {
+    "amount_minor": 1752,
+    "currency": "GBP"
+   },
+   "kept": {
+    "amount_minor": 972,
+    "currency": "GBP"
+   },
+   "kept_reason": null,
+   "returns_units": 1,
+   "cost_known": true
+  }
+ },
+ {
+  "ok": true,
+  "name": "product detail: LED Desk Lamp per-unit gross times units",
+  "got": 4800,
+  "want": 4800
+ },
+ {
+  "ok": true,
+  "name": "products: total equals sum of rows",
+  "got": 24816,
+  "want": 24816
+ },
+ {
+  "ok": true,
+  "name": "products: shop total equals Money kept",
+  "got": 24316,
+  "want": 24316
+ },
+ {
+  "ok": true,
+  "name": "products: unattributed equals the ledger's entries with no variant",
+  "got": -500,
+  "want": -500
+ },
+ {
+  "ok": true,
+  "name": "products: shop total = total + unattributed",
+  "got": 24316,
+  "want": 24316
+ },
+ {
+  "ok": true,
+  "name": "products by net_proceeds: shop total equals Money net_proceeds",
+  "got": 49538,
+  "want": 49538
+ },
+ {
+  "ok": true,
+  "name": "products by gross_sales: shop total equals Money gross_sales",
+  "got": 86200,
+  "want": 86200
+ },
+ {
+  "ok": true,
+  "name": "products cash: shop total equals Money cash kept",
+  "got": 26364,
+  "want": 26364
+ },
+ {
+  "ok": true,
+  "name": "movements: names the variant",
+  "got": [
+   "Double Use Curly Hair Brush",
+   "HAIR-BLUE"
+  ],
+  "want": [
+   "Double Use Curly Hair Brush",
+   "HAIR-BLUE"
+  ]
+ },
+ {
+  "ok": true,
+  "name": "settlements: count",
+  "got": 3,
+  "want": 3
+ },
+ {
+  "ok": true,
+  "name": "settlement 202608A-0003: statement amount",
+  "got": -513,
+  "want": -513
+ },
+ {
+  "ok": true,
+  "name": "settlement 202608A-0003: detail opens",
+  "got": true,
+  "want": true
+ },
+ {
+  "ok": true,
+  "name": "settlement 202608A-0002: statement amount",
+  "got": 14750,
+  "want": 14750
+ },
+ {
+  "ok": true,
+  "name": "settlement 202608A-0002: detail opens",
+  "got": true,
+  "want": true
+ },
+ {
+  "ok": true,
+  "name": "settlement 202608A-0001: statement amount",
+  "got": 31151,
+  "want": 31151
+ },
+ {
+  "ok": true,
+  "name": "settlement 202608A-0001: detail opens",
+  "got": true,
+  "want": true
+ },
+ {
+  "ok": true,
+  "name": "records: every entry once through the cursor",
+  "got": [
+   119,
+   119
+  ],
+  "want": [
+   119,
+   119
+  ]
+ },
+ {
+  "ok": true,
+  "name": "records: sum equals ledger",
+  "got": -31824,
+  "want": -31824
+ },
+ {
+  "ok": true,
+  "name": "returns: count",
+  "got": 7,
+  "want": 7
+ },
+ {
+  "ok": true,
+  "name": "return metrics: units",
+  "got": 7,
+  "want": 7
+ },
+ {
+  "ok": true,
+  "name": "return metrics: write off",
+  "got": 5100,
+  "want": 5100
+ },
+ {
+  "ok": true,
+  "name": "return metrics: rate = returned / sold",
+  "got": 0.291667,
+  "want": 0.291667
+ },
+ {
+  "ok": true,
+  "name": "stock: one row per sku",
+  "got": 10,
+  "want": 10
+ },
+ {
+  "ok": true,
+  "name": "stock: DESK-BLK tiktok stock",
+  "got": 19,
+  "want": 19
+ },
+ {
+  "ok": true,
+  "name": "stock: HAIR-RED tiktok stock",
+  "got": 23,
+  "want": 23
+ },
+ {
+  "ok": true,
+  "name": "stock: 3741a1be tiktok stock",
+  "got": 17,
+  "want": 17
+ },
+ {
+  "ok": true,
+  "name": "stock: BAG-BLK tiktok stock",
+  "got": 13,
+  "want": 13
+ },
+ {
+  "ok": true,
+  "name": "stock: LAMP-WHT tiktok stock",
+  "got": 9,
+  "want": 9
+ },
+ {
+  "ok": true,
+  "name": "stock: BAG-BRN tiktok stock",
+  "got": 11,
+  "want": 11
+ },
+ {
+  "ok": true,
+  "name": "stock: FLASK-DEF tiktok stock",
+  "got": 15,
+  "want": 15
+ },
+ {
+  "ok": true,
+  "name": "stock: HAIR-BLUE tiktok stock",
+  "got": 25,
+  "want": 25
+ },
+ {
+  "ok": true,
+  "name": "stock: GIFT-DEF tiktok stock",
+  "got": 0,
+  "want": 0
+ },
+ {
+  "ok": true,
+  "name": "stock: f1be3e79 tiktok stock",
+  "got": 21,
+  "want": 21
+ },
+ {
+  "ok": true,
+  "name": "discrepancies: open count",
+  "got": 1,
+  "want": 1
+ },
+ {
+  "ok": true,
+  "name": "needs you: carries open discrepancies",
+  "got": true,
+  "want": true
+ },
+ {
+  "ok": true,
+  "name": "cost coverage: every unit costed",
+  "got": 1.0,
+  "want": 1.0
+ }
+]

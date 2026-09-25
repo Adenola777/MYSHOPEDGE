@@ -56,7 +56,7 @@ by side, except the last, which carries S15 alone.
 | S10 | Product detail | Core | Wireframes, revised A18 | 06 | `shops/[shopId]/products/[productId]` |
 | S11 | Money | Core | Wireframes, revised A18 | 07 | `shops/[shopId]/money` |
 | S12 | Tax | Core | Wireframes | 07 | |
-| S13 | Notifications | Core | Wireframes | 08 | `shops/[shopId]/notifications`, reached from the bell. Rows are not links yet, because a notification carries no address |
+| S13 | Notifications | Core | Wireframes | 08 | `shops/[shopId]/notifications`, reached from the bell. Each open notice can be marked read or done, and the bell's count falls with it (25 September). Rows are not links yet, because a notification carries no address |
 | S14 | Discrepancy detail | Core | Wireframes, revised A18 | 08 | `shops/[shopId]/discrepancies`, as a list |
 | S15 | Settings and data | Settings | Wireframes | 09 | |
 | S16 | Product transactions | Products | A3 | | |
@@ -69,7 +69,7 @@ by side, except the last, which carries S15 alone.
 | S23 | Export | Money | A3, revised A18 | | |
 | S24 | Other-channel sales | Money | A3 | | |
 | S25 | Stock adjustment | Stock | A3, revised A18 | | At the top of `shops/[shopId]/stock/[skuId]` |
-| S26 | Stock movement history | Stock | A3, revised A18 | | `shops/[shopId]/stock/[skuId]` |
+| S26 | Stock movement history | Stock | A3, revised A18 | | `shops/[shopId]/stock/[skuId]`. The heading names the product, variant and seller SKU (25 September) |
 | S27 | Alert settings | Settings | A3 | | |
 | S28 | Connection problem | Onboarding | A3 | | |
 | S29 | Disconnect | Settings | A3 | | |

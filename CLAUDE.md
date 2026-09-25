@@ -194,6 +194,13 @@ Each of these was found by running something, and each survived reading.
    the change to `Decimal`.
 8. **The test data covers two months, not twelve.** July and August 2026. Nothing yet tests
    behaviour across many months or across the British Summer Time boundary.
+9. **The first end to end QA, 24 and 25 September.** The real service ran against a local
+   copy of development whose schema fingerprint, ledger and ownership matched Neon exactly,
+   and the production build of the front end ran against it. 281 of 283 checks passed.
+   The owner ruled on both failures and on the notification gap the same day, and after
+   those changes all 305 pass. The four tooling faults remain, among them that
+   `migrate.py` cannot build a database from empty and that `testdata/seed.sql` does not
+   load. `audit/QA_end_to_end_25_september.md` has the detail.
 
 ## Commercial rulings worth knowing before touching billing
 

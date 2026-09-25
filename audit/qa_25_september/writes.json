@@ -1,0 +1,730 @@
+[
+ {
+  "ok": true,
+  "name": "billing: subscription refuses cleanly without Stripe",
+  "got": "billing_unconfigured",
+  "want": "billing_unconfigured"
+ },
+ {
+  "ok": true,
+  "name": "stripe webhook: unsigned is 400",
+  "got": 400,
+  "want": 400
+ },
+ {
+  "ok": true,
+  "name": "tiktok callback: forged state is 400 state_invalid",
+  "got": "state_invalid",
+  "want": "state_invalid"
+ },
+ {
+  "ok": true,
+  "name": "tiktok authorize: needs sign in",
+  "got": 401,
+  "want": 401
+ },
+ {
+  "ok": true,
+  "name": "tiktok authorize: foreign return_to refused",
+  "got": true,
+  "want": true
+ },
+ {
+  "ok": true,
+  "name": "auth: no token is 401",
+  "got": 401,
+  "want": 401
+ },
+ {
+  "ok": true,
+  "name": "auth: tampered signature is 401",
+  "got": 401,
+  "want": 401
+ },
+ {
+  "ok": true,
+  "name": "auth: wrong audience is 401",
+  "got": 401,
+  "want": 401
+ },
+ {
+  "ok": true,
+  "name": "auth: wrong issuer is 401",
+  "got": 401,
+  "want": 401
+ },
+ {
+  "ok": true,
+  "name": "auth: expired is 401 token_expired",
+  "got": "token_expired",
+  "want": "token_expired"
+ },
+ {
+  "ok": true,
+  "name": "auth: alg none is 401",
+  "got": 401,
+  "want": 401
+ },
+ {
+  "ok": true,
+  "name": "auth: emailVerified false is 403",
+  "got": 403,
+  "want": 403
+ },
+ {
+  "ok": true,
+  "name": "tenant B: account created on first sign in",
+  "got": [
+   200,
+   "other@qa.test",
+   0
+  ],
+  "want": [
+   200,
+   "other@qa.test",
+   0
+  ]
+ },
+ {
+  "ok": true,
+  "name": "tenant B: sees no shops",
+  "got": [],
+  "want": []
+ },
+ {
+  "ok": true,
+  "name": "tenant B: /today on A's shop is refused like a missing shop",
+  "got": [
+   403,
+   "forbidden_shop"
+  ],
+  "want": [
+   403,
+   "forbidden_shop"
+  ]
+ },
+ {
+  "ok": true,
+  "name": "tenant B: /today refusal is 403 forbidden_shop",
+  "got": [
+   403,
+   "forbidden_shop"
+  ],
+  "want": [
+   403,
+   "forbidden_shop"
+  ]
+ },
+ {
+  "ok": true,
+  "name": "tenant B: /money on A's shop is refused like a missing shop",
+  "got": [
+   403,
+   "forbidden_shop"
+  ],
+  "want": [
+   403,
+   "forbidden_shop"
+  ]
+ },
+ {
+  "ok": true,
+  "name": "tenant B: /money refusal is 403 forbidden_shop",
+  "got": [
+   403,
+   "forbidden_shop"
+  ],
+  "want": [
+   403,
+   "forbidden_shop"
+  ]
+ },
+ {
+  "ok": true,
+  "name": "tenant B: /products on A's shop is refused like a missing shop",
+  "got": [
+   403,
+   "forbidden_shop"
+  ],
+  "want": [
+   403,
+   "forbidden_shop"
+  ]
+ },
+ {
+  "ok": true,
+  "name": "tenant B: /products refusal is 403 forbidden_shop",
+  "got": [
+   403,
+   "forbidden_shop"
+  ],
+  "want": [
+   403,
+   "forbidden_shop"
+  ]
+ },
+ {
+  "ok": true,
+  "name": "tenant B: /products/1e872806-de90-a026-171b-f962d1460b0c on A's shop is refused like a missing shop",
+  "got": [
+   403,
+   "forbidden_shop"
+  ],
+  "want": [
+   403,
+   "forbidden_shop"
+  ]
+ },
+ {
+  "ok": true,
+  "name": "tenant B: /products/1e872806-de90-a026-171b-f962d1460b0c refusal is 403 forbidden_shop",
+  "got": [
+   403,
+   "forbidden_shop"
+  ],
+  "want": [
+   403,
+   "forbidden_shop"
+  ]
+ },
+ {
+  "ok": true,
+  "name": "tenant B: /records on A's shop is refused like a missing shop",
+  "got": [
+   403,
+   "forbidden_shop"
+  ],
+  "want": [
+   403,
+   "forbidden_shop"
+  ]
+ },
+ {
+  "ok": true,
+  "name": "tenant B: /records refusal is 403 forbidden_shop",
+  "got": [
+   403,
+   "forbidden_shop"
+  ],
+  "want": [
+   403,
+   "forbidden_shop"
+  ]
+ },
+ {
+  "ok": true,
+  "name": "tenant B: /returns on A's shop is refused like a missing shop",
+  "got": [
+   403,
+   "forbidden_shop"
+  ],
+  "want": [
+   403,
+   "forbidden_shop"
+  ]
+ },
+ {
+  "ok": true,
+  "name": "tenant B: /returns refusal is 403 forbidden_shop",
+  "got": [
+   403,
+   "forbidden_shop"
+  ],
+  "want": [
+   403,
+   "forbidden_shop"
+  ]
+ },
+ {
+  "ok": true,
+  "name": "tenant B: /returns/metrics on A's shop is refused like a missing shop",
+  "got": [
+   403,
+   "forbidden_shop"
+  ],
+  "want": [
+   403,
+   "forbidden_shop"
+  ]
+ },
+ {
+  "ok": true,
+  "name": "tenant B: /returns/metrics refusal is 403 forbidden_shop",
+  "got": [
+   403,
+   "forbidden_shop"
+  ],
+  "want": [
+   403,
+   "forbidden_shop"
+  ]
+ },
+ {
+  "ok": true,
+  "name": "tenant B: /settlements on A's shop is refused like a missing shop",
+  "got": [
+   403,
+   "forbidden_shop"
+  ],
+  "want": [
+   403,
+   "forbidden_shop"
+  ]
+ },
+ {
+  "ok": true,
+  "name": "tenant B: /settlements refusal is 403 forbidden_shop",
+  "got": [
+   403,
+   "forbidden_shop"
+  ],
+  "want": [
+   403,
+   "forbidden_shop"
+  ]
+ },
+ {
+  "ok": true,
+  "name": "tenant B: /settlements/3bf24861-d4e5-da54-caf5-4b1cba0943bc on A's shop is refused like a missing shop",
+  "got": [
+   403,
+   "forbidden_shop"
+  ],
+  "want": [
+   403,
+   "forbidden_shop"
+  ]
+ },
+ {
+  "ok": true,
+  "name": "tenant B: /settlements/3bf24861-d4e5-da54-caf5-4b1cba0943bc refusal is 403 forbidden_shop",
+  "got": [
+   403,
+   "forbidden_shop"
+  ],
+  "want": [
+   403,
+   "forbidden_shop"
+  ]
+ },
+ {
+  "ok": true,
+  "name": "tenant B: /stock on A's shop is refused like a missing shop",
+  "got": [
+   403,
+   "forbidden_shop"
+  ],
+  "want": [
+   403,
+   "forbidden_shop"
+  ]
+ },
+ {
+  "ok": true,
+  "name": "tenant B: /stock refusal is 403 forbidden_shop",
+  "got": [
+   403,
+   "forbidden_shop"
+  ],
+  "want": [
+   403,
+   "forbidden_shop"
+  ]
+ },
+ {
+  "ok": true,
+  "name": "tenant B: /stock/1b126d84-efdf-c9ea-0182-cdcc0a6af22f/movements on A's shop is refused like a missing shop",
+  "got": [
+   403,
+   "forbidden_shop"
+  ],
+  "want": [
+   403,
+   "forbidden_shop"
+  ]
+ },
+ {
+  "ok": true,
+  "name": "tenant B: /stock/1b126d84-efdf-c9ea-0182-cdcc0a6af22f/movements refusal is 403 forbidden_shop",
+  "got": [
+   403,
+   "forbidden_shop"
+  ],
+  "want": [
+   403,
+   "forbidden_shop"
+  ]
+ },
+ {
+  "ok": true,
+  "name": "tenant B: /sync on A's shop is refused like a missing shop",
+  "got": [
+   403,
+   "forbidden_shop"
+  ],
+  "want": [
+   403,
+   "forbidden_shop"
+  ]
+ },
+ {
+  "ok": true,
+  "name": "tenant B: /sync refusal is 403 forbidden_shop",
+  "got": [
+   403,
+   "forbidden_shop"
+  ],
+  "want": [
+   403,
+   "forbidden_shop"
+  ]
+ },
+ {
+  "ok": true,
+  "name": "tenant B: /needs-you on A's shop is refused like a missing shop",
+  "got": [
+   403,
+   "forbidden_shop"
+  ],
+  "want": [
+   403,
+   "forbidden_shop"
+  ]
+ },
+ {
+  "ok": true,
+  "name": "tenant B: /needs-you refusal is 403 forbidden_shop",
+  "got": [
+   403,
+   "forbidden_shop"
+  ],
+  "want": [
+   403,
+   "forbidden_shop"
+  ]
+ },
+ {
+  "ok": true,
+  "name": "tenant B: /discrepancies on A's shop is refused like a missing shop",
+  "got": [
+   403,
+   "forbidden_shop"
+  ],
+  "want": [
+   403,
+   "forbidden_shop"
+  ]
+ },
+ {
+  "ok": true,
+  "name": "tenant B: /discrepancies refusal is 403 forbidden_shop",
+  "got": [
+   403,
+   "forbidden_shop"
+  ],
+  "want": [
+   403,
+   "forbidden_shop"
+  ]
+ },
+ {
+  "ok": true,
+  "name": "tenant B: /costs/coverage on A's shop is refused like a missing shop",
+  "got": [
+   403,
+   "forbidden_shop"
+  ],
+  "want": [
+   403,
+   "forbidden_shop"
+  ]
+ },
+ {
+  "ok": true,
+  "name": "tenant B: /costs/coverage refusal is 403 forbidden_shop",
+  "got": [
+   403,
+   "forbidden_shop"
+  ],
+  "want": [
+   403,
+   "forbidden_shop"
+  ]
+ },
+ {
+  "ok": true,
+  "name": "tenant B: cannot set A's cost",
+  "got": 403,
+  "want": 403
+ },
+ {
+  "ok": true,
+  "name": "tenant B: cannot adjust A's stock",
+  "got": 403,
+  "want": 403
+ },
+ {
+  "ok": true,
+  "name": "tenant B: cannot resolve A's discrepancy",
+  "got": 403,
+  "want": 403
+ },
+ {
+  "ok": true,
+  "name": "tenant B: nothing written",
+  "got": 10,
+  "want": 10
+ },
+ {
+  "ok": true,
+  "name": "notifications: A sees its notification",
+  "got": [
+   200,
+   [
+    "e85c843a-15d7-4c67-ab94-5667f39fec6b"
+   ],
+   1
+  ],
+  "want": [
+   200,
+   [
+    "e85c843a-15d7-4c67-ab94-5667f39fec6b"
+   ],
+   1
+  ]
+ },
+ {
+  "ok": true,
+  "name": "notifications: B does not see it",
+  "got": [],
+  "want": []
+ },
+ {
+  "ok": true,
+  "name": "notifications: B cannot mark it",
+  "got": 404,
+  "want": 404
+ },
+ {
+  "ok": true,
+  "name": "notifications: A marks it read",
+  "got": [
+   200,
+   "read"
+  ],
+  "want": [
+   200,
+   "read"
+  ]
+ },
+ {
+  "ok": true,
+  "name": "notifications: status stored",
+  "got": "read",
+  "want": "read"
+ },
+ {
+  "ok": true,
+  "name": "notifications: unread count falls to 0",
+  "got": 0,
+  "want": 0
+ },
+ {
+  "ok": true,
+  "name": "cost: A sets a cost",
+  "got": true,
+  "want": true
+ },
+ {
+  "ok": true,
+  "name": "cost: stored",
+  "got": 777,
+  "want": 777
+ },
+ {
+  "ok": true,
+  "name": "cost: negative refused",
+  "got": true,
+  "want": true
+ },
+ {
+  "ok": true,
+  "name": "cost: wrong currency refused",
+  "got": true,
+  "want": true
+ },
+ {
+  "ok": true,
+  "name": "adjustment: created",
+  "got": 201,
+  "want": 201
+ },
+ {
+  "ok": true,
+  "name": "adjustment: replay returns the first answer",
+  "got": [
+   201,
+   {
+    "movement": {
+     "id": "e6c807f5-a417-4132-9c9b-7bda9dc1ba0e",
+     "reason": "QA: two damaged",
+     "order_id": null,
+     "quantity": -2,
+     "return_id": null,
+     "created_by": "56e487ea-e0fa-3691-7857-724855e716fc",
+     "occurred_at": "2026-09-25T12:48:30.219951Z",
+     "movement_type": "manual_adjustment"
+    },
+    "position": {
+     "as_of": "2026-09-25T12:48:23.387276Z",
+     "state": "healthy",
+     "sku_id": "1b126d84-efdf-c9ea-0182-cdcc0a6af22f",
+     "on_shelf": 17,
+     "days_left": null,
+     "seller_sku": "DESK-BLK",
+     "coming_back": 0,
+     "written_off": 0,
+     "tiktok_stock": 19,
+     "product_title": "Computer Desk 120cm",
+     "tiktok_sku_id": "1729100000000000004",
+     "adjusted_delta": -2,
+     "sold_not_posted": 0
+    }
+   }
+  ],
+  "want": [
+   201,
+   {
+    "movement": {
+     "id": "e6c807f5-a417-4132-9c9b-7bda9dc1ba0e",
+     "movement_type": "manual_adjustment",
+     "quantity": -2,
+     "occurred_at": "2026-09-25T12:48:30.219951Z",
+     "order_id": null,
+     "return_id": null,
+     "reason": "QA: two damaged",
+     "created_by": "56e487ea-e0fa-3691-7857-724855e716fc"
+    },
+    "position": {
+     "sku_id": "1b126d84-efdf-c9ea-0182-cdcc0a6af22f",
+     "tiktok_sku_id": "1729100000000000004",
+     "seller_sku": "DESK-BLK",
+     "product_title": "Computer Desk 120cm",
+     "tiktok_stock": 19,
+     "adjusted_delta": -2,
+     "on_shelf": 17,
+     "sold_not_posted": 0,
+     "coming_back": 0,
+     "written_off": 0,
+     "state": "healthy",
+     "days_left": null,
+     "as_of": "2026-09-25T12:48:23.387276Z"
+    }
+   }
+  ]
+ },
+ {
+  "ok": true,
+  "name": "adjustment: one movement written",
+  "got": 2,
+  "want": 2
+ },
+ {
+  "ok": true,
+  "name": "adjustment: same key, different body is refused",
+  "got": true,
+  "want": true
+ },
+ {
+  "ok": true,
+  "name": "adjustment: without a key is accepted, as the contract makes the key optional",
+  "got": 201,
+  "want": 201
+ },
+ {
+  "ok": true,
+  "name": "adjustment: stock screen shows both adjustments",
+  "got": -3,
+  "want": -3
+ },
+ {
+  "ok": true,
+  "name": "resolve: accepted",
+  "got": [
+   200,
+   "resolved"
+  ],
+  "want": [
+   200,
+   "resolved"
+  ]
+ },
+ {
+  "ok": true,
+  "name": "resolve: stored",
+  "got": [
+   "resolved",
+   "explained"
+  ],
+  "want": [
+   "resolved",
+   "explained"
+  ]
+ },
+ {
+  "ok": true,
+  "name": "resolve: replay is the same",
+  "got": [
+   200,
+   {
+    "discrepancy": {
+     "id": "0407a537-ca4d-627c-3829-74249d317c38",
+     "kind": "amount",
+     "note": "QA: TikTok penalty explained",
+     "field": "adjustment_amount",
+     "effect": null,
+     "status": "resolved",
+     "entity_id": "47ccb32b-f09c-99f7-cd52-781d3a83ea97",
+     "opened_at": "2026-09-25T12:48:23.387276Z",
+     "resolution": "explained",
+     "correctable": false,
+     "entity_type": "settlement",
+     "resolved_at": "2026-09-25T12:48:30.274193Z",
+     "seller_value": null,
+     "tiktok_value": "-5.00",
+     "applied_value": "-5.00"
+    },
+    "adjustment_posted": null
+   }
+  ],
+  "want": [
+   200,
+   {
+    "discrepancy": {
+     "id": "0407a537-ca4d-627c-3829-74249d317c38",
+     "kind": "amount",
+     "entity_type": "settlement",
+     "entity_id": "47ccb32b-f09c-99f7-cd52-781d3a83ea97",
+     "field": "adjustment_amount",
+     "tiktok_value": "-5.00",
+     "seller_value": null,
+     "applied_value": "-5.00",
+     "status": "resolved",
+     "resolution": "explained",
+     "note": "QA: TikTok penalty explained",
+     "effect": null,
+     "opened_at": "2026-09-25T12:48:23.387276Z",
+     "resolved_at": "2026-09-25T12:48:30.274193Z",
+     "correctable": false
+    },
+    "adjustment_posted": null
+   }
+  ]
+ },
+ {
+  "ok": true,
+  "name": "resolve: Needs you no longer lists it",
+  "got": false,
+  "want": false
+ }
+]

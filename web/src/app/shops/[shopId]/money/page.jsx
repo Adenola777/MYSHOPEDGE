@@ -27,6 +27,7 @@
 import Link from "next/link";
 import { fetchShop, formatDate } from "@/lib/api";
 import { apiProblem } from "@/components/ApiProblem";
+import { LineLabel } from "@/components/LineLabel";
 import { Figure } from "@/components/Figure";
 import { BEFORE_OVERHEADS, CONFIDENCE, chipClass, keptReason } from "@/lib/terms";
 
@@ -65,14 +66,6 @@ export default async function MoneyPage({ params, searchParams }) {
 
   /** The heading and TikTok's name for a line that carries one verbatim. */
   /** @param {any} l */
-  const lineLabel = (l) =>
-    l.tiktok_fee_type ? (
-      <span>
-        {l.category === "platform_adjustment" ? "TikTok adjustment" : "Fee we do not recognise"}
-        <span className="rows__sub" style={{ display: "block" }}>TikTok calls it {l.tiktok_fee_type}</span>
-      </span>
-    ) : l.label;
-
   /** @param {Record<string, string>} q */
   const href = (q) => `${base}${Object.keys(q).length ? `?${new URLSearchParams(q)}` : ""}`;
   /** @type {Record<string, string>} */
@@ -115,7 +108,7 @@ export default async function MoneyPage({ params, searchParams }) {
             <ul className="rows">
               {s.lines.map((l, i) => (
                 <li key={`${l.category}-${l.tiktok_fee_type ?? i}`}>
-                  <Link className="rowlink rowlink--quiet" href={recordsHref(l)}>{lineLabel(l)}</Link>
+                  <Link className="rowlink rowlink--quiet" href={recordsHref(l)}><LineLabel line={l} /></Link>
                   <Figure amount={l.amount} />
                 </li>
               ))}

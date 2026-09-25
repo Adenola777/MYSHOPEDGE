@@ -168,7 +168,12 @@ def products_ranking():
             5100, 10200, 0, 6000)
     nocost = (UUID("55555555-5555-4555-8555-555555555555"), "P-X", "No cost yet",
               2, 0, 4000, 3000, "GBP", 0, None, 1, None)
-    products.tenant = with_conn(products, [("with scoped as", Result(cols, [desk, nocost]))])
+    loose = Result(["category","tiktok_fee_type","amount_minor","currency"],
+                   [("platform_adjustment", "PLATFORM_PENALTY", -500, "GBP")])
+    products.tenant = with_conn(products, [
+        ("and le.sku_id is null", loose),
+        ("with scoped as", Result(cols, [desk, nocost])),
+    ])
     r = client.get(f"/v1/shops/{SHOP}/products")
     _assert(r.status_code == 200, f"status {r.status_code}: {r.text[:300]}")
     b = r.json()
@@ -181,7 +186,41 @@ def products_ranking():
     _assert(rows["No cost yet"]["kept_reason"] is not None, "a null kept must say why")
     # A product with an unknown cost ranks last rather than first.
     _assert(b["products"][0]["title"] == "Computer Desk 120cm")
+    # Money that belongs to no product is its own line, named as the money screen names it.
+    _assert(b["unattributed"]["amount"]["amount_minor"] == -500, b.get("unattributed"))
+    _assert(b["unattributed"]["lines"][0]["label"] == "PLATFORM_PENALTY", b["unattributed"])
+    # A product with no cost means the shop's profit is not known, so no shop total.
+    _assert(b["shop_total"] is None, "no shop total while a cost is missing")
 check("GET products returns null kept with a reason, and ranks unknowns last", products_ranking)
+
+
+def products_shop_total():
+    cols = ["product_id","tiktok_product_id","title","units_sold","returns_units",
+            "gross_sales_minor","net_proceeds_minor","currency","return_loss_minor",
+            "cost_retained_minor","skus_without_cost","kept_minor"]
+    desk = (PRODUCT, "P-DESK", "Computer Desk 120cm", 3, 1, 36000, 21300, "GBP",
+            5100, 10200, 0, 6000)
+    loose = Result(["category","tiktok_fee_type","amount_minor","currency"],
+                   [("platform_adjustment", "PLATFORM_PENALTY", -500, "GBP")])
+    products.tenant = with_conn(products, [
+        ("and le.sku_id is null", loose),
+        ("with scoped as", Result(cols, [desk])),
+    ])
+    b = client.get(f"/v1/shops/{SHOP}/products").json()
+    _assert(b["total"]["amount_minor"] == 6000, "total stays the products' own sum")
+    _assert(b["shop_total"]["amount_minor"] == 5500, "shop total adds the unattributed line")
+    products.tenant = with_conn(products, [
+        ("and le.sku_id is null", Result(["category","tiktok_fee_type","amount_minor","currency"], [])),
+        ("with scoped as", Result(cols, [desk])),
+    ])
+    b = client.get(f"/v1/shops/{SHOP}/products").json()
+    _assert(b["unattributed"] is None and b["shop_total"]["amount_minor"] == 6000, b)
+    # The kept ranking reaches down to return costs; gross sales asks for gross sales only.
+    _assert("stock_written_off" in products._measure_categories("kept"))
+    _assert("platform_adjustment" in products._measure_categories("net_proceeds"))
+    _assert("stock_written_off" not in products._measure_categories("net_proceeds"))
+    _assert(products._measure_categories("gross_sales") == ["gross_sales"])
+check("GET products adds money tied to no product so the shop total meets Money", products_shop_total)
 
 
 # --- money, the calculator for the whole shop
@@ -698,7 +737,9 @@ def movements_page():
     rows = [(UUID(int=i), "manual_adjustment", -2, NOW, None, None, "Damaged", None)
             for i in range(1, 3)]
     stock.tenant = with_conn(stock, [
-        ("select 1 from skus", Result(["x"], [(1,)])),
+        ("from skus k join products p", Result(
+            ["id","product_id","title","variant_label","seller_sku","tiktok_sku_id"],
+            [(SKU, PRODUCT, "Computer Desk 120cm", "Black", "DESK-BLK", "1729100000000000004")])),
         ("from stock_movements where", Result(MOVE_COLS, rows)),
     ])
     r = client.get(f"/v1/shops/{SHOP}/stock/{SKU}/movements?limit=1")
@@ -707,10 +748,12 @@ def movements_page():
     _assert(b["movements"][0]["quantity"] == -2)
     _assert(b["movements"][0]["reason"] == "Damaged")
     _assert(b["next_cursor"] is not None)
+    # The screen that adjusts this variant's stock must be able to say which item it is.
+    _assert(b["sku"]["product_title"] == "Computer Desk 120cm" and b["sku"]["seller_sku"] == "DESK-BLK", b["sku"])
 check("GET movements lists a SKU's ledger newest first", movements_page)
 
 def movements_unknown_sku():
-    stock.tenant = with_conn(stock, [("select 1 from skus", Result(["x"], []))])
+    stock.tenant = with_conn(stock, [("from skus k join products p", Result(["x"], []))])
     r = client.get(f"/v1/shops/{SHOP}/stock/{SKU}/movements")
     _assert(r.status_code == 404, f"status {r.status_code}")
     _assert(r.json()["code"] == "sku_not_found")
@@ -1052,6 +1095,13 @@ def notifications_rules():
     ])
     b = client.get("/v1/notifications?status=unread").json()
     _assert(b["unread_count"] == 4 and b["notifications"][0]["type"] == "out_of_stock", b)
+    # Open is unread and read together, filtered by the service rather than the browser.
+    notes.tenant = with_conn(notes, [
+        ("status = 'unread'", Result(["c"], [(4,)])),
+        ("status <> 'done'", Result(NOTE_COLS, [n])),
+    ])
+    r = client.get("/v1/notifications?status=open")
+    _assert(r.status_code == 200 and r.json()["notifications"][0]["status"] == "unread", r.text)
     notes.tenant = with_conn(notes, [
         ("for update", Result(["status"], [("done",)])),
     ])
