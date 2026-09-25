@@ -1,0 +1,23 @@
+{
+  "summary": "Backend-only QA for MyShopEdge Stripe billing on FastAPI at 127.0.0.1:8801 with local Postgres. Converted the QA harness into a pytest suite (9 tests) covering plans catalog, trial-start via SetupIntent, GET subscription, auth requirement, webhook lifecycle (past_due w/ idempotency, active recovery, canceled), unknown-customer no-op, and bad-signature rejection. All 9 tests passed. DB row correctly transitions and stripe_customer_id/stripe_subscription_id/trial_end/current_period_end are populated.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_billing.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "billing.py maps Stripe 'incomplete' -> 'none' in GET; verify this is the intended UX for a freshly-created trial that has not yet completed card auth (currently DB stays 'trialing' which the tests exercise).",
+    "Webhook handler correctly returns 200 for unknown customers (idempotent/no-op) and 400 for forged signatures — matches Stripe best practice.",
+    "SECURITY DEFINER functions are the only write path; ensure they are still granted only to the service role (not exposed via PostgREST/anon)."
+  ],
+  "updated_files": ["/app/backend/tests/test_billing.py"],
+  "success_rate": {"backend": "100% (9/9)", "frontend": "n/a"},
+  "test_credentials": "Bearer token at /app/scripts/qa/tok_a (ES256, ~6h expiry, sub=stack|synthetic-uk-shop).",
+  "seed_data_creation": "Reused the single existing subscriptions row for account 56e487ea-e0fa-3691-7857-724855e716fc. Trial-start test may reset Stripe subscription id (idempotent by design).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Non-standard stack: service at 127.0.0.1:8801, Postgres at 127.0.0.1:5432/myshopedge, no Mongo, no supervisor. Do not restart services. Stripe secrets are in /app/service/.env; the test file loads them itself. Webhook signing: HMAC-SHA256 of '<ts>.<raw_body>' with STRIPE_WEBHOOK_SECRET. Card confirmation via js.stripe.com is not reachable from this container — that's environment, not a code bug.",
+  "rca of the issue": "No issues found."
+}

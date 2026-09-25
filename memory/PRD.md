@@ -74,3 +74,45 @@ The blocked table in `CLAUDE.md` is the authority. The order quota ruled in A16 
 within a billing period and the period is now stored, so counting is unblocked. Account
 suspension on a sustained `past_due` has a data source now that the status is written, and
 the route into `accounts.status = 'suspended'` is still to be built.
+
+## Remediation programme, agreed 26 June 2026
+
+The owner approved a phased plan to make the application fully functional. It is executed
+inside a local harness built from this repository (local PostgreSQL, local ES256 tokens,
+the platform Stripe test sandbox), so no live infrastructure is touched, and each phase is
+verified before the next begins.
+
+Owner decisions on record: use the local harness; test Stripe with the platform test
+sandbox; cost file storage to be settled at its phase, S3 style recommended over Vercel
+Blob because a Python service cannot do Vercel Blob signed uploads (A10.8); sign-in on
+preview URLs wanted, owner to set a stable custom preview domain; Render cold start to be
+handled with a keep-warm ping.
+
+### Phase 0, local harness. Done 26 June 2026.
+Scripts under `/app/scripts` build the database (`00_superuser.sql`, `01_dbsetup.sql`,
+`local_migrate.py`) and run the service (`run_service.sh`). The build backfills 0001-0009,
+pre-creates the `neon_auth` stand-in so 0011 applies before 0016, and relaxes two NOT NULL
+columns the seed omits. The service runs on 127.0.0.1:8801 against the seeded seller, with
+row level security proven by `/me` and `/shops`.
+
+### Phase 1, Stripe billing end to end. Done 26 June 2026.
+The trial, the SetupIntent, the `GET /billing/subscription` endpoint and the webhook run
+against the platform Stripe test sandbox and the real Postgres. The subscriptions row moves
+incomplete to trialing to past_due to active to canceled through signed webhook events, the
+replay is idempotent, an unknown customer is accepted with 200, and a forged signature is
+refused with 400. Verified by the testing agent, 9 of 9, `/app/test_reports/iteration_1.json`,
+and by `/app/service/tests/test_billing_local_harness.py`. The owner runs the same
+`setup_stripe.py` step against the live account to go live, which is theirs by rule 3.
+
+### Remaining phases, in order
+2. Access and hosting. Owner confirms sign-in on the used domain and the keep-warm ping.
+3. TikTok ingestion, token refresh and expected payouts. Needs the owner's Seller Developer
+   custom app credentials on GBGBLCRKQTEX. Cannot be verified live from the harness.
+4. Cost file uploads, seven operations, once storage is chosen.
+5. Tax features, six operations.
+6. Analytics reads and the export worker.
+7. Account and shop management, the order quota, and account suspension. Needs the four
+   `checkReturnItem` rulings.
+8. The remaining screens, and the privacy and terms pages.
+9. Test data across months and the clock change, the three tooling faults, and the data
+   protection confirmations.
