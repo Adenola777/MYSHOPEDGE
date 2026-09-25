@@ -1,5 +1,5 @@
 """QA of the read operations against independent SQL on the local copy of development."""
-import json, subprocess, urllib.request, urllib.error, psycopg
+import json, urllib.request, urllib.error, psycopg
 BASE="http://127.0.0.1:8801/v1"; SH="8a773a13-73b5-a382-7dd0-fda02e950369"
 TOK=open("tok_a").read().strip()
 db=psycopg.connect("postgresql://postgres@/myshopedge?host=/tmp&port=5439", autocommit=True)
