@@ -12,6 +12,10 @@
  * movement carries MyShopEdge's internal identifier rather than TikTok's order number,
  * which is the one a seller would recognise. The row therefore says only whether it
  * belongs to an order or a return.
+ *
+ * The heading names the product, the variant and the seller SKU from `sku` on the response.
+ * The contract gained that field on 25 September 2026 at the owner's instruction, because
+ * QA found this screen, which carries the adjustment form, named no item at all.
  */
 
 import Link from "next/link";
@@ -41,16 +45,24 @@ export default async function MovementsPage({ params, searchParams }) {
   });
   if (problem) return problem;
 
-  /** @type {{ movements: import("@/lib/api-types").components["schemas"]["StockMovement"][], next_cursor: string | null }} */
-  const { movements, next_cursor } = result.data;
+  /**
+   * @type {{
+   *   sku: { product_title?: string | null, variant_label?: string | null, seller_sku?: string | null },
+   *   movements: import("@/lib/api-types").components["schemas"]["StockMovement"][],
+   *   next_cursor: string | null,
+   * }}
+   */
+  const { sku, movements, next_cursor } = result.data;
+  const variant = [sku.variant_label, sku.seller_sku ? `SKU ${sku.seller_sku}` : "No seller SKU"]
+    .filter(Boolean).join(", ");
   const base = `/shops/${shopId}/stock/${skuId}`;
 
   return (
     <section>
       <header className="page-head">
         <p><Link href={`/shops/${shopId}/stock`}>Stock</Link></p>
-        <h1>Stock movements</h1>
-        <p>Every change to this variant&rsquo;s count, newest first.</p>
+        <h1>{sku.product_title || "Untitled product"}</h1>
+        <p>{variant}. Every change to this variant&rsquo;s count, newest first.</p>
       </header>
 
       <AdjustForm shopId={shopId} skuId={skuId} />

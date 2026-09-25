@@ -684,10 +684,52 @@
   "want": 24816
  },
  {
-  "ok": false,
-  "name": "products: total equals Money kept (open question, statement-level adjustment)",
-  "got": 24816,
+  "ok": true,
+  "name": "products: shop total equals Money kept",
+  "got": 24316,
   "want": 24316
+ },
+ {
+  "ok": true,
+  "name": "products: unattributed equals the ledger's entries with no variant",
+  "got": -500,
+  "want": -500
+ },
+ {
+  "ok": true,
+  "name": "products: shop total = total + unattributed",
+  "got": 24316,
+  "want": 24316
+ },
+ {
+  "ok": true,
+  "name": "products by net_proceeds: shop total equals Money net_proceeds",
+  "got": 49538,
+  "want": 49538
+ },
+ {
+  "ok": true,
+  "name": "products by gross_sales: shop total equals Money gross_sales",
+  "got": 86200,
+  "want": 86200
+ },
+ {
+  "ok": true,
+  "name": "products cash: shop total equals Money cash kept",
+  "got": 26364,
+  "want": 26364
+ },
+ {
+  "ok": true,
+  "name": "movements: names the variant",
+  "got": [
+   "Double Use Curly Hair Brush",
+   "HAIR-BLUE"
+  ],
+  "want": [
+   "Double Use Curly Hair Brush",
+   "HAIR-BLUE"
+  ]
  },
  {
   "ok": true,

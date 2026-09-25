@@ -7,13 +7,16 @@ results are in `audit/qa_25_september/`.
 
 ## Result
 
-| Suite | What it checks | Passed |
-|---|---|---|
-| Reads | Every read operation, compared with independent SQL on the ledger | 101 of 102 |
-| Writes | Authentication, a second seller, the four writes, outside services | 68 of 68 |
-| Screens | Every screen in Chromium, its figures against the API, and three writes made through the forms | 112 of 113 |
+| Suite | What it checks | First run | After the fixes |
+|---|---|---|---|
+| Reads | Every read operation, compared with independent SQL on the ledger | 101 of 102 | 108 of 108 |
+| Writes | Authentication, a second seller, the four writes, outside services | 68 of 68 | 68 of 68 |
+| Screens | Every screen in Chromium, its figures against the API, and writes made through the forms | 112 of 113 | 129 of 129 |
 
-The two failures are real findings and are listed under "Open, needing a decision".
+The first run's two failures and the notification gap went to the owner, who ruled on all
+three on 25 September. The section "Settled on 25 September" says what changed. The
+results in `audit/qa_25_september/` are from the run after the fixes, each suite on a
+freshly built database.
 
 ## How it was run
 
@@ -103,22 +106,46 @@ screen is drawn in #B3261E, as the owner ruled on 24 September. The bell shows o
 notification. A cost, a stock adjustment and a discrepancy resolution were each made through
 the screen and confirmed in the database, and Today dropped the discrepancy afterwards.
 
-## Open, needing a decision
+## Settled on 25 September
 
-1. **The products total does not equal Money.** For July and August the products total is
+The owner ruled on the three findings below. Each change went into the contract first, then
+the service with smoke cases, then the screen, and each was checked against the local copy
+of development.
+
+- **Money tied to no product has its own line.** `listProducts` now returns `unattributed`,
+  the period's ledger entries that carry no variant, named as Money names them, and
+  `shop_total`, which is `total` plus those lines. The categories come from Money's own
+  chain in `money_view.py`, so the two screens cannot disagree about what a figure holds.
+  For July and August the shop total is £243.16 on the sales basis and £263.64 on the cash
+  basis, and for net proceeds and gross sales it is £495.38 and £862.00. Each equals
+  Money. `shop_total` is null while a product sold in the period has no cost price. The
+  screen shows the products' total, then "For the whole shop, not one product" with the
+  TikTok adjustment, then "Total for the shop".
+- **The movements page names the variant.** `getStockMovements` now returns `sku`, with
+  the product title, variant label, seller SKU and TikTok SKU id. The page's heading is the
+  product, with the variant and SKU beneath it.
+- **Notifications work.** Each open notice offers "Mark as read" while unread and "Done"
+  while not done, and the list offers "Mark all as read". The page and the bell refresh
+  after each change, and the bell's count falls. `listNotifications` gained `status=open`
+  so the Open list is filtered and paged by the service, where it used to take one page of
+  everything and filter it in the browser. Older notices are reached through the cursor.
+
+## What the first run found
+
+1. **Settled, see above. The products total does not equal Money.** For July and August the products total is
    £248.16 and Money's gross profit after returns is £243.16. The £5.00 is TikTok's platform
    penalty on the statement, which belongs to no product. The docstring in `products.py`
    says the arithmetic should be "visibly closed" against the money screen, and today it is
    not. Two answers are possible: the products screen states the unallocated £5.00 on its
    own line, or the difference is accepted and explained in a footnote. Either is a ruling.
 
-2. **The stock movements page never names the variant.** `/shops/{id}/stock/{sku}` carries
+2. **Settled, see above. The stock movements page never names the variant.** `/shops/{id}/stock/{sku}` carries
    the adjustment form, and it says "Stock movements" without the product or variant. A
    seller could adjust the wrong item without knowing. `getStockMovements` returns no product
    or variant, so the fix starts in the contract: add the product title, variant label and
    seller SKU to that response, then serve and show them.
 
-3. **No screen marks a notification read.** `PATCH /notifications/{id}` works, but nothing
+3. **Settled, see above. No screen marks a notification read.** `PATCH /notifications/{id}` works, but nothing
    calls it, so the bell's count can never fall. A button on S13 would close it.
 
 ## Faults in the test tooling, found by running it

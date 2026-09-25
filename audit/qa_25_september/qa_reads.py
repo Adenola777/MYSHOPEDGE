@@ -59,7 +59,18 @@ for p in pr["products"]:
     check(f"product detail: {p['title']} matches the list row", d["product"], p)
     check(f"product detail: {p['title']} per-unit gross times units", d["per_unit"]["sections"][0]["lines"][0]["amount"]["amount_minor"]*p["units"], p["gross_sales"]["amount_minor"])
 check("products: total equals sum of rows", pr["total"]["amount_minor"], sum(p["kept"]["amount_minor"] for p in pr["products"] if p["kept"]))
-check("products: total equals Money kept (open question, statement-level adjustment)", pr["total"]["amount_minor"], m["kept"]["amount_minor"])
+check("products: shop total equals Money kept", pr["shop_total"]["amount_minor"], m["kept"]["amount_minor"])
+loose=q("select coalesce(sum(amount_minor),0)::int from ledger_entries where sku_id is null and category='platform_adjustment' and basis_month between '2026-07-01' and '2026-08-01'")[0][0]
+check("products: unattributed equals the ledger's entries with no variant", pr["unattributed"]["amount"]["amount_minor"], loose)
+check("products: shop total = total + unattributed", pr["shop_total"]["amount_minor"], pr["total"]["amount_minor"]+pr["unattributed"]["amount"]["amount_minor"])
+for meas, key in (("net_proceeds","net_proceeds"),("gross_sales","gross_sales")):
+    _,x=get(f"/shops/{SH}/products?{R}&measure={meas}")
+    check(f"products by {meas}: shop total equals Money {key}", x["shop_total"]["amount_minor"], m["totals"][key]["amount_minor"])
+_,pc=get(f"/shops/{SH}/products?{R}&basis=cash")
+check("products cash: shop total equals Money cash kept", pc["shop_total"]["amount_minor"], mc["kept"]["amount_minor"])
+sk1=q("select k.id::text, p.title, k.seller_sku from skus k join products p on p.id=k.product_id where k.seller_sku='HAIR-BLUE'")[0]
+_,mv=get(f"/shops/{SH}/stock/{sk1[0]}/movements")
+check("movements: names the variant", (mv["sku"]["product_title"], mv["sku"]["seller_sku"]), (sk1[1], sk1[2]))
 # Settlements
 _,st=get(f"/shops/{SH}/settlements")
 check("settlements: count", len(st["settlements"]), q("select count(*)::int from settlements")[0][0])

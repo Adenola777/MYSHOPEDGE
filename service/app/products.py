@@ -92,6 +92,11 @@ class Others(BaseModel):
     amount: Money
 
 
+class Unattributed(BaseModel):
+    amount: Money
+    lines: list[Any]
+
+
 class ProductRanking(BaseModel):
     period: dict[str, Any]
     measure: str
@@ -99,7 +104,48 @@ class ProductRanking(BaseModel):
     total: Money
     shown_total: Money
     others: Others | None = None
+    unattributed: Unattributed | None = None
+    shop_total: Money | None = None
     next_cursor: str | None = None
+
+
+# Money in the period that belongs to the shop and to no variant, such as a platform
+# adjustment TikTok applies to a whole statement. The per-product query joins on sku_id, so
+# it cannot see these entries, and without them the products screen does not add up to the
+# money screen. Ruled by the owner on 25 September 2026: they are shown on their own line.
+UNATTRIBUTED_SQL = """
+select le.category, le.tiktok_fee_type,
+       sum(le.amount_minor) as amount_minor,
+       coalesce(max(le.currency), 'GBP') as currency
+  from ledger_entries le
+ where le.shop_id = %(shop)s
+   and {date_column} >= %(from)s
+   and {date_column} <= %(to)s
+   and le.sku_id is null
+   and le.category = any(%(categories)s)
+ group by le.category, le.tiktok_fee_type
+having sum(le.amount_minor) <> 0
+ order by le.category, le.tiktok_fee_type
+"""
+
+
+def _measure_categories(measure: str) -> list[str]:
+    """The money screen's categories behind the figure this ranking totals.
+
+    Read from `money_view.CHAIN` so the two screens cannot disagree about what a figure
+    contains. Imported here rather than at the top because money_view imports this module.
+    """
+    from .money_view import CHAIN
+
+    if measure == "gross_sales":
+        return ["gross_sales"]
+    upto = "refunds" if measure == "net_proceeds" else "return_costs"
+    categories: list[str] = []
+    for key, _label, _reached, cats in CHAIN:
+        categories.extend(cats)
+        if key == upto:
+            break
+    return categories
 
 
 # One row per product. Every figure is derived here rather than in Python, so the database
@@ -216,8 +262,14 @@ def list_products(
         cur = conn.execute(sql, args)
         cols = [d.name for d in cur.description]
         rows = [dict(zip(cols, r, strict=True)) for r in cur.fetchall()]
+        cur = conn.execute(
+            UNATTRIBUTED_SQL.format(date_column=date_column),
+            {**args, "categories": _measure_categories(measure)},
+        )
+        cols = [d.name for d in cur.description]
+        loose = [dict(zip(cols, r, strict=True)) for r in cur.fetchall()]
 
-    currency = rows[0]["currency"] if rows else "GBP"
+    currency = rows[0]["currency"] if rows else (loose[0]["currency"] if loose else "GBP")
 
     # Ranking happens here rather than in SQL because `kept` can be null, and a null sorts
     # unpredictably across databases. A product with an unknown cost ranks last on `kept`
@@ -278,6 +330,15 @@ def list_products(
     )
     unshown = [r for r in rows if r not in page]
 
+    from .money_view import _line
+
+    loose_lines = [_line(r, currency) for r in loose]
+    loose_minor = sum(int(r["amount_minor"]) for r in loose)
+    # Every total except gross sales and net proceeds is built from `kept`, which is null for
+    # a product with no cost price. The shop's figure is then not known, so none is given.
+    kept_based = column not in ("gross_sales_minor", "net_proceeds_minor")
+    shop_known = not (kept_based and any(r["kept_minor"] is None for r in rows))
+
     return ProductRanking(
         period={"from": start.isoformat(), "to": end.isoformat(), "basis": basis},
         measure=measure,
@@ -291,6 +352,11 @@ def list_products(
             )
             if unshown else None
         ),
+        unattributed=(
+            Unattributed(amount=money(loose_minor, currency), lines=loose_lines)
+            if loose_lines else None
+        ),
+        shop_total=money(int(total_minor) + loose_minor, currency) if shop_known else None,
         next_cursor=next_cursor,
     )
 

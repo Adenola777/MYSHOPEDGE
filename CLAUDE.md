@@ -197,9 +197,10 @@ Each of these was found by running something, and each survived reading.
 9. **The first end to end QA, 24 and 25 September.** The real service ran against a local
    copy of development whose schema fingerprint, ledger and ownership matched Neon exactly,
    and the production build of the front end ran against it. 281 of 283 checks passed.
-   The two failures and four tooling faults are in `audit/QA_end_to_end_25_september.md`,
-   among them that `migrate.py` cannot build a database from empty and that
-   `testdata/seed.sql` does not load.
+   The owner ruled on both failures and on the notification gap the same day, and after
+   those changes all 305 pass. The four tooling faults remain, among them that
+   `migrate.py` cannot build a database from empty and that `testdata/seed.sql` does not
+   load. `audit/QA_end_to_end_25_september.md` has the detail.
 
 ## Commercial rulings worth knowing before touching billing
 

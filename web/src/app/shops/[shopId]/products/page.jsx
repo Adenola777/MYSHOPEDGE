@@ -13,12 +13,19 @@
  * belongs in the service and waits for phase 3 of the audit, which adds it to the contract.
  *
  * A product with no cost shows no profit, never £0.00: `Figure` renders the reason.
+ *
+ * **Money tied to no product has its own line**, as the owner ruled on 25 September 2026.
+ * A platform adjustment TikTok applies to a whole statement belongs to the shop and to no
+ * product, so the products alone do not add up to Money. The service returns those lines
+ * as `unattributed` and the sum as `shop_total`, and the screen shows both beneath the
+ * products, so the last figure on this screen is the one Money shows for the same period.
  */
 
 import Link from "next/link";
 import { fetchProducts } from "@/lib/api";
 import { Figure } from "@/components/Figure";
 import { apiProblem } from "@/components/ApiProblem";
+import { LineLabel } from "@/components/LineLabel";
 import { BEFORE_OVERHEADS } from "@/lib/terms";
 
 export const metadata = { title: "Products" };
@@ -49,8 +56,9 @@ export default async function ProductsPage({ params, searchParams }) {
   if (problem) return problem;
 
   /** @typedef {import("@/lib/api-types").components["schemas"]["ProductRow"]} ProductRow */
-  /** @type {{ products: ProductRow[], total?: any, measure?: string, others?: { count: number, amount: any } }} */
-  const { products = [], total, measure = "kept", others } = result.data;
+  /** @typedef {import("@/lib/api-types").components["schemas"]["ProductRanking"]} Ranking */
+  /** @type {{ products: ProductRow[], total?: any, measure?: string, others?: { count: number, amount: any }, unattributed?: Ranking["unattributed"], shop_total?: any }} */
+  const { products = [], total, measure = "kept", others, unattributed, shop_total } = result.data;
   const base = `/shops/${shopId}/products`;
 
   const ranked = products.filter((p) => p.cost_known || measure !== "kept");
@@ -108,7 +116,25 @@ export default async function ProductsPage({ params, searchParams }) {
               </li>
             ))}
             {total && measure === "kept" && (
-              <li className="rows__total"><span>Total</span><Figure amount={total} /></li>
+              <li className="rows__total">
+                <span>{unattributed ? "Total across products" : "Total"}</span>
+                <Figure amount={total} />
+              </li>
+            )}
+            {unattributed && measure === "kept" && (
+              <>
+                <li className="rows__group"><span>For the whole shop, not one product</span></li>
+                {unattributed.lines.map((l) => (
+                  <li key={`${l.category}-${l.tiktok_fee_type ?? ""}`}>
+                    <LineLabel line={l} />
+                    <Figure amount={l.amount} />
+                  </li>
+                ))}
+                <li className="rows__total">
+                  <span>Total for the shop</span>
+                  <Figure amount={shop_total} reason="Not known until every product sold has a cost price." />
+                </li>
+              </>
             )}
           </ul>
           {others && others.count > 0 && (
@@ -120,7 +146,12 @@ export default async function ProductsPage({ params, searchParams }) {
         </div>
       )}
 
-      {measure === "kept" && <p className="footnote">{BEFORE_OVERHEADS}</p>}
+      {measure === "kept" && (
+        <p className="footnote">
+          {BEFORE_OVERHEADS}
+          {unattributed ? " The total for the shop is the figure Money shows for the same period." : ""}
+        </p>
+      )}
     </section>
   );
 }

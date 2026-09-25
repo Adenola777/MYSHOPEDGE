@@ -68,14 +68,18 @@ COLUMNS = "id, shop_id, type, severity, title, body, entity_type, entity_id, sta
 @router.get("/notifications", response_model=NotificationPage)
 def list_notifications(
     account: Annotated[Account, Depends(require_account)],
-    status: Annotated[Literal["unread", "read", "done"] | None, Query()] = None,
+    status: Annotated[Literal["unread", "read", "done", "open"] | None, Query()] = None,
     severity: Annotated[Literal["info", "warning", "critical"] | None, Query()] = None,
     limit: Annotated[int, Query(ge=1, le=MAX_LIMIT)] = 50,
     cursor: Annotated[str | None, Query()] = None,
 ) -> NotificationPage:
     where = ["account_id = %s"]
     args: list[Any] = [str(account.id)]
-    if status:
+    if status == "open":
+        # Unread and read together, so S13's Open list pages through the service rather
+        # than filtering one page of every notice in the browser.
+        where.append("status <> 'done'")
+    elif status:
         where.append("status = %s")
         args.append(status)
     if severity:

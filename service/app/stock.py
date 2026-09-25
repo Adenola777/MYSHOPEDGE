@@ -110,7 +110,19 @@ class StockMovement(BaseModel):
     created_by: UUID | None = None
 
 
+class MovementSku(BaseModel):
+    """Which variant the movements belong to. Added 25 September 2026 at the owner's
+    instruction, because QA found the screen that adjusts a variant's stock named nothing."""
+    sku_id: UUID
+    product_id: UUID
+    product_title: str | None = None
+    variant_label: str | None = None
+    seller_sku: str | None = None
+    tiktok_sku_id: str | None = None
+
+
 class MovementPage(BaseModel):
+    sku: MovementSku
     movements: list[StockMovement]
     next_cursor: str | None = None
 
@@ -265,7 +277,9 @@ def get_stock_movements(
 
     with tenant(account.id) as conn:
         known = conn.execute(
-            "select 1 from skus where id = %s and shop_id = %s",
+            "select k.id, k.product_id, p.title, k.variant_label, k.seller_sku, k.tiktok_sku_id "
+            "from skus k join products p on p.id = k.product_id "
+            "where k.id = %s and k.shop_id = %s",
             (str(sku_id), str(shop_id)),
         ).fetchone()
         if known is None:
@@ -286,7 +300,14 @@ def get_stock_movements(
         rows = rows[:limit]
         next_cursor = encode_cursor(rows[-1]["occurred_at"], rows[-1]["id"])
 
-    return MovementPage(movements=[StockMovement(**r) for r in rows], next_cursor=next_cursor)
+    return MovementPage(
+        sku=MovementSku(
+            sku_id=known[0], product_id=known[1], product_title=known[2],
+            variant_label=known[3], seller_sku=known[4], tiktok_sku_id=known[5],
+        ),
+        movements=[StockMovement(**r) for r in rows],
+        next_cursor=next_cursor,
+    )
 
 
 # --- createStockAdjustment, STK-4 ----------------------------------------------------------

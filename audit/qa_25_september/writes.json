@@ -481,14 +481,14 @@
   "got": [
    200,
    [
-    "6484882d-9ea0-4217-9f65-4c9a8c1cde16"
+    "e85c843a-15d7-4c67-ab94-5667f39fec6b"
    ],
    1
   ],
   "want": [
    200,
    [
-    "6484882d-9ea0-4217-9f65-4c9a8c1cde16"
+    "e85c843a-15d7-4c67-ab94-5667f39fec6b"
    ],
    1
   ]
@@ -566,17 +566,17 @@
    201,
    {
     "movement": {
-     "id": "b869506f-1481-4472-b4cb-6c88f7e047c6",
+     "id": "e6c807f5-a417-4132-9c9b-7bda9dc1ba0e",
      "reason": "QA: two damaged",
      "order_id": null,
      "quantity": -2,
      "return_id": null,
      "created_by": "56e487ea-e0fa-3691-7857-724855e716fc",
-     "occurred_at": "2026-09-25T12:31:52.714989Z",
+     "occurred_at": "2026-09-25T12:48:30.219951Z",
      "movement_type": "manual_adjustment"
     },
     "position": {
-     "as_of": "2026-09-25T12:31:33.852898Z",
+     "as_of": "2026-09-25T12:48:23.387276Z",
      "state": "healthy",
      "sku_id": "1b126d84-efdf-c9ea-0182-cdcc0a6af22f",
      "on_shelf": 17,
@@ -596,10 +596,10 @@
    201,
    {
     "movement": {
-     "id": "b869506f-1481-4472-b4cb-6c88f7e047c6",
+     "id": "e6c807f5-a417-4132-9c9b-7bda9dc1ba0e",
      "movement_type": "manual_adjustment",
      "quantity": -2,
-     "occurred_at": "2026-09-25T12:31:52.714989Z",
+     "occurred_at": "2026-09-25T12:48:30.219951Z",
      "order_id": null,
      "return_id": null,
      "reason": "QA: two damaged",
@@ -618,7 +618,7 @@
      "written_off": 0,
      "state": "healthy",
      "days_left": null,
-     "as_of": "2026-09-25T12:31:33.852898Z"
+     "as_of": "2026-09-25T12:48:23.387276Z"
     }
    }
   ]
@@ -685,11 +685,11 @@
      "effect": null,
      "status": "resolved",
      "entity_id": "47ccb32b-f09c-99f7-cd52-781d3a83ea97",
-     "opened_at": "2026-09-25T12:31:33.852898Z",
+     "opened_at": "2026-09-25T12:48:23.387276Z",
      "resolution": "explained",
      "correctable": false,
      "entity_type": "settlement",
-     "resolved_at": "2026-09-25T12:31:52.767650Z",
+     "resolved_at": "2026-09-25T12:48:30.274193Z",
      "seller_value": null,
      "tiktok_value": "-5.00",
      "applied_value": "-5.00"
@@ -713,8 +713,8 @@
      "resolution": "explained",
      "note": "QA: TikTok penalty explained",
      "effect": null,
-     "opened_at": "2026-09-25T12:31:33.852898Z",
-     "resolved_at": "2026-09-25T12:31:52.767650Z",
+     "opened_at": "2026-09-25T12:48:23.387276Z",
+     "resolved_at": "2026-09-25T12:48:30.274193Z",
      "correctable": false
     },
     "adjustment_posted": null

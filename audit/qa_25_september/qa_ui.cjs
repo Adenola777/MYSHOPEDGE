@@ -39,11 +39,14 @@ const check = (name, ok, detail = "") => { res.push({ ok: !!ok, name, detail });
   const sm = t.shop_money;
   await visit("Today", `/shops/${SH}/today`, [gbp(sm.generated), gbp(sm.paid_out), gbp(sm.awaiting), gbp(sm.return_postage), "Synthetic UK Shop", ...t.needs_you.map((n) => n.label)]);
   const bell = await page.$eval(".bell", (e) => e.innerText + " " + (e.getAttribute("aria-label") || "")).catch(() => "");
-  check("Top bar: bell shows one unread", /1/.test(bell), bell);
+  check("Top bar: bell shows the three unread", /3/.test(bell), bell);
   // Products for July and August
   const R = "from=2026-07-01&to=2026-08-31";
   const pr = await api(`/shops/${SH}/products?${R}`);
-  await visit("Products", `/shops/${SH}/products?${R}`, [...pr.products.map((p) => p.title), ...pr.products.map((p) => gbp(p.kept)), gbp(pr.total)]);
+  await visit("Products", `/shops/${SH}/products?${R}`, [...pr.products.map((p) => p.title), ...pr.products.map((p) => gbp(p.kept)), gbp(pr.total),
+    "For the whole shop, not one product", "TikTok adjustment", "TikTok calls it PLATFORM_PENALTY", "Total for the shop", gbp(pr.shop_total)]);
+  const mk = await api(`/shops/${SH}/money?${R}`);
+  check("Products: shop total equals Money's gross profit after returns", pr.shop_total.amount_minor === mk.kept.amount_minor, `${pr.shop_total.amount_minor} vs ${mk.kept.amount_minor}`);
   for (const m of ["units", "returns"]) {
     const x = await api(`/shops/${SH}/products?${R}&measure=${m}`);
     await visit(`Products by ${m}`, `/shops/${SH}/products?${R}&measure=${m}`, x.products.map((p) => p.title), false);
@@ -65,13 +68,29 @@ const check = (name, ok, detail = "") => { res.push({ ok: !!ok, name, detail });
   await visit("Stock", `/shops/${SH}/stock`, [...new Set(st.items.map((i) => i.product_title))]);
   for (const s of ["out", "low", "healthy"]) await visit(`Stock filter ${s}`, `/shops/${SH}/stock?state=${s}`, [], false);
   const sku = st.items.find((i) => i.seller_sku === "HAIR-BLUE");
-  await visit("Stock variant", `/shops/${SH}/stock/${sku.sku_id}`, [sku.product_title]);
+  await visit("Stock variant", `/shops/${SH}/stock/${sku.sku_id}`, [sku.product_title, "Blue", "SKU HAIR-BLUE"]);
+  check("Stock variant: heading is the product", (await page.innerText("h1")) === sku.product_title, await page.innerText("h1"));
   // Records, Discrepancies, Notifications, Shops, Start
   const rec = await api(`/shops/${SH}/records`);
   await visit("Records", `/shops/${SH}/records`, rec.entries.slice(0, 5).map((e) => gbp(e.amount)));
   const dc = await api(`/shops/${SH}/discrepancies`);
   await visit("Discrepancies", `/shops/${SH}/discrepancies`, ["Mark as explained"]);
-  await visit("Notifications", `/shops/${SH}/notifications`, ["QA notification for the bell"]);
+  await visit("Notifications", `/shops/${SH}/notifications`, ["QA notification for the bell", "QA second notice", "QA third notice", "3 unread", "Mark all as read"]);
+  const bellCount = async () => (await page.$eval(".bell", (e) => e.innerText).catch(() => "")).trim();
+  check("Notifications: bell shows 3", (await bellCount()).includes("3"), await bellCount());
+  await page.click('button[aria-label="Mark as read: QA notification for the bell"]'); await page.waitForTimeout(1500);
+  check("Notifications: one marked read is stored", sql("select status from notifications where title='QA notification for the bell'") === "read");
+  check("Notifications: header and bell fall to 2", (await page.innerText("body")).includes("2 unread") && (await bellCount()).includes("2"), await bellCount());
+  await page.click('button[aria-label="Mark as done: QA second notice"]'); await page.waitForTimeout(1500);
+  check("Notifications: one marked done is stored", sql("select status from notifications where title='QA second notice'") === "done");
+  let body = await page.innerText("body");
+  check("Notifications: a done notice leaves Open", !body.includes("QA second notice"), body.slice(0, 300));
+  await page.click('button:has-text("Mark all as read")'); await page.waitForTimeout(2000);
+  check("Notifications: mark all as read stores every one", sql("select count(*) from notifications where status='unread'") === "0");
+  body = await page.innerText("body");
+  check("Notifications: nothing unread, and the bell carries no count", body.includes("Nothing new.") && !/\d/.test(await bellCount()), await bellCount());
+  await visit("Notifications resolved", `/shops/${SH}/notifications?show=resolved`, ["QA second notice"]);
+  check("Notifications: a done notice offers no action", !(await page.innerText("body")).includes("Mark as read"));
   await visit("Start", `/start`, []);
   // Writes through the screens
   await page.goto(W + `/shops/${SH}/products/${p0.product_id}?${R}`, { waitUntil: "networkidle" });

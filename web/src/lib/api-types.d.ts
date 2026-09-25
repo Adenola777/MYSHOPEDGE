@@ -1857,6 +1857,23 @@ export interface components {
                 count?: number;
                 amount?: components["schemas"]["Money"];
             };
+            /**
+             * @description Money in the period that belongs to the shop and to no product, such as a
+             *     platform adjustment TikTok applies to a whole statement. Each is its own line,
+             *     named as the money screen names it. Null when there is none. Ruled by the owner
+             *     on 25 September 2026, so that the products screen adds up to the money screen.
+             */
+            unattributed?: {
+                amount: components["schemas"]["Money"];
+                lines: components["schemas"]["CalculatorLine"][];
+            } | null;
+            /**
+             * @description `total` plus `unattributed.amount`. For the `kept` measure this equals the
+             *     money screen's Gross profit after returns for the same period and basis. Null
+             *     when a product sold in the period has no cost price, because the shop's profit
+             *     is then not known, and a total that left that product out would read as one.
+             */
+            shop_total?: components["schemas"]["Money"] | null;
             next_cursor?: string | null;
         };
         ProductRow: {
@@ -2587,7 +2604,12 @@ export interface operations {
                 limit?: components["parameters"]["Limit"];
                 /** @description The `next_cursor` from a previous response. Opaque, do not parse. */
                 cursor?: components["parameters"]["Cursor"];
-                status?: "unread" | "read" | "done";
+                /**
+                 * @description `open` is every notice not yet done, unread and read together, newest first.
+                 *     Added 25 September 2026 so the Open list on S13 pages through the service rather
+                 *     than filtering one page in the browser.
+                 */
+                status?: "unread" | "read" | "done" | "open";
                 severity?: "info" | "warning" | "critical";
             };
             header?: never;
@@ -3686,6 +3708,21 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CursorPage"] & {
+                        /**
+                         * @description The variant these movements belong to, so the screen that adjusts
+                         *     its stock can say which item it is. Added 25 September 2026 at the owner's
+                         *     instruction, after QA found the screen named nothing.
+                         */
+                        sku: {
+                            /** Format: uuid */
+                            sku_id: string;
+                            /** Format: uuid */
+                            product_id: string;
+                            product_title?: string | null;
+                            variant_label?: string | null;
+                            seller_sku?: string | null;
+                            tiktok_sku_id?: string | null;
+                        };
                         movements: components["schemas"]["StockMovement"][];
                     };
                 };
