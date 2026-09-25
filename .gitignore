@@ -21,3 +21,6 @@ service/.env
 service/__pycache__/
 service/**/__pycache__/
 *.pyc
+*.env
+credentials.json
+.credentials
