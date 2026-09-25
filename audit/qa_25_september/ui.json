@@ -1,0 +1,567 @@
+[
+ {
+  "ok": true,
+  "name": "Today: loads (200)",
+  "detail": "status 200"
+ },
+ {
+  "ok": true,
+  "name": "Today: no error state",
+  "detail": "Skip to content\nNot updated yet\n1\nToday\n\nSynthetic UK Shop\n\nYour shop has not been brought up to date yet, so these figures are not complete.\n\nGross profit after returns today Confirmed\n\n£0.00\n\nThis i"
+ },
+ {
+  "ok": true,
+  "name": "Today: shows the 8 expected values",
+  "detail": "missing []"
+ },
+ {
+  "ok": true,
+  "name": "Today: no sideways scroll at 390px",
+  "detail": ""
+ },
+ {
+  "ok": true,
+  "name": "Today: no console errors",
+  "detail": "[]"
+ },
+ {
+  "ok": true,
+  "name": "Today: 1 deductions drawn red",
+  "detail": "[\"rgb(179, 38, 30)\"]"
+ },
+ {
+  "ok": true,
+  "name": "Top bar: bell shows one unread",
+  "detail": "1 Notifications, 1 unread"
+ },
+ {
+  "ok": true,
+  "name": "Products: loads (200)",
+  "detail": "status 200"
+ },
+ {
+  "ok": true,
+  "name": "Products: no error state",
+  "detail": "Skip to content\nNot updated yet\n1\nProducts\n\nRanked by gross profit after returns\n\nGross profit\nUnits\nReturns\nDouble Use Curly Hair Brush\n11 sold, 3 returned. Net proceeds £143.50\n£117.58\nComputer Desk"
+ },
+ {
+  "ok": true,
+  "name": "Products: shows the 13 expected values",
+  "detail": "missing []"
+ },
+ {
+  "ok": true,
+  "name": "Products: no sideways scroll at 390px",
+  "detail": ""
+ },
+ {
+  "ok": true,
+  "name": "Products: no console errors",
+  "detail": "[]"
+ },
+ {
+  "ok": true,
+  "name": "Products by units: loads (200)",
+  "detail": "status 200"
+ },
+ {
+  "ok": true,
+  "name": "Products by units: no error state",
+  "detail": "Skip to content\nNot updated yet\n1\nProducts\n\nRanked by units sold\n\nGross profit\nUnits\nReturns\nDouble Use Curly Hair Brush\n11 sold, 3 returned. Net proceeds £143.50\n11\nTravel Duffel Bag\n4 sold, 2 return"
+ },
+ {
+  "ok": true,
+  "name": "Products by units: shows the 6 expected values",
+  "detail": "missing []"
+ },
+ {
+  "ok": true,
+  "name": "Products by units: no sideways scroll at 390px",
+  "detail": ""
+ },
+ {
+  "ok": true,
+  "name": "Products by units: no console errors",
+  "detail": "[]"
+ },
+ {
+  "ok": true,
+  "name": "Products by returns: loads (200)",
+  "detail": "status 200"
+ },
+ {
+  "ok": true,
+  "name": "Products by returns: no error state",
+  "detail": "Skip to content\nNot updated yet\n1\nProducts\n\nRanked by units returned\n\nGross profit\nUnits\nReturns\nDouble Use Curly Hair Brush\n11 sold, 3 returned. Net proceeds £143.50\n3\nTravel Duffel Bag\n4 sold, 2 ret"
+ },
+ {
+  "ok": true,
+  "name": "Products by returns: shows the 6 expected values",
+  "detail": "missing []"
+ },
+ {
+  "ok": true,
+  "name": "Products by returns: no sideways scroll at 390px",
+  "detail": ""
+ },
+ {
+  "ok": true,
+  "name": "Products by returns: no console errors",
+  "detail": "[]"
+ },
+ {
+  "ok": true,
+  "name": "Product detail: loads (200)",
+  "detail": "status 200"
+ },
+ {
+  "ok": true,
+  "name": "Product detail: no error state",
+  "detail": "Skip to content\nNot updated yet\n1\n\nProducts\n\nDouble Use Curly Hair Brush\n\n11 units sold in this period.\n\nOne unit, pound by pound\n\nWhere the money from one sale of this product goes.\n\nGross sales (GMV"
+ },
+ {
+  "ok": true,
+  "name": "Product detail: shows the 1 expected values",
+  "detail": "missing []"
+ },
+ {
+  "ok": true,
+  "name": "Product detail: no sideways scroll at 390px",
+  "detail": ""
+ },
+ {
+  "ok": true,
+  "name": "Product detail: no console errors",
+  "detail": "[]"
+ },
+ {
+  "ok": true,
+  "name": "Product detail: 8 deductions drawn red",
+  "detail": "[\"rgb(179, 38, 30)\"]"
+ },
+ {
+  "ok": true,
+  "name": "Money sales 2026-08-23: loads (200)",
+  "detail": "status 200"
+ },
+ {
+  "ok": true,
+  "name": "Money sales 2026-08-23: no error state",
+  "detail": "Skip to content\nNot updated yet\n1\nMoney\n\nWhere every pound went, 23 Aug 2026. Confirmed\n\nToday\nThis month\nSales basis\nCash basis\nTikTok fees\nTikTok adjustment\nTikTok calls it PLATFORM_PENALTY\n-£5.00\nN"
+ },
+ {
+  "ok": true,
+  "name": "Money sales 2026-08-23: shows the 2 expected values",
+  "detail": "missing []"
+ },
+ {
+  "ok": true,
+  "name": "Money sales 2026-08-23: no sideways scroll at 390px",
+  "detail": ""
+ },
+ {
+  "ok": true,
+  "name": "Money sales 2026-08-23: no console errors",
+  "detail": "[]"
+ },
+ {
+  "ok": true,
+  "name": "Money sales 2026-08-23: 2 deductions drawn red",
+  "detail": "[\"rgb(179, 38, 30)\"]"
+ },
+ {
+  "ok": true,
+  "name": "Money cash 2026-08-23: loads (200)",
+  "detail": "status 200"
+ },
+ {
+  "ok": true,
+  "name": "Money cash 2026-08-23: no error state",
+  "detail": "Skip to content\nNot updated yet\n1\nMoney\n\nWhere every pound went, 23 Aug 2026. Confirmed\n\nToday\nThis month\nSales basis\nCash basis\n\nCash basis counts money in the month TikTok settled it. Nothing sold i"
+ },
+ {
+  "ok": true,
+  "name": "Money cash 2026-08-23: shows the 0 expected values",
+  "detail": "missing []"
+ },
+ {
+  "ok": true,
+  "name": "Money cash 2026-08-23: no sideways scroll at 390px",
+  "detail": ""
+ },
+ {
+  "ok": true,
+  "name": "Money cash 2026-08-23: no console errors",
+  "detail": "[]"
+ },
+ {
+  "ok": true,
+  "name": "Money this month: loads (200)",
+  "detail": "status 200"
+ },
+ {
+  "ok": true,
+  "name": "Money this month: no error state",
+  "detail": "Skip to content\nNot updated yet\n1\nMoney\n\nWhere every pound went, 1 Sept 2026 to 25 Sept 2026. Confirmed\n\nToday\nThis month\nSales basis\nCash basis\n\nSales basis counts money on the day of the sale. Nothi"
+ },
+ {
+  "ok": true,
+  "name": "Money this month: shows the 0 expected values",
+  "detail": "missing []"
+ },
+ {
+  "ok": true,
+  "name": "Money this month: no sideways scroll at 390px",
+  "detail": ""
+ },
+ {
+  "ok": true,
+  "name": "Money this month: no console errors",
+  "detail": "[]"
+ },
+ {
+  "ok": true,
+  "name": "Stock: loads (200)",
+  "detail": "status 200"
+ },
+ {
+  "ok": true,
+  "name": "Stock: no error state",
+  "detail": "Skip to content\nNot updated yet\n1\nStock\n\nWhat you have, as TikTok last reported it with your adjustments. Counted 25 Sept 2026, 13:31.\n\nAll\nOut of stock\nLow\nReturns in transit\nHealthy\n\nDays of cover i"
+ },
+ {
+  "ok": true,
+  "name": "Stock: shows the 6 expected values",
+  "detail": "missing []"
+ },
+ {
+  "ok": true,
+  "name": "Stock: no sideways scroll at 390px",
+  "detail": ""
+ },
+ {
+  "ok": true,
+  "name": "Stock: no console errors",
+  "detail": "[]"
+ },
+ {
+  "ok": true,
+  "name": "Stock filter out: loads (200)",
+  "detail": "status 200"
+ },
+ {
+  "ok": true,
+  "name": "Stock filter out: no error state",
+  "detail": "Skip to content\nNot updated yet\n1\nStock\n\nWhat you have, as TikTok last reported it with your adjustments. Counted 25 Sept 2026, 13:31.\n\nAll\nOut of stock\nLow\nReturns in transit\nHealthy\n\nDays of cover i"
+ },
+ {
+  "ok": true,
+  "name": "Stock filter out: shows the 0 expected values",
+  "detail": "missing []"
+ },
+ {
+  "ok": true,
+  "name": "Stock filter out: no sideways scroll at 390px",
+  "detail": ""
+ },
+ {
+  "ok": true,
+  "name": "Stock filter out: no console errors",
+  "detail": "[]"
+ },
+ {
+  "ok": true,
+  "name": "Stock filter low: loads (200)",
+  "detail": "status 200"
+ },
+ {
+  "ok": true,
+  "name": "Stock filter low: no error state",
+  "detail": "Skip to content\nNot updated yet\n1\nStock\n\nWhat you have, as TikTok last reported it with your adjustments. Counted 25 Sept 2026, 13:31.\n\nAll\nOut of stock\nLow\nReturns in transit\nHealthy\nNo variants in t"
+ },
+ {
+  "ok": true,
+  "name": "Stock filter low: shows the 0 expected values",
+  "detail": "missing []"
+ },
+ {
+  "ok": true,
+  "name": "Stock filter low: no sideways scroll at 390px",
+  "detail": ""
+ },
+ {
+  "ok": true,
+  "name": "Stock filter low: no console errors",
+  "detail": "[]"
+ },
+ {
+  "ok": true,
+  "name": "Stock filter healthy: loads (200)",
+  "detail": "status 200"
+ },
+ {
+  "ok": true,
+  "name": "Stock filter healthy: no error state",
+  "detail": "Skip to content\nNot updated yet\n1\nStock\n\nWhat you have, as TikTok last reported it with your adjustments. Counted 25 Sept 2026, 13:31.\n\nAll\nOut of stock\nLow\nReturns in transit\nHealthy\n\nDays of cover i"
+ },
+ {
+  "ok": true,
+  "name": "Stock filter healthy: shows the 0 expected values",
+  "detail": "missing []"
+ },
+ {
+  "ok": true,
+  "name": "Stock filter healthy: no sideways scroll at 390px",
+  "detail": ""
+ },
+ {
+  "ok": true,
+  "name": "Stock filter healthy: no console errors",
+  "detail": "[]"
+ },
+ {
+  "ok": true,
+  "name": "Stock variant: loads (200)",
+  "detail": "status 200"
+ },
+ {
+  "ok": true,
+  "name": "Stock variant: no error state",
+  "detail": "Skip to content\nNot updated yet\n1\n\nStock\n\nStock movements\n\nEvery change to this variant’s count, newest first.\n\nAdjust the count\n\nThis changes your count in MyShopEdge only. TikTok’s own figure stays "
+ },
+ {
+  "ok": false,
+  "name": "Stock variant: shows the 1 expected values",
+  "detail": "missing [\"Double Use Curly Hair Brush\"]"
+ },
+ {
+  "ok": true,
+  "name": "Stock variant: no sideways scroll at 390px",
+  "detail": ""
+ },
+ {
+  "ok": true,
+  "name": "Stock variant: no console errors",
+  "detail": "[]"
+ },
+ {
+  "ok": true,
+  "name": "Records: loads (200)",
+  "detail": "status 200"
+ },
+ {
+  "ok": true,
+  "name": "Records: no error state",
+  "detail": "Skip to content\nNot updated yet\n1\n\nMoney\n\nRecords\n\nOn the sales basis. These are the records behind the figure, as the ledger holds them.\n\nPayout\n23 Aug 2026\n£5.13\nTikTok adjustment\n23 Aug 2026. TikTo"
+ },
+ {
+  "ok": true,
+  "name": "Records: shows the 5 expected values",
+  "detail": "missing []"
+ },
+ {
+  "ok": true,
+  "name": "Records: no sideways scroll at 390px",
+  "detail": ""
+ },
+ {
+  "ok": true,
+  "name": "Records: no console errors",
+  "detail": "[]"
+ },
+ {
+  "ok": true,
+  "name": "Records: 18 deductions drawn red",
+  "detail": "[\"rgb(179, 38, 30)\"]"
+ },
+ {
+  "ok": true,
+  "name": "Discrepancies: loads (200)",
+  "detail": "status 200"
+ },
+ {
+  "ok": true,
+  "name": "Discrepancies: no error state",
+  "detail": "Skip to content\nNot updated yet\n1\nDiscrepancies\n\n1 discrepancy is open. While one is open, totals use TikTok's value.\n\nOpen\nResolved\nAmount differs Open\n\nOn a settlement, found 25 Sept 2026.\n\nWhat we "
+ },
+ {
+  "ok": true,
+  "name": "Discrepancies: shows the 1 expected values",
+  "detail": "missing []"
+ },
+ {
+  "ok": true,
+  "name": "Discrepancies: no sideways scroll at 390px",
+  "detail": ""
+ },
+ {
+  "ok": true,
+  "name": "Discrepancies: no console errors",
+  "detail": "[]"
+ },
+ {
+  "ok": true,
+  "name": "Notifications: loads (200)",
+  "detail": "status 200"
+ },
+ {
+  "ok": true,
+  "name": "Notifications: no error state",
+  "detail": "Skip to content\nNot updated yet\n1\nNotifications\n\n1 unread\n\nOpen\nResolved\nQA notification for the bell\nInserted by the QA run 25 Sept 2026\nCheck\nToday\nStock\nProducts\nMoney\n\nMyShopEdge is operated by In"
+ },
+ {
+  "ok": true,
+  "name": "Notifications: shows the 1 expected values",
+  "detail": "missing []"
+ },
+ {
+  "ok": true,
+  "name": "Notifications: no sideways scroll at 390px",
+  "detail": ""
+ },
+ {
+  "ok": true,
+  "name": "Notifications: no console errors",
+  "detail": "[]"
+ },
+ {
+  "ok": true,
+  "name": "Start: loads (200)",
+  "detail": "status 200"
+ },
+ {
+  "ok": true,
+  "name": "Start: no error state",
+  "detail": "Skip to content\nSign-in is not set up on this copy of MyShopEdge.\n\nThe Stack project id is not configured here, so nobody can sign in yet.\n\nMyShopEdge is operated by Inspirecraft Global Limited, Leice"
+ },
+ {
+  "ok": true,
+  "name": "Start: shows the 0 expected values",
+  "detail": "missing []"
+ },
+ {
+  "ok": true,
+  "name": "Start: no sideways scroll at 390px",
+  "detail": ""
+ },
+ {
+  "ok": true,
+  "name": "Start: no console errors",
+  "detail": "[]"
+ },
+ {
+  "ok": true,
+  "name": "Write: cost saved through the screen",
+  "detail": "420"
+ },
+ {
+  "ok": true,
+  "name": "Write: stock adjustment saved through the screen",
+  "detail": ""
+ },
+ {
+  "ok": true,
+  "name": "Write: variant screen shows the adjustment",
+  "detail": "Skip to content\nNot updated yet\n1\n\nStock\n\nStock movements\n\nEvery change to this variant’s count, newest first.\n\nAdjust the count\n\nThis changes your count in MyShopEdge only. TikTok’s own figure stays as it is, and the difference is kept as your adjustment.\n\nUnits\nReason\n\nSave adjustment\n\nHistory\nAdj"
+ },
+ {
+  "ok": true,
+  "name": "Write: discrepancy resolved through the screen",
+  "detail": ""
+ },
+ {
+  "ok": true,
+  "name": "Today after writes: loads (200)",
+  "detail": "status 200"
+ },
+ {
+  "ok": true,
+  "name": "Today after writes: no error state",
+  "detail": "Skip to content\nNot updated yet\n1\nToday\n\nSynthetic UK Shop\n\nYour shop has not been brought up to date yet, so these figures are not complete.\n\nGross profit after returns today Confirmed\n\n£0.00\n\nThis i"
+ },
+ {
+  "ok": true,
+  "name": "Today after writes: shows the 0 expected values",
+  "detail": "missing []"
+ },
+ {
+  "ok": true,
+  "name": "Today after writes: no sideways scroll at 390px",
+  "detail": ""
+ },
+ {
+  "ok": true,
+  "name": "Today after writes: no console errors",
+  "detail": "[]"
+ },
+ {
+  "ok": true,
+  "name": "Today after writes: 1 deductions drawn red",
+  "detail": "[\"rgb(179, 38, 30)\"]"
+ },
+ {
+  "ok": true,
+  "name": "Today after writes: discrepancy gone from Needs you",
+  "detail": ""
+ },
+ {
+  "ok": true,
+  "name": "Today desktop: loads (200)",
+  "detail": "status 200"
+ },
+ {
+  "ok": true,
+  "name": "Today desktop: no error state",
+  "detail": "Skip to content\nNot updated yet\n1\nToday\n\nSynthetic UK Shop\n\nYour shop has not been brought up to date yet, so these figures are not complete.\n\nGross profit after returns today Confirmed\n\n£0.00\n\nThis i"
+ },
+ {
+  "ok": true,
+  "name": "Today desktop: shows the 0 expected values",
+  "detail": "missing []"
+ },
+ {
+  "ok": true,
+  "name": "Today desktop: no sideways scroll at 390px",
+  "detail": ""
+ },
+ {
+  "ok": true,
+  "name": "Today desktop: no console errors",
+  "detail": "[]"
+ },
+ {
+  "ok": true,
+  "name": "Today desktop: 1 deductions drawn red",
+  "detail": "[\"rgb(179, 38, 30)\"]"
+ },
+ {
+  "ok": true,
+  "name": "Money desktop: loads (200)",
+  "detail": "status 200"
+ },
+ {
+  "ok": true,
+  "name": "Money desktop: no error state",
+  "detail": "Skip to content\nNot updated yet\n1\nMoney\n\nWhere every pound went, 23 Aug 2026. Confirmed\n\nToday\nThis month\nSales basis\nCash basis\nTikTok fees\nTikTok adjustment\nTikTok calls it PLATFORM_PENALTY\n-£5.00\nN"
+ },
+ {
+  "ok": true,
+  "name": "Money desktop: shows the 0 expected values",
+  "detail": "missing []"
+ },
+ {
+  "ok": true,
+  "name": "Money desktop: no sideways scroll at 390px",
+  "detail": ""
+ },
+ {
+  "ok": true,
+  "name": "Money desktop: no console errors",
+  "detail": "[]"
+ },
+ {
+  "ok": true,
+  "name": "Money desktop: 2 deductions drawn red",
+  "detail": "[\"rgb(179, 38, 30)\"]"
+ }
+]
