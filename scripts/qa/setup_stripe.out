@@ -1,0 +1,45 @@
+/app/service/scripts/setup_stripe.py:66: DeprecationWarning: 
+        StripeClient.products is deprecated, use StripeClient.v1.products instead.
+          All functionality under it has been copied over to StripeClient.v1.products.
+          See [migration guide](https://github.com/stripe/stripe-python/wiki/v1-namespace-in-StripeClient) for more on this and tips on migrating to the new v1 namespace.
+        
+  found = client.products.search(params={"query": f"metadata['plan']:'{slug}'", "limit": 1})
+/app/service/scripts/setup_stripe.py:69: DeprecationWarning: 
+        StripeClient.products is deprecated, use StripeClient.v1.products instead.
+          All functionality under it has been copied over to StripeClient.v1.products.
+          See [migration guide](https://github.com/stripe/stripe-python/wiki/v1-namespace-in-StripeClient) for more on this and tips on migrating to the new v1 namespace.
+        
+  return client.products.create(
+/app/service/scripts/setup_stripe.py:77: DeprecationWarning: 
+        StripeClient.prices is deprecated, use StripeClient.v1.prices instead.
+          All functionality under it has been copied over to StripeClient.v1.prices.
+          See [migration guide](https://github.com/stripe/stripe-python/wiki/v1-namespace-in-StripeClient) for more on this and tips on migrating to the new v1 namespace.
+        
+  found = client.prices.list(params={"lookup_keys": [lookup_key], "active": True, "limit": 1})
+/app/service/scripts/setup_stripe.py:85: DeprecationWarning: 
+        StripeClient.prices is deprecated, use StripeClient.v1.prices instead.
+          All functionality under it has been copied over to StripeClient.v1.prices.
+          See [migration guide](https://github.com/stripe/stripe-python/wiki/v1-namespace-in-StripeClient) for more on this and tips on migrating to the new v1 namespace.
+        
+  price = client.prices.create(
+Starter  prod_VKHqwf1LIHsqJN  price_1UJdGnLF1o1OftCsT6y1wOKH  created
+/app/service/scripts/setup_stripe.py:66: DeprecationWarning: 
+        StripeClient.products is deprecated, use StripeClient.v1.products instead.
+          All functionality under it has been copied over to StripeClient.v1.products.
+          See [migration guide](https://github.com/stripe/stripe-python/wiki/v1-namespace-in-StripeClient) for more on this and tips on migrating to the new v1 namespace.
+        
+  found = client.products.search(params={"query": f"metadata['plan']:'{slug}'", "limit": 1})
+Growth   prod_VKHqoiEKccBefO  price_1UJdGoLF1o1OftCsMSwJFD1m  created
+Pro      prod_VKHq4HJFqB0cnK  price_1UJdGpLF1o1OftCsSrqEHz42  created
+
+The trial is 14 days and it is set on the subscription, not on the
+price, so it does not appear here.
+
+Set these where the service runs:
+
+STRIPE_PRICE_STARTER=price_1UJdGnLF1o1OftCsT6y1wOKH
+STRIPE_PRICE_GROWTH=price_1UJdGoLF1o1OftCsMSwJFD1m
+STRIPE_PRICE_PRO=price_1UJdGpLF1o1OftCsSrqEHz42
+
+The VAT treatment of these prices is not settled. Set tax_behavior on each
+price before anyone subscribes, because it cannot be changed afterwards.
