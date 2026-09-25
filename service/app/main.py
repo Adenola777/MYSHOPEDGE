@@ -26,6 +26,7 @@ from . import (
     settlements,
     stock,
     sync_status,
+    tax,
     today_view,
 )
 from .problems import problem_handler, problem_response
@@ -89,6 +90,7 @@ app.include_router(returns.router, prefix="/v1")
 app.include_router(settlements.router, prefix="/v1")
 app.include_router(stock.router, prefix="/v1")
 app.include_router(sync_status.router, prefix="/v1")
+app.include_router(tax.router, prefix="/v1")
 app.include_router(today_view.router, prefix="/v1")
 
 

@@ -109,10 +109,22 @@ and by `/app/service/tests/test_billing_local_harness.py`. The owner runs the sa
 3. TikTok ingestion, token refresh and expected payouts. Needs the owner's Seller Developer
    custom app credentials on GBGBLCRKQTEX. Cannot be verified live from the harness.
 4. Cost file uploads, seven operations, once storage is chosen.
-5. Tax features, six operations.
+5. Tax features. VAT monitor and tax profile done 26 June 2026; set-aside amount pending rules.
 6. Analytics reads and the export worker.
 7. Account and shop management, the order quota, and account suspension. Needs the four
    `checkReturnItem` rulings.
 8. The remaining screens, and the privacy and terms pages.
 9. Test data across months and the clock change, the three tooling faults, and the data
    protection confirmations.
+
+### Phase 5 progress, tax. Done 26 June 2026 (VAT monitor, tax profile).
+`service/app/tax.py` adds getTaxProfile, putTaxProfile, getVatMonitor and getSetAside, to
+the contract. The VAT threshold is read from `reference_rules`, not hard-coded; the rule was
+seeded from HMRC (GBP 90,000, effective 1 April 2024) by `testdata/reference_rules_seed.sql`.
+Verified against the real stack: the rolling twelve-month turnover reads GBP 862.00, which
+reconciles with the Money screen; the threshold, headroom and month buckets are correct; a
+VAT-registered profile without a date is refused with 422; a forbidden shop returns 403.
+Set-aside returns `no_tax_profile` with no profile, and null with a basis note once a profile
+exists, because the income-tax and NI reference rules and the set-aside method are not yet
+ruled. Two owner inputs remain for the numbers: the income-tax and NI reference values, and
+the set-aside method.
