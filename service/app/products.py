@@ -190,11 +190,16 @@ returned as (
      and (coalesce(r.refund_completed_at, r.requested_at) at time zone 'Europe/London')::date <= %(to)s
    group by s.product_id, s.id
 ),
--- The cost in force for the SKU, which is the latest not-superseded row.
+-- The cost in force at the end of the period, which for a past month is the cost that
+-- applied then and not today's. A cost whose effective_from is after the period end is not
+-- used, so entering or changing a cost now no longer rewrites a closed month's profit.
+-- Fixes the cost-recompute bug noted in costs.py. Uses effective_from, not superseded_at,
+-- because superseded_at only records when a row was replaced, while effective_from is the
+-- business date the cost took effect (A4).
 cost as (
   select distinct on (sku_id) sku_id, cost_minor
     from product_costs
-   where shop_id = %(shop)s and superseded_at is null
+   where shop_id = %(shop)s and effective_from <= %(to)s
    order by sku_id, effective_from desc
 ),
 -- A4: retained cost is cost x (sold - returned), per SKU, floored at zero because more

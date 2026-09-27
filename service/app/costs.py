@@ -161,7 +161,8 @@ with sold as (
 ),
 costed as (
   select sold.*, exists (select 1 from product_costs pc
-                          where pc.sku_id = sold.sku_id and pc.superseded_at is null) as has_cost
+                          where pc.sku_id = sold.sku_id
+                            and pc.effective_from <= %(to)s) as has_cost
     from sold
 )
 select c.sku_id, p.title as product_title, c.units, c.gross_minor, c.has_cost,

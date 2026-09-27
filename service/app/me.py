@@ -24,8 +24,11 @@ one shop.
 
 from __future__ import annotations
 
+import csv
 import hashlib
+import io
 import json
+import zipfile
 from datetime import datetime
 from typing import Annotated, Literal
 from uuid import UUID, uuid4
@@ -38,6 +41,7 @@ from .dates import now_utc
 from .db import tenant
 from .idempotency import record, replay, request_hash
 from .problems import Problem
+from .storage import get_object, put_object
 
 router = APIRouter(tags=["Account"])
 
@@ -234,20 +238,91 @@ class ExportJob(BaseModel):
     size_bytes: int | None = None
 
 
+def _account_key(account_id: UUID, export_id: UUID) -> str:
+    return f"myshopedge/account-exports/{account_id}/{export_id}.zip"
+
+
+def _csv_bytes(header: list[str], rows: list) -> str:
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(header)
+    w.writerows(rows)
+    return buf.getvalue()
+
+
+def _build_archive(conn, account: Account) -> bytes:
+    """A ZIP of the account's data as separate CSVs, read through the caller's own scope."""
+    out = io.BytesIO()
+    with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as zf:
+        acc = conn.execute(
+            "select id, email, status, created_at from accounts where id = %s",
+            (str(account.id),),
+        ).fetchone()
+        zf.writestr("account.csv", _csv_bytes(
+            ["id", "email", "status", "created_at"],
+            [[acc[0], acc[1], acc[2], acc[3].isoformat() if acc[3] else ""]] if acc else [],
+        ))
+
+        shops = conn.execute(
+            "select id, tiktok_shop_id, shop_name, region, connection_status, created_at "
+            "from shops where account_id = %s order by created_at", (str(account.id),),
+        ).fetchall()
+        zf.writestr("shops.csv", _csv_bytes(
+            ["id", "tiktok_shop_id", "shop_name", "region", "connection_status", "created_at"],
+            [[s[0], s[1], s[2], s[3], s[4], s[5].isoformat() if s[5] else ""] for s in shops],
+        ))
+
+        ledger = conn.execute(
+            "select le.basis_day, le.entry_type, le.category, le.amount_minor, le.currency, "
+            "le.source, o.tiktok_order_id from ledger_entries le "
+            "left join orders o on o.id = le.order_id "
+            "where le.shop_id in (select id from shops where account_id = %s) "
+            "order by le.occurred_at, le.id", (str(account.id),),
+        ).fetchall()
+        zf.writestr("ledger.csv", _csv_bytes(
+            ["date", "type", "category", "amount_minor", "currency", "source", "tiktok_order"],
+            [[r[0].isoformat(), r[1], r[2], r[3], r[4], r[5], r[6] or ""] for r in ledger],
+        ))
+
+        costs = conn.execute(
+            "select k.seller_sku, pc.cost_minor, pc.packing_minor, pc.postage_minor, "
+            "pc.currency, pc.source, pc.effective_from, pc.superseded_at "
+            "from product_costs pc join skus k on k.id = pc.sku_id "
+            "where pc.shop_id in (select id from shops where account_id = %s) "
+            "order by k.seller_sku, pc.effective_from", (str(account.id),),
+        ).fetchall()
+        zf.writestr("product-costs.csv", _csv_bytes(
+            ["seller_sku", "cost_minor", "packing_minor", "postage_minor", "currency",
+             "source", "effective_from", "superseded_at"],
+            [[r[0], r[1], r[2], r[3], r[4], r[5], r[6].isoformat() if r[6] else "",
+              r[7].isoformat() if r[7] else ""] for r in costs],
+        ))
+
+        other = conn.execute(
+            "select month, channel, gross_minor, entered_at from other_channel_sales "
+            "where shop_id in (select id from shops where account_id = %s) order by month",
+            (str(account.id),),
+        ).fetchall()
+        zf.writestr("other-channel-sales.csv", _csv_bytes(
+            ["month", "channel", "gross_minor", "entered_at"],
+            [[r[0].isoformat(), r[1], r[2], r[3].isoformat() if r[3] else ""] for r in other],
+        ))
+    return out.getvalue()
+
+
 @router.post("/me/export", status_code=202, response_model=ExportJob,
              summary="Request a download of the account's data")
 def request_account_export(
     account: Annotated[Account, Depends(require_account)],
     idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None,
 ):
-    """Queue a full account-data export.
+    """Build a ZIP of the account's data and store it, then return a ready job.
 
-    The archive is written by a background worker to object storage, and neither the worker
-    nor an account-scoped export store exists yet (BUILD_PLAN Wave 2). The `exports` table is
-    for shop report exports only (its `kind` and `format` checks forbid an account archive),
-    so nothing is written there. This accepts the request and answers 202 with a queued job.
-    The job id is held against the Idempotency-Key so a repeat returns the same id, which is
-    the promise the contract makes. `download_url` stays absent until the worker exists.
+    The archive is a set of CSVs (account, shops, ledger, product costs, other-channel
+    sales), each read through the caller's own scope. It is small, so it is built here rather
+    than by a separate worker, and the job is `ready` when the 202 returns. `download_url`
+    points back at this service, because the store issues no public links. A repeat with the
+    same Idempotency-Key returns the same job.
     """
     op = "requestAccountExport"
     digest = request_hash(str(account.id))
@@ -257,6 +332,30 @@ def request_account_export(
             from fastapi.responses import JSONResponse
             return JSONResponse(status_code=again[0], content=again[1])
 
-        job = ExportJob(id=uuid4(), status="queued", requested_at=now_utc())
+        export_id = uuid4()
+        blob = _build_archive(conn, account)
+        put_object(_account_key(account.id, export_id), blob, "application/zip")
+        now = now_utc()
+        job = ExportJob(
+            id=export_id, status="ready", requested_at=now, ready_at=now,
+            download_url=f"/me/export/{export_id}/download", size_bytes=len(blob),
+        )
         record(conn, account.id, op, idempotency_key, digest, 202, job.model_dump(mode="json"))
     return job
+
+
+@router.get("/me/export/{exportId}/download", summary="Download the account data archive")
+def download_account_export(
+    account: Annotated[Account, Depends(require_account)],
+    exportId: UUID,
+) -> Response:
+    # The object is named by the caller's account id and the export id, so a seller can only
+    # ever fetch their own archive: another account's id is simply a path that is not theirs.
+    try:
+        data, _ = get_object(_account_key(account.id, exportId))
+    except Exception as exc:  # noqa: BLE001
+        raise Problem(404, "export_not_found", "That export was not found.") from exc
+    return Response(
+        content=data, media_type="application/zip",
+        headers={"Content-Disposition": 'attachment; filename="my-data.zip"'},
+    )
