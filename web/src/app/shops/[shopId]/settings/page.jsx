@@ -13,6 +13,7 @@ export default async function SettingsPage({ params }) {
   const base = `/shops/${shopId}`;
   const links = [
     [`${base}/settings/alerts`, "Alert settings", "Low-stock, coming-back and absorption thresholds."],
+    [`${base}/costs`, "Product costs", "Upload a spreadsheet of costs, or add them by hand."],
     [`${base}/other-sales`, "Other-channel sales", "Enter sales from outside TikTok so the VAT monitor sees your whole turnover."],
     [`${base}/export`, "Export figures", "Build a spreadsheet of your figures for your accountant."],
     [`${base}/sync`, "Sync status", "See what MyShopEdge has brought in from TikTok."],

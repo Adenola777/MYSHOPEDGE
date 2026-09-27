@@ -69,6 +69,9 @@ export default async function ProductsPage({ params, searchParams }) {
       <header className="page-head">
         <h1>Products</h1>
         <p>{RANKED_BY[measure] ?? "Ranked"}</p>
+        <p className="crumb">
+          <Link data-testid="products-costs-link" href={`/shops/${shopId}/costs`}>Add product costs</Link>
+        </p>
       </header>
 
       <nav className="switch" aria-label="Rank by">

@@ -1,0 +1,27 @@
+{
+  "summary": "WAVE 2 QA: backend export endpoints (S23) + records product filter (S16) via pytest, and frontend Playwright coverage of Export screen, Product Transactions, Sync waiting, Connection-problem redirect, Settings hub, and nav regression. All 12 pytest cases pass (12/12) and all 6 UI flows pass.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/service/tests/test_exports_wave2.py",
+    "/app/test_reports/pytest/wave2_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "exports.create_export builds the file synchronously inside the request; fine for small seller data but if any single ledger export grows large the request timeout will bite. Consider moving to a background worker with real status polling if row_count > threshold.",
+    "storage.py caches session key in module-global _session_key without a lock; benign in single-worker uvicorn but could double-init under concurrent workers. Not blocking.",
+    "get_export returns Content-Disposition with filename derived from kind+dates; safe for now (no user-controlled filename), but if kind ever becomes free text add sanitisation.",
+    "Product Transactions link, Export ready + download, Sync waiting all have proper data-testid attributes. Good."
+  ],
+  "updated_files": [
+    "/app/service/tests/test_exports_wave2.py",
+    "/app/test_reports/pytest/wave2_results.xml"
+  ],
+  "success_rate": {"backend": "100% (12/12)", "frontend": "100% (Export build+download, Product transactions link+records-list, Sync waiting, Connection-problem redirect to Today, Settings hub Export/Sync links, Nav 6 tabs)"},
+  "test_credentials": "Bearer token /app/scripts/qa/tok_a; shop 8a773a13-73b5-a382-7dd0-fda02e950369; product 1e872806-de90-a026-171b-f962d1460b0c.",
+  "seed_data_creation": "Backend tests created several ShopExportJob rows in exports table (non-destructive, no cleanup needed). Blob objects also written to Emergent object storage under prefix myshopedge/exports/{shop_id}/.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Wave 2 tests in /app/service/tests/test_exports_wave2.py. Export endpoints synchronous, returned status='ready' immediately with row_count/size_bytes. CSV first-row is header row (checked). XLSX validated by PK zip magic. Idempotency-Key 8-128 chars, tested with 'test-wave2-<random12hex>'. Note the connection-problem page correctly redirects to /today when shop is healthy - this is by design. The Playwright Export test used the default form values (month_summary/xlsx/sales/current-month) rather than typing period 2026-07-01..2026-08-31; the default period still produced a downloadable file, so the flow works end-to-end.",
+  "rca of the issue": "N/A"
+}

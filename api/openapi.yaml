@@ -855,6 +855,52 @@ paths:
           $ref: '#/components/responses/ForbiddenShop'
         '404':
           $ref: '#/components/responses/NotFound'
+  /shops/{shopId}/cost-uploads/{uploadId}/file:
+    put:
+      tags:
+      - Costs
+      summary: Upload a cost file's bytes
+      description: 'The bytes of the file created by createCostUpload. The chosen object store
+        issues no presigned upload URLs, so the upload comes through the service rather than
+        straight to the store. CSV or Excel (.xlsx) only.
+
+        '
+      operationId: uploadCostFile
+      parameters:
+      - $ref: '#/components/parameters/ShopId'
+      - $ref: '#/components/parameters/UploadId'
+      requestBody:
+        required: true
+        content:
+          text/csv:
+            schema:
+              type: string
+              format: binary
+          application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '200':
+          description: The upload, parsed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CostUpload'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ForbiddenShop'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '413':
+          description: File too large
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
   /shops/{shopId}/cost-uploads/{uploadId}/mapping:
     put:
       tags:
