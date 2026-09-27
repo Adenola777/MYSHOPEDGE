@@ -164,3 +164,35 @@ drill-down, S2 First sync, S28 Connection problem, and auth edge screens S35–S
 **Blocked (unchanged):** Wave 2 cost-uploads/exports (object storage + worker), Wave 3
 live-TikTok endpoints (insights/trends/expected-payouts), Wave 4 checkReturnItem (four
 owner rulings). `/me/export` needs an account-scoped export store + worker.
+
+---
+
+## WAVE 2 + follow-ups delivered — 27 September 2026
+
+Object storage wired via Emergent managed store (`service/app/storage.py`, EMERGENT_LLM_KEY
++ INTEGRATION_PROXY_URL). Note: the store has no presigned URLs and rejects double-dot object
+paths — both handled.
+
+**Product Transactions (S16)** — frontend drill-down at
+`/shops/{id}/products/{id}/transactions` using the existing `/records?product_id=` filter.
+
+**Sync screens** — S2 first-sync progress (`/sync`, polls `getSyncStatus`) and S28
+connection-problem state (reads `/shops` connection_status, redirects healthy shops to Today).
+
+**Export Delivery (S23)** — new `createExport` (POST /shops/{id}/exports) + `getExport`
+(GET .../{id}, with `?download=1` streaming the file). Generates real CSV/XLSX (ledger,
+transactions, month_summary) inline into object storage; frontend `/export` builds and
+blob-downloads with the seller's token. Verified: 119-row ledger CSV, xlsx month_summary.
+
+**Cost Uploads (S3/S4)** — full six-operation flow reusing the built `cost_files.py` parser:
+createCostUpload → PUT .../file (bytes through the service; added one contract path
+`/shops/{id}/cost-uploads/{id}/file`) → getCostUpload → putMapping → match → apply. Match
+rows persisted as a JSON object in storage (no migration needed; `cost_upload_rows` table
+absent). Applied costs write `product_costs` with source 'upload'. Frontend `/costs` screen
+drives upload→map→match→apply. Status word: DB/CostUpload use `confirmed`, Summary uses `matched`.
+
+Contract conformance now 50/54 served (was 30 at start of WAVE 1). Remaining 4: the two
+account-level `/me/export` (queued stub; needs account-scoped store + worker), TikTok-live
+`payouts/expected`, `insights`, `trends` (Wave 3), and `return-items/check` (Wave 4 rulings).
+
+QA: testing_agent iterations 3 and 4 both 100% pass (frontend + backend), no open issues.

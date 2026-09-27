@@ -1,0 +1,27 @@
+{
+  "summary": "Wave 2 S3/S4 Cost Uploads QA. Backend: 9/9 pytest cases pass covering create -> PUT bytes -> get -> mapping (with 422 invalid column) -> match (matched/unmatched/reason) -> apply (idempotent replay verified) -> list (matched/applied status) -> 401 no-auth -> 403 foreign-shop. Frontend: Playwright drove /shops/{id}/costs end-to-end: file input -> mapping form prefilled (match_on=seller_sku, key=Seller SKU, cost=Unit Cost) -> match result (2 matched HAIR-BLUE/HAIR-RED, 1 unmatched ZZZ-NOPE with human reason) -> apply -> cost-applied confirmation shown. Products page has products-costs-link with correct href; Settings hub links to costs; nav shows Today/Stock/Products/Money/Tax/Settings; regression pages export/glossary/tax load.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/service/tests/test_cost_uploads_wave2.py",
+    "/app/test_reports/pytest/cost_uploads_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "cost_uploads.py apply_cost_upload writes product_costs inside a request loop with N INSERTs; fine for typical spreadsheet sizes but for very large uploads consider executemany. Not blocking.",
+    "The status-word split (DB 'confirmed' vs list summary 'matched') is documented in the module docstring and both response schemas serialise the correct word - good but a comment in the summary mapping line already exists.",
+    "CostUploadFlow.jsx concatenates NEXT_PUBLIC_API_BASE_URL + upload_url (which begins with /shops/...); this depends on the API base URL not having a trailing slash. Current env is fine; if the env var ever gains one it would double-slash. Consider using URL() to be defensive.",
+    "storage_key uniqueness relies on uuid4 file names; safe. The double-dot object-path guard mentioned in the request context is not visible in cost_uploads.py itself but is handled inside storage.py."
+  ],
+  "updated_files": [
+    "/app/service/tests/test_cost_uploads_wave2.py",
+    "/app/test_reports/pytest/cost_uploads_results.xml"
+  ],
+  "success_rate": {"backend": "100% (9/9)", "frontend": "100% (upload -> mapping prefill -> match -> apply -> cost-applied; products-costs-link, Settings costs link, nav 6 tabs, export/glossary/tax reachable)"},
+  "test_credentials": "Bearer token /app/scripts/qa/tok_a; shop 8a773a13-73b5-a382-7dd0-fda02e950369; seller SKUs HAIR-BLUE and HAIR-RED (existing), ZZZ-NOPE (deliberately absent for unmatched-row check).",
+  "seed_data_creation": "Each backend test run creates one cost_uploads row and inserts 2 product_costs rows (source='upload') for HAIR-BLUE/HAIR-RED; older rows are automatically superseded (superseded_at set) by the same code path. Objects also written to Emergent object storage under myshopedge/cost-uploads/{shop_id}/.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Cost uploads test file is /app/service/tests/test_cost_uploads_wave2.py. upload_url returned by createCostUpload starts with '/shops/...' (no /api/v1 prefix) and the frontend prepends NEXT_PUBLIC_API_BASE_URL. Idempotency-Key must be 8-128 chars; the apply endpoint replays the exact prior response. When testing status in list, the SAME upload appears as 'matched' after match and 'applied' after apply - both are correct. The 'alerts' feature is served under /notifications (not /alerts) in the Next app router. Coverage card correctly showed 100% (0 of 0 sold units) because pod date is Sept 2026 and default period has no sales, as documented.",
+  "rca of the issue": "N/A - no defects found."
+}
