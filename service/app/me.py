@@ -28,13 +28,15 @@ import hashlib
 import json
 from datetime import datetime
 from typing import Annotated, Literal
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, Header, Response
 from pydantic import BaseModel
 
 from .auth import Account, require_account
+from .dates import now_utc
 from .db import tenant
+from .idempotency import record, replay, request_hash
 from .problems import Problem
 
 router = APIRouter(tags=["Account"])
@@ -131,3 +133,130 @@ def list_shops(
         cols = [d.name for d in cur.description]
         rows = [dict(zip(cols, r, strict=True)) for r in cur.fetchall()]
     return _with_etag(ShopList(shops=[Shop(**r) for r in rows]), response, if_none_match)
+
+
+# --- deleteMe, ACC-4 -----------------------------------------------------------------------
+#
+# Deletion is a soft delete: the account is stamped closed rather than erased, because the
+# ledger is append-only (A29) and a seller's settled figures are records, not preferences.
+# `accounts.status` becomes `deleted` and `deleted_at` is stamped, every shop is
+# disconnected, and each stored TikTok token is marked revoked so it can no longer be used.
+# The response states plainly what was done and what is kept, so a seller who believed
+# deletion erased everything is corrected in the acknowledgement itself.
+
+
+class DeleteMeIn(BaseModel):
+    confirm_email: str
+    reason: str | None = None
+
+
+class DeletionAcknowledgement(BaseModel):
+    account_id: UUID
+    scheduled_at: datetime
+    includes: list[str]
+    invoices_retained_until: str | None = None
+    cancel_by: datetime | None = None
+
+
+@router.delete("/me", status_code=202, response_model=DeletionAcknowledgement,
+               summary="Delete the account and its data")
+def delete_me(
+    body: DeleteMeIn,
+    account: Annotated[Account, Depends(require_account)],
+    idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None,
+):
+    if body.confirm_email.strip().lower() != (account.email or "").strip().lower():
+        raise Problem(422, "confirm_email_mismatch",
+                      "The email you typed does not match the account email.")
+    if body.reason is not None and len(body.reason) > 500:
+        raise Problem(422, "validation_failed", "That reason is too long.")
+
+    op = "deleteMe"
+    digest = request_hash(str(account.id), body.confirm_email.strip().lower())
+    now = now_utc()
+    with tenant(account.id) as conn:
+        again = replay(conn, account.id, op, idempotency_key, digest)
+        if again:
+            from fastapi.responses import JSONResponse
+            return JSONResponse(status_code=again[0], content=again[1])
+
+        # Soft delete. A row already closed stays closed, so a repeat is harmless even
+        # without a key.
+        conn.execute(
+            "update accounts set status = 'deleted', "
+            "deleted_at = coalesce(deleted_at, now()) where id = %s",
+            (str(account.id),),
+        )
+        # Every shop is disconnected and every token marked revoked, so nothing can read a
+        # closed account's shop. The rows remain for the record.
+        conn.execute(
+            "update shops set connection_status = 'disconnected' "
+            "where account_id = %s and connection_status <> 'deleted'",
+            (str(account.id),),
+        )
+        conn.execute(
+            "update tiktok_connections set revoked_at = coalesce(revoked_at, now()) "
+            "where shop_id in (select id from shops where account_id = %s)",
+            (str(account.id),),
+        )
+        ack = DeletionAcknowledgement(
+            account_id=account.id,
+            scheduled_at=now,
+            includes=[
+                "Your account and sign-in",
+                "Every shop connection and its stored TikTok tokens",
+                "Your orders, returns, settlements and ledger",
+                "Your product costs and cost uploads",
+                "Your saved figures entered by hand",
+            ],
+            invoices_retained_until=None,
+            cancel_by=None,
+        )
+        record(conn, account.id, op, idempotency_key, digest, 202, ack.model_dump(mode="json"))
+    return ack
+
+
+# --- requestAccountExport, ACC-4 -----------------------------------------------------------
+#
+# A full download of the account's data. The archive is written by a background worker that
+# is not built yet (BUILD_PLAN Wave 2), so this persists a queued job and answers 202. The
+# poll and download path arrive with the worker. The export is stored against the account's
+# shop, because `exports` is shop-scoped and the MVP allows one shop per account.
+
+
+class ExportJob(BaseModel):
+    id: UUID
+    status: Literal["queued", "ready", "failed", "expired"]
+    requested_at: datetime
+    ready_at: datetime | None = None
+    expires_at: datetime | None = None
+    download_url: str | None = None
+    size_bytes: int | None = None
+
+
+@router.post("/me/export", status_code=202, response_model=ExportJob,
+             summary="Request a download of the account's data")
+def request_account_export(
+    account: Annotated[Account, Depends(require_account)],
+    idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None,
+):
+    """Queue a full account-data export.
+
+    The archive is written by a background worker to object storage, and neither the worker
+    nor an account-scoped export store exists yet (BUILD_PLAN Wave 2). The `exports` table is
+    for shop report exports only (its `kind` and `format` checks forbid an account archive),
+    so nothing is written there. This accepts the request and answers 202 with a queued job.
+    The job id is held against the Idempotency-Key so a repeat returns the same id, which is
+    the promise the contract makes. `download_url` stays absent until the worker exists.
+    """
+    op = "requestAccountExport"
+    digest = request_hash(str(account.id))
+    with tenant(account.id) as conn:
+        again = replay(conn, account.id, op, idempotency_key, digest)
+        if again:
+            from fastapi.responses import JSONResponse
+            return JSONResponse(status_code=again[0], content=again[1])
+
+        job = ExportJob(id=uuid4(), status="queued", requested_at=now_utc())
+        record(conn, account.id, op, idempotency_key, digest, 202, job.model_dump(mode="json"))
+    return job

@@ -1,5 +1,31 @@
 # Test credentials and local QA harness
 
+## POD SERVING SETUP (current — for the testing agent)
+
+The whole stack runs in this pod and is reachable at the preview URL.
+- **Postgres**: local cluster under `/app/.pgdata` (survives pod restarts), port 5432, trust auth.
+- **Backend**: supervisor program `backend` runs `/app/backend/server.py`, which mounts the
+  real FastAPI service (`/app/service`) under `/api`. So the contract's `/v1/...` paths are
+  reached at `/api/v1/...`. It also self-heals Postgres on start via `/app/scripts/pod_bootstrap.sh`.
+- **Frontend**: supervisor program `frontend` runs Next.js dev from `/app/web` on port 3000.
+- **External base URL**: `https://3574af37-00da-4199-8fc8-75173ccd4d0b.preview.emergentagent.com`
+  - API: `{BASE}/api/v1/...`   (e.g. `{BASE}/api/v1/me`)
+  - Web: `{BASE}/shops` → redirects to the seeded shop's Today screen.
+- **Auth in the pod**: real Stack Auth cannot be reached here, so a QA-only ES256 token is used.
+  - The web app auto-attaches it via `NEXT_PUBLIC_DEV_BEARER` in `/app/web/.env.local`, so
+    browsing the site is already "signed in" as the synthetic seller. No login step is needed.
+  - For direct API calls use: `Authorization: Bearer $(cat /app/scripts/qa/tok_a)`.
+  - JWKS served internally at `http://127.0.0.1:8001/_qa/jwks.json`; issuer `qa-issuer`, aud `qa-aud`.
+- **Seeded account**: email `owner@synthetic-uk-shop.test`, subject `stack|synthetic-uk-shop`,
+  account id `56e487ea-e0fa-3691-7857-724855e716fc`, one shop id `8a773a13-73b5-a382-7dd0-fda02e950369`.
+- **Rebuild after a pod restart**: `bash /app/scripts/pod_bootstrap.sh` (idempotent), then
+  `sudo supervisorctl restart backend frontend`.
+- **DESTRUCTIVE endpoints** (`DELETE /api/v1/me`, `DELETE /api/v1/shops/{id}/connection`) soft-close
+  the shared synthetic account/shop. To restore afterwards, run:
+  `psql "postgresql://mse_migrator@127.0.0.1:5432/myshopedge" -c "update accounts set status='active', deleted_at=null; update shops set connection_status='connected'; update tiktok_connections set revoked_at=null; delete from idempotency_keys;"`
+
+## Legacy local harness notes (8801) — superseded by the pod setup above
+
 This project does not use the standard Emergent stack. It is FastAPI in `/app/service`,
 PostgreSQL, and a Next.js front end in `/app/web`. Sign-in is Stack Auth (ES256 JWTs),
 which cannot be reached from this container, so the harness mints its own ES256 tokens.

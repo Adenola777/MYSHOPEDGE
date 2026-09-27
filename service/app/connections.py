@@ -41,15 +41,18 @@ import secrets
 import time
 from datetime import datetime, timedelta, timezone
 from typing import Annotated, Any
+from uuid import UUID
 
 import httpx
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Header, Query
 from pydantic import BaseModel
 
 from .auth import Account, require_account
 from .db import tenant, unscoped
+from .idempotency import record, replay, request_hash
 from .problems import Problem
+from .shops import require_shop
 
 router = APIRouter(tags=["Connection"])
 
@@ -451,3 +454,53 @@ def tiktok_callback(
         rejection_reason=rejection_reason,
         return_to=return_to,
     )
+
+
+# --- disconnectShop, CON-3 -----------------------------------------------------------------
+
+
+class DisconnectOut(BaseModel):
+    shop_id: UUID
+    connection_status: str
+    data_retained: bool
+    revoked_at: datetime | None = None
+
+
+@router.delete("/shops/{shopId}/connection", response_model=DisconnectOut,
+               summary="Disconnect the shop")
+def disconnect_shop(
+    account: Annotated[Account, Depends(require_account)],
+    shop_id: Annotated[UUID, Depends(require_shop)],
+    idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None,
+) -> DisconnectOut:
+    """Set the shop disconnected and mark its stored tokens revoked.
+
+    Disconnecting never deletes data: the orders, ledger and costs remain, and reconnecting
+    the same shop resumes against them. The best-effort DeauthorizeShop call to TikTok
+    (202403) is not made here, because nothing yet decrypts a stored token to make a signed
+    call, and a disconnection must not depend on TikTok answering. The tokens are marked
+    revoked so they are never used again regardless.
+    """
+    op = "disconnectShop"
+    digest = request_hash(str(shop_id))
+    with tenant(account.id) as conn:
+        again = replay(conn, account.id, op, idempotency_key, digest)
+        if again:
+            from fastapi.responses import JSONResponse
+            return JSONResponse(status_code=again[0], content=again[1])
+
+        conn.execute(
+            "update shops set connection_status = 'disconnected' where id = %s",
+            (str(shop_id),),
+        )
+        row = conn.execute(
+            "update tiktok_connections set revoked_at = coalesce(revoked_at, now()) "
+            "where shop_id = %s returning revoked_at",
+            (str(shop_id),),
+        ).fetchone()
+        out = DisconnectOut(
+            shop_id=shop_id, connection_status="disconnected", data_retained=True,
+            revoked_at=row[0] if row else None,
+        )
+        record(conn, account.id, op, idempotency_key, digest, 200, out.model_dump(mode="json"))
+    return out

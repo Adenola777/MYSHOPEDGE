@@ -10,7 +10,15 @@
 
 import { authorizationHeader } from "./stack";
 
-const BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/v1";
+// The browser talks to the API on its public origin. Server components render inside the
+// same network as the service, so they use an internal base when one is provided
+// (API_INTERNAL_BASE_URL), which is faster and does not depend on the public ingress. On
+// Vercel API_INTERNAL_BASE_URL is unset, so both sides use NEXT_PUBLIC_API_BASE_URL.
+const PUBLIC_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/v1";
+const BASE =
+  typeof window === "undefined"
+    ? process.env.API_INTERNAL_BASE_URL ?? PUBLIC_BASE
+    : PUBLIC_BASE;
 
 /**
  * @typedef {Object} ApiResult

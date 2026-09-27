@@ -21,12 +21,12 @@ from datetime import date
 from typing import Annotated, Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 
 from .auth import Account, require_account
 from .dates import business_today, now_utc
-from .db import tenant
+from .db import tenant, unscoped
 from .money import Money, money
 from .problems import Problem
 from .shops import require_shop
@@ -248,4 +248,142 @@ def get_set_aside(
         as_of=as_of, amount=None, unavailable_reason=None, confidence="incomplete",
         basis_of_estimate=[BasisItem(
             label="Set-aside tax rates are not configured yet, so no amount can be produced.")],
+    )
+
+
+# --- getTaxDates, TAX-4 --------------------------------------------------------------------
+#
+# The key Self Assessment dates for a UK tax year, each computed from a reference rule so it
+# carries the date the rule was last reviewed and its source. A tax year Y runs 6 April Y to
+# 5 April Y+1, and each rule's value gives the month, day and how many years after Y the
+# date falls. A date whose rule is not configured is left out rather than guessed, so an
+# empty list is an honest answer that the rules are not loaded rather than a wrong one.
+
+
+class TaxDate(BaseModel):
+    label: str
+    date: str
+    rule_key: str
+    reviewed_at: str | None = None
+    source_url: str | None = None
+
+
+class TaxDatesOut(BaseModel):
+    tax_year: int
+    dates: list[TaxDate]
+
+
+@router.get("/tax/dates", response_model=TaxDatesOut, summary="Quarterly and payment dates")
+def get_tax_dates(
+    account: Annotated[Account, Depends(require_account)],
+    tax_year: Annotated[int | None, Query(ge=2020, le=2100)] = None,
+) -> TaxDatesOut:
+    today = business_today()
+    # The UK tax year that is current today: it begins on 6 April. Before 6 April the
+    # current year started in the previous calendar year.
+    year = tax_year if tax_year is not None else (
+        today.year if (today.month, today.day) >= (4, 6) else today.year - 1
+    )
+    ref_date = date(year, 4, 6)
+    with unscoped() as conn:
+        rows = conn.execute(
+            "select rule_key, value, reviewed_at, source_url from reference_rules "
+            "where rule_set = 'income_tax' and rule_key like 'date.%%' "
+            "and effective_from <= %s and (effective_to is null or effective_to >= %s) "
+            "order by rule_key",
+            (ref_date, ref_date),
+        ).fetchall()
+
+    dates: list[TaxDate] = []
+    for rule_key, value, reviewed_at, source_url in rows:
+        v = value if isinstance(value, dict) else {}
+        try:
+            when = date(year + int(v["year_offset"]), int(v["month"]), int(v["day"]))
+        except (KeyError, ValueError, TypeError):
+            continue
+        dates.append(TaxDate(
+            label=str(v.get("label", rule_key)),
+            date=when.isoformat(),
+            rule_key=rule_key,
+            reviewed_at=reviewed_at.isoformat() if reviewed_at else None,
+            source_url=source_url,
+        ))
+    dates.sort(key=lambda d: d.date)
+    return TaxDatesOut(tax_year=year, dates=dates)
+
+
+# --- quarterlyCheck, TAX-5 -----------------------------------------------------------------
+#
+# A comparison, not advice. The seller supplies their prior-year gross income and it is
+# compared with the income thresholds in force for the year. `above_threshold` states a fact
+# about a number and nothing more, which is why the response carries no recommendation field.
+
+
+class QuarterlyCheckIn(BaseModel):
+    prior_year_gross: Money
+    tax_year: int | None = None
+
+
+class ThresholdComparison(BaseModel):
+    rule_key: str
+    label: str
+    threshold: Money
+    above_threshold: bool
+    headroom: Money | None = None
+    reviewed_at: str | None = None
+
+
+class QuarterlyCheckOut(BaseModel):
+    tax_year: int
+    prior_year_gross: Money
+    thresholds: list[ThresholdComparison]
+    checked_at: str
+
+
+@router.post("/tax/quarterly-check", response_model=QuarterlyCheckOut,
+             summary="Compare prior-year gross income with the thresholds")
+def quarterly_check(
+    body: QuarterlyCheckIn,
+    account: Annotated[Account, Depends(require_account)],
+) -> QuarterlyCheckOut:
+    if body.prior_year_gross.amount_minor < 0:
+        raise Problem(422, "validation_failed", "Prior-year gross income cannot be negative.")
+    today = business_today()
+    year = body.tax_year if body.tax_year is not None else (
+        today.year if (today.month, today.day) >= (4, 6) else today.year - 1
+    )
+    ref_date = date(year, 4, 6)
+    gross = body.prior_year_gross.amount_minor
+    currency = body.prior_year_gross.currency
+
+    with unscoped() as conn:
+        rows = conn.execute(
+            "select rule_key, value, reviewed_at, rule_set from reference_rules "
+            "where rule_set in ('mtd', 'income_tax', 'national_insurance') "
+            "and rule_key like 'threshold.%%' "
+            "and effective_from <= %s and (effective_to is null or effective_to >= %s) "
+            "order by rule_set, rule_key",
+            (ref_date, ref_date),
+        ).fetchall()
+
+    thresholds: list[ThresholdComparison] = []
+    for rule_key, value, reviewed_at, _rule_set in rows:
+        v = value if isinstance(value, dict) else {}
+        if "amount_minor" not in v:
+            continue
+        amount = int(v["amount_minor"])
+        thresholds.append(ThresholdComparison(
+            rule_key=rule_key,
+            label=str(v.get("label", rule_key)),
+            threshold=money(amount, v.get("currency", currency)),
+            above_threshold=gross >= amount,
+            headroom=money(amount - gross, v.get("currency", currency)),
+            reviewed_at=reviewed_at.isoformat() if reviewed_at else None,
+        ))
+
+    return QuarterlyCheckOut(
+        tax_year=year,
+        prior_year_gross=body.prior_year_gross,
+        thresholds=thresholds,
+        checked_at=now_utc().isoformat(),
     )

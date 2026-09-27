@@ -38,6 +38,17 @@ const ICON = {
       <path d="M16.5 6.5a4 4 0 0 0-7 2.5v9.5M7 18.5h10M7 13h7" />
     </svg>
   ),
+  tax: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6" />
+    </svg>
+  ),
+  settings: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2" />
+    </svg>
+  ),
 };
 
 /** @type {[string, string][]} */
@@ -46,6 +57,8 @@ const TABS = [
   ["stock", "Stock"],
   ["products", "Products"],
   ["money", "Money"],
+  ["tax", "Tax"],
+  ["settings", "Settings"],
 ];
 
 /** @param {{ shopId: string }} props */
@@ -59,6 +72,7 @@ export function ShopNav({ shopId }) {
         const current = path === href || path.startsWith(`${href}/`)
           // Records and discrepancies are opened from Money and Today, so they keep their tab lit.
           || (slug === "money" && path.startsWith(`${base}/records`))
+          || (slug === "settings" && (path.startsWith(`${base}/glossary`) || path.startsWith(`${base}/other-sales`)))
           || (slug === "today" && (path.startsWith(`${base}/discrepancies`) || path.startsWith(`${base}/notifications`)));
         return (
           <Link key={slug} href={href} aria-current={current ? "page" : undefined}>

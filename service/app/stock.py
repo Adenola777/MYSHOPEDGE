@@ -53,7 +53,7 @@ from __future__ import annotations
 
 import base64
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Annotated, Any, Literal
 from uuid import UUID
 
@@ -65,6 +65,7 @@ from .auth import Account, require_account
 from .dates import business_today, now_utc
 from .db import tenant
 from .idempotency import record, replay, request_hash
+from .money import Money, money
 from .problems import Problem
 from .settlements import MAX_LIMIT, decode_cursor, encode_cursor
 from .shops import require_shop
@@ -394,3 +395,68 @@ def create_stock_adjustment(
         out = AdjustmentOut(movement=movement, position=position)
         record(conn, account.id, op, idempotency_key, digest, 201, out.model_dump(mode="json"))
     return out
+
+
+# --- getVelocity, DSH-3 --------------------------------------------------------------------
+#
+# Average daily gross, net proceeds and units over a trailing window. The window is
+# window_days London days ending today, and each average is the window's total divided by
+# the number of days, computed through Decimal so no float holds money. Net proceeds uses
+# the same categories the money and product screens net to, so the three cannot disagree.
+
+
+class Velocity(BaseModel):
+    window_days: int
+    period: dict[str, Any]
+    average_daily_gross: Money
+    average_daily_net_proceeds: Money
+    average_daily_units: float
+
+
+@router.get("/shops/{shopId}/velocity", response_model=Velocity,
+            summary="Average daily sales and net proceeds")
+def get_velocity(
+    account: Annotated[Account, Depends(require_account)],
+    shop_id: Annotated[UUID, Depends(require_shop)],
+    basis: Annotated[str, Query(pattern="^(sales|cash)$")] = "sales",
+    window_days: Annotated[int, Query(ge=7, le=90)] = 28,
+) -> Velocity:
+    from decimal import ROUND_HALF_UP, Decimal
+
+    from .products import NET_PROCEEDS_TYPES
+
+    today = business_today()
+    start = today - timedelta(days=window_days - 1)
+    date_column = "le.basis_day" if basis == "sales" else "le.settlement_month"
+    with tenant(account.id) as conn:
+        currency = (conn.execute(
+            "select trim(currency) from shops where id = %s", (str(shop_id),)
+        ).fetchone() or ["GBP"])[0] or "GBP"
+        row = conn.execute(
+            "select "
+            "  coalesce(sum(amount_minor) filter (where category = 'gross_sales'), 0), "
+            "  coalesce(sum(amount_minor) filter (where entry_type = any(%(np)s)), 0) "
+            "from ledger_entries le "
+            f"where shop_id = %(shop)s and {date_column} >= %(from)s and {date_column} <= %(to)s",
+            {"shop": str(shop_id), "from": start, "to": today, "np": list(NET_PROCEEDS_TYPES)},
+        ).fetchone()
+        units = conn.execute(
+            "select coalesce(sum(ol.quantity), 0) from order_lines ol "
+            "join orders o on o.id = ol.order_id "
+            "where ol.shop_id = %s and o.cancelled_at is null "
+            "and (o.order_created_at at time zone 'Europe/London')::date between %s and %s",
+            (str(shop_id), start, today),
+        ).fetchone()
+
+    days = Decimal(window_days)
+    gross_avg = int((Decimal(int(row[0])) / days).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+    net_avg = int((Decimal(int(row[1])) / days).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+    units_avg = float((Decimal(int(units[0])) / days).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
+
+    return Velocity(
+        window_days=window_days,
+        period={"from": start.isoformat(), "to": today.isoformat(), "basis": basis},
+        average_daily_gross=money(gross_avg, currency),
+        average_daily_net_proceeds=money(net_avg, currency),
+        average_daily_units=units_avg,
+    )

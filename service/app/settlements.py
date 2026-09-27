@@ -38,7 +38,6 @@ from .db import tenant
 from .money import Money, money
 from .problems import Problem
 from .shops import require_shop
-
 router = APIRouter(tags=["Settlements"])
 
 MAX_LIMIT = 100
@@ -277,3 +276,47 @@ def get_settlement(
             for o in orders
         ],
     )
+
+
+# --- recordSettlementInvoice ---------------------------------------------------------------
+#
+# No TikTok finance endpoint returns the fee invoice number. It appears in Seller Center
+# under Finance, Bills, Invoice, and the seller enters it here so the statement ties to the
+# document their accountant asks for. Only the invoice number has a column; the optional
+# gross, net and VAT the contract accepts have nowhere to be stored on `settlements`, so
+# they are accepted and not persisted, and this is noted rather than silently dropped.
+
+
+class SettlementInvoiceIn(BaseModel):
+    invoice_number: str
+    gross: Money | None = None
+    net: Money | None = None
+    vat: Money | None = None
+
+
+@router.put("/shops/{shopId}/settlements/{settlementId}/invoice", response_model=Settlement,
+            summary="Record the TikTok fee invoice number")
+def record_settlement_invoice(
+    body: SettlementInvoiceIn,
+    account: Annotated[Account, Depends(require_account)],
+    shop_id: Annotated[UUID, Depends(require_shop)],
+    settlementId: UUID,
+) -> Settlement:
+    number = body.invoice_number.strip()
+    if not number:
+        raise Problem(422, "validation_failed", "An invoice number is required.")
+    if len(number) > 64:
+        raise Problem(422, "validation_failed", "That invoice number is too long.")
+
+    with tenant(account.id) as conn:
+        cur = conn.execute(
+            f"update settlements set tiktok_invoice_number = %s where id = %s and shop_id = %s "
+            f"returning {SETTLEMENT_COLUMNS}",
+            (number, str(settlementId), str(shop_id)),
+        )
+        cols = [d.name for d in cur.description]
+        row = cur.fetchone()
+    if row is None:
+        # Same answer as a settlement on another account, for the reason in shops.py.
+        raise Problem(404, "settlement_not_found", "That settlement was not found.")
+    return _settlement(dict(zip(cols, row, strict=True)))

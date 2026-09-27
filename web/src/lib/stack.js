@@ -52,6 +52,13 @@ export const stackApp = STACK_CONFIGURED
  * @returns {Promise<string | null>}
  */
 export async function authorizationHeader() {
+  // QA-ONLY affordance. When NEXT_PUBLIC_DEV_BEARER is set (the local/preview harness, never
+  // production), attach it as the bearer so screens render against the real handlers without
+  // a live Stack Auth sign-in, which cannot be performed inside the build container. It is
+  // never set on Vercel, so production is unaffected.
+  const devBearer = process.env.NEXT_PUBLIC_DEV_BEARER;
+  if (devBearer) return `Bearer ${devBearer}`;
+
   if (!stackApp) return null;
   try {
     const { accessToken } = await stackApp.getAuthJson();
