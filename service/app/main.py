@@ -18,6 +18,7 @@ from . import (
     connections,
     costs,
     discrepancies,
+    exports,
     me,
     notifications,
     money_view,
@@ -85,6 +86,7 @@ app.include_router(alert_settings.router, prefix="/v1")
 app.include_router(connections.router, prefix="/v1")
 app.include_router(costs.router, prefix="/v1")
 app.include_router(discrepancies.router, prefix="/v1")
+app.include_router(exports.router, prefix="/v1")
 app.include_router(me.router, prefix="/v1")
 app.include_router(notifications.router, prefix="/v1")
 app.include_router(money_view.router, prefix="/v1")

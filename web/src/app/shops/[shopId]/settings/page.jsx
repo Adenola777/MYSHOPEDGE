@@ -14,6 +14,8 @@ export default async function SettingsPage({ params }) {
   const links = [
     [`${base}/settings/alerts`, "Alert settings", "Low-stock, coming-back and absorption thresholds."],
     [`${base}/other-sales`, "Other-channel sales", "Enter sales from outside TikTok so the VAT monitor sees your whole turnover."],
+    [`${base}/export`, "Export figures", "Build a spreadsheet of your figures for your accountant."],
+    [`${base}/sync`, "Sync status", "See what MyShopEdge has brought in from TikTok."],
     [`${base}/glossary`, "Glossary", "Plain definitions of the tax and finance terms MyShopEdge uses."],
     [`${base}/settings/export`, "Download my data", "Prepare a full archive of everything held about your account."],
     [`${base}/settings/disconnect`, "Disconnect this shop", "Stop reading from TikTok. Your records stay."],
@@ -30,7 +32,7 @@ export default async function SettingsPage({ params }) {
           {links.map(([href, title, why]) => (
             <li key={href}>
               <span>
-                <Link href={href} data-testid={`settings-link-${href.split("/").pop()}`}>{title}</Link>
+                <Link href={href} data-testid={`settings-link-${title.toLowerCase().replace(/[^a-z]+/g, "-").replace(/^-|-$/g, "")}`}>{title}</Link>
                 <div className="rows__sub">{why}</div>
               </span>
             </li>

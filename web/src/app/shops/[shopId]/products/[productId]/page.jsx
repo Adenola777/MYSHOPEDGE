@@ -148,6 +148,12 @@ export default async function ProductDetailPage({ params, searchParams }) {
         one product, its deductions are shared across them in proportion, and the shares add up
         to the order exactly.
       </p>
+
+      <p className="card__foot" style={{ marginTop: "1rem" }}>
+        <Link data-testid="product-transactions-link" href={`/shops/${shopId}/products/${productId}/transactions`}>
+          See every record behind these figures
+        </Link>
+      </p>
     </section>
   );
 }
