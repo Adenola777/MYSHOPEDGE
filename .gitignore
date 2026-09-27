@@ -24,3 +24,7 @@ service/**/__pycache__/
 *.env
 credentials.json
 .credentials
+
+# Local pod Postgres data dir and logs (never commit)
+.pgdata/
+**/server.log

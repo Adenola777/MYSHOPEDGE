@@ -1,0 +1,24 @@
+{
+  "summary": "WAVE 1 end-to-end QA against the public preview URL. Built /app/service/tests/test_wave1_endpoints.py (27 pytest cases via requests) covering all 13 new endpoints including auth/tenancy, validation guards, idempotency, and destructive DELETE /me + DELETE /connection (run last, DB restored in teardown). Result: 27/27 backend PASS. Frontend Playwright verified all 8 screens render, nav bar shows 6 tabs, alert-settings save-and-persist works (low_stock_days=12 sticks after reload), other-sales upsert appears in Months entered, Prepare-my-download shows queued state with request reference id, and delete wrong-email guard shows the mismatch error via [data-testid=delete-error]. DB restored to seed state after destructive tests.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/service/tests/test_wave1_endpoints.py",
+    "/app/test_reports/pytest/wave1_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "quarterly-check endpoint intentionally returns a list of per-rule ThresholdComparison objects (each with above_threshold), rather than a single top-level above_threshold flag - matches the API design and the OpenAPI schema. Only one threshold rule (MTD ITSA £50,000, effective 2026-04-06) is currently seeded; querying with tax_year<=2025 returns an empty thresholds list, which is by design (rule not yet effective). Consider seeding earlier income_tax/NI thresholds if the UI needs them for prior years.",
+  "The unused `account` parameter in tax.get_tax_dates / tax.quarterly_check is only for auth enforcement (Depends(require_account)) - fine, just noting that both endpoints use unscoped() for reference_rules which is correct.",
+  "Tenancy is enforced correctly (401 without auth, 403 forbidden_shop for another tenant's shop id).",
+  "Idempotency: /me/export enforces Idempotency-Key length 8-128 (422 below) and returns identical job id for repeat keys; /connection disconnect is idempotent on repeat calls with same key. Good."
+  ],
+  "updated_files": ["/app/service/tests/test_wave1_endpoints.py", "/app/test_reports/pytest/wave1_results.xml"],
+  "success_rate": {"backend": "100% (27/27)", "frontend": "100% (8 screens + 4 interactive flows + nav)"},
+  "test_credentials": "Bearer token at /app/scripts/qa/tok_a; account owner@synthetic-uk-shop.test; shop id 8a773a13-73b5-a382-7dd0-fda02e950369.",
+  "seed_data_creation": "Test run added other-channel sales rows (eBay 2026-06 £500 and 2026-07 £500), an invoice number on one settlement, and modified alert_settings (low_stock_days=12). Destructive test class teardown re-runs the RESTORE SQL from test_credentials.md (accounts.status=active, deleted_at=null, shops.connection_status=connected, tiktok_connections.revoked_at=null, deletes idempotency_keys). Verified post-run: status=active, connection_status=connected.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Non-standard stack (FastAPI /app/service mounted under /api by /app/backend/server.py, Next.js in /app/web on 3000, Postgres 15 local). Always hit the public preview URL, prefix API paths with /api/v1. Auth via Bearer $(cat /app/scripts/qa/tok_a). Wave 1 tests live in /app/service/tests/test_wave1_endpoints.py - keep TestZzDestructive last (alphabetical ordering) so RESTORE runs at teardown. Idempotency-Key must be 8-128 chars. quarterly-check thresholds list is only populated for tax_year>=2026 with current seed. Frontend interactive elements all use documented data-testids on /app/web/src/components/SettingsForms.jsx.",
+  "rca of the issue": "No functional issues found. Initial test failure on TestQuarterlyCheck was in the test itself (wrong assumption of top-level above_threshold vs the per-rule list schema, and using tax_year=2025 before the only seeded threshold's effective_from 2026-04-06). Fixed the test to use tax_year=2026 and assert on thresholds[].above_threshold - now all green."
+}

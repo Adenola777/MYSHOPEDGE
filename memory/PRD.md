@@ -128,3 +128,39 @@ Set-aside returns `no_tax_profile` with no profile, and null with a basis note o
 exists, because the income-tax and NI reference rules and the set-aside method are not yet
 ruled. Two owner inputs remain for the numbers: the income-tax and NI reference values, and
 the set-aside method.
+
+---
+
+## WAVE 1 delivered — 27 September 2026
+
+**Pod runnability.** Set up a self-healing local stack: Postgres 15 under `/app/.pgdata`
+(survives restarts), migrations 0001–0024 + seed + reference rules via
+`scripts/pod_bootstrap.sh`. Backend served by `/app/backend/server.py` shim mounting the
+real service under `/api` (so contract `/v1/...` = `/api/v1/...`); Next.js dev on 3000 via
+`/app/frontend` shim. QA-only ES256 auth: web auto-signs-in with `NEXT_PUBLIC_DEV_BEARER`,
+JWKS at `/_qa/jwks.json`. `/app/.pgdata` gitignored.
+
+**Backend (13 endpoints, all verified against the real DB, 100% QA pass):**
+- `DELETE /me` (soft-close + cascade disconnect/revoke, idempotent), `POST /me/export`
+  (queued job, idempotent; worker/store is Wave 2 so nothing is persisted to the shop-scoped
+  `exports` table by design).
+- `DELETE /shops/{id}/connection` (disconnect, data retained, idempotent).
+- `GET /rules`, `GET /tax/dates`, `POST /tax/quarterly-check` (new reference-rule seed:
+  SA dates + MTD ITSA £50k threshold).
+- `GET/PUT /shops/{id}/alert-settings`.
+- `GET /shops/{id}/money/where-it-went`, `GET /shops/{id}/summary/{month}`.
+- `GET /shops/{id}/velocity`.
+- `GET /shops/{id}/other-sales`, `PUT /shops/{id}/other-sales/{month}`.
+- `PUT /shops/{id}/settlements/{settlementId}/invoice`.
+Contract conformance now 42/53 served, 11 remaining (Wave 2/3/4).
+
+**Frontend (8 screens):** S12 Tax, S15 Settings hub, S27 Alert settings, S24 Other-channel
+sales, S32 Glossary, S31 Download data, S29 Disconnect, S30 Delete account. ShopNav now
+carries Tax + Settings tabs. All render against real handlers; interactive flows QA-passed.
+
+**Deferred from Wave 1 (frontend-only, no new endpoint):** S16 Product transactions
+drill-down, S2 First sync, S28 Connection problem, and auth edge screens S35–S38.
+
+**Blocked (unchanged):** Wave 2 cost-uploads/exports (object storage + worker), Wave 3
+live-TikTok endpoints (insights/trends/expected-payouts), Wave 4 checkReturnItem (four
+owner rulings). `/me/export` needs an account-scoped export store + worker.
